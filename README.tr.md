@@ -37,6 +37,7 @@ Sıfır harici bağımlılıklı, çevrimdışı kullanılabilen küçük bir Ja
 npm test
 npm run demo
 npm run demo:planner
+npm run demo:web  # http://127.0.0.1:4173/examples/web/
 ```
 
 ```js
@@ -73,6 +74,7 @@ Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorit
 
 - **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
 - **Açıklanabilir oturum planı:** Aynı konunun bütün oturumu kaplamasını sınırlayan, çalışma yoğunluğunu konular arasında dağıtan ve ertelenen kartları açıkça sayan planlayıcı. [Kurallar](docs/session-planner.md).
+- **İnteraktif öğrenme laboratuvarı:** Gerçek tekrar motorunu ve çalışma planlayıcısını tarayıcıda deneyebilirsin. Ücretsiz ve çevrimdışı çalışan yerel örnek, gerçek öğrenci verisi içermez. [Çalıştırma rehberi](docs/interactive-lab.md).
 
 Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.
 
