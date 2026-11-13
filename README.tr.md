@@ -15,6 +15,8 @@ FARK'ın uzun vadeli hedefi; şeffaf tekrar planlamasını, hata analizini ve ki
 
 **Bu bir başlangıç.** **v0.3.0**, bu büyük fikrin küçük ve bağımsız teknik çekirdeğidir; tamamlanmış bir yapay zekâ öğretmeni, uyarlanabilir öğrenme sistemi veya sınav platformu değildir.
 
+> **Canlı İnteraktif Laboratuvar (yalnızca tarayıcıda, sunucusuz):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
+
 ![FARK Study Engine İnteraktif Laboratuvar](docs/images/interactive-lab.png)
 
 ---

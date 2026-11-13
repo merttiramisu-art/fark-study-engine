@@ -12,7 +12,7 @@ npm run demo:web
 
 Open **http://127.0.0.1:4173/examples/web/** in your browser. Stop the local server with Ctrl+C.
 
-This lab is included in the *draft v0.2 pull request*; it is not currently deployed as a hosted website. Running the command starts a local-only server bound to `127.0.0.1` — not a public deployment.
+You can also try the static browser-only demo directly on GitHub Pages (all state stays in your browser tab memory; nothing is uploaded): [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/).
 
 ## What you can try
 

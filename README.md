@@ -15,6 +15,8 @@ We want to explore transparent review scheduling, meaningful mistake analysis, a
 
 **We're just getting started.** **v0.3.0** expands the small working foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
 
+> **Live Interactive Lab (browser-only, zero tracking):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
+
 ![FARK Study Engine Interactive Lab](docs/images/interactive-lab.png)
 
 ## What works today
