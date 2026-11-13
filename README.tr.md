@@ -70,6 +70,8 @@ Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorit
 - **Kayıt güvenliği:** Aynı kartın iki kez sayılmasını, imkânsız sayaçları ve tutarsız hata kategorilerini reddeder.
 - **Geriye uyumluluk:** v0.1 kartları okunur; geçmişte belirtilmemiş hata nedenleri bilinmiyor olarak kalır.
 
+- **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
+
 Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.
 
 ## Nereye gitmek istiyoruz? / Roadmap
