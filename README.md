@@ -27,6 +27,7 @@ A small **dependency-free, offline-capable JavaScript module**:
 - **Self-reported mistake reasons (v0.2):** learners can optionally label an `again` review as `knowledge-gap`, `misconception`, `attention`, or `other`; unclassified mistakes remain explicitly unknown.
 - **Data-integrity checks (v0.2):** reject duplicate card IDs, impossible counters, and corrupt reason histories instead of silently inflating progress.
 - **Portable decks (v0.2):** opt-in, versioned JSON export and import with validation; no automatic storage, encryption, or cloud backup.
+- **Explainable study sessions (v0.2):** plan bounded, round-robin review work across topics and explain which items were selected and how many due items were deferred.
 - **Predictable behavior:** return new card objects without modifying the original and produce deterministic results for a given date.
 
 **Important limitations:** Even with the proposed v0.2 insights, the library does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
@@ -38,6 +39,7 @@ Requires **Node.js 20+**. No API key, subscription, cloud service, or dependency
 ```bash
 npm test
 npm run demo
+npm run demo:planner
 ```
 
 ```js
@@ -63,7 +65,7 @@ console.log(selectReviewQueue([reviewed], '2026-11-14T12:00:00Z'));
 console.log(getStudySummary([reviewed], now));
 ```
 
-See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), and the [portable deck format](docs/portable-decks.md).
+See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), and [the explainable session planner](docs/session-planner.md).
 
 ## Where we want to go
 
@@ -73,7 +75,7 @@ These are **planned directions**, not completed features.
 2. **Explore smarter review schedules:** compare transparent strategies against real, consented learning outcomes instead of claiming one algorithm works for everyone.
 3. **Validate progress by topic:** evaluate usefulness and fairness of topic summaries; do not present them as knowledge measurements.
 4. **Investigate adaptive study recommendations:** test whether recommendations genuinely help different learners.
-5. **Improve accessibility and portability:** data import/export, localization, and simple accessible example interfaces.
+5. **Improve accessibility and usability:** localization, simple accessible example interfaces and evidence-based evaluation of session-planning limits.
 
 We want to document assumptions, test behavior, and distinguish promising educational ideas from evidence-backed results.
 
