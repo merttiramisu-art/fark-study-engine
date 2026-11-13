@@ -38,7 +38,7 @@ test('demo only imports local engine modules and no external dependencies', asyn
   assert.doesNotMatch(js, /(?:fetch\(|XMLHttpRequest|sendBeacon|https?:\/\/)/);
   assert.doesNotMatch(css, /@import|url\(https?:\/\//);
   assert.match(js, /planStudySession\(/);
-  assert.match(js, /reviewCard\(/);
+  assert.match(js, /reviewCardWithStrategy\(/);
   assert.match(js, /createCard\(/);
   assert.match(js, /getReviewForecast\(/);
   assert.match(js, /getMistakeBreakdown\(/);
@@ -46,6 +46,8 @@ test('demo only imports local engine modules and no external dependencies', asyn
   assert.match(js, /importStudyDeck\(/);
   assert.match(js, /exportStudyCsv\(/);
   assert.match(js, /importStudyCsv\(/);
+  assert.match(js, /exportStudyMarkdown\(/);
+  assert.match(js, /importStudyMarkdown\(/);
 });
 
 test('local demo server routes only allowlisted assets with restrictive headers', async t => {
@@ -66,7 +68,9 @@ test('local demo server routes only allowlisted assets with restrictive headers'
     ['/src/index.js', 'text/javascript', 'export function reviewCard'],
     ['/src/planner.js', 'text/javascript', 'export function planStudySession'],
     ['/src/portable.js', 'text/javascript', 'export function importStudyDeck'],
-    ['/src/csv.js', 'text/javascript', 'export function exportStudyCsv']
+    ['/src/csv.js', 'text/javascript', 'export function exportStudyCsv'],
+    ['/src/markdown.js', 'text/javascript', 'export function exportStudyMarkdown'],
+    ['/src/strategies.js', 'text/javascript', 'export function reviewCardWithStrategy']
   ];
   for (const [path, type, expected] of assets) {
     const response = await fetch(base + path);

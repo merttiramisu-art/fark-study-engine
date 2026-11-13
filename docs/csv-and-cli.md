@@ -39,18 +39,21 @@ const importedCards = importStudyCsv(csv, { idPrefix: 'bio' });
 Run locally with `node bin/fark.js` (or `fark` when installed):
 
 ```bash
+node bin/fark.js init starter.json
+node bin/fark.js study starter.json --limit 5 --strategy gentle --save
 node bin/fark.js validate cards.csv
-node bin/fark.js convert cards.csv --to json --out deck.json
+node bin/fark.js convert cards.csv --to md --include-stats --out sheet.md
 node bin/fark.js summary deck.json --at 2026-11-13T12:00:00Z
 node bin/fark.js plan deck.json --limit 6 --topic-limit 2 --new-limit 2
 node bin/fark.js forecast deck.json --days 7 --json
+node bin/fark.js compare good,good,again,easy
 ```
 
 All commands exit with `0` on valid input and `1` with an explicit error on invalid input or malformed decks.
 
 ## 4. TypeScript support
 
-Bundled `.d.ts` declarations (`types/*.d.ts`) cover `.`, `./planner`, `./portable`, and `./csv` with zero runtime overhead.
+Bundled `.d.ts` declarations (`types/*.d.ts`) cover `.`, `./planner`, `./portable`, `./csv`, `./markdown`, and `./strategies` with zero runtime overhead.
 
 ## Türkçe özet
 

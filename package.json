@@ -1,6 +1,6 @@
 {
   "name": "fark-study-engine",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A tiny, dependency-free, offline-first spaced review engine for learning tools.",
   "repository": {
     "type": "git",
@@ -31,6 +31,14 @@
     "./csv": {
       "types": "./types/csv.d.ts",
       "default": "./src/csv.js"
+    },
+    "./markdown": {
+      "types": "./types/markdown.d.ts",
+      "default": "./src/markdown.js"
+    },
+    "./strategies": {
+      "types": "./types/strategies.d.ts",
+      "default": "./src/strategies.js"
     }
   },
   "engines": {

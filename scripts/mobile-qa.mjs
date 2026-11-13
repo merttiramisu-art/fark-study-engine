@@ -90,6 +90,7 @@ async function run() {
   await retry(() => server.listening);
   const address = 'http://127.0.0.1:' + server.address().port + '/examples/web/';
   const profile = await mkdtemp(join(tmpdir(), 'fark-mobile-qa-'));
+  let stderrLog = '';
   const chrome = spawn(chromeExecutable(), [
     '--headless=new',
     '--no-sandbox',
@@ -104,14 +105,25 @@ async function run() {
     '--remote-debugging-address=127.0.0.1',
     '--user-data-dir=' + profile,
     'about:blank'
-  ], { stdio: 'ignore' });
+  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+  chrome.stderr?.on('data', chunk => {
+    if (stderrLog.length < 4000) stderrLog += chunk.toString();
+  });
   let devtools;
   try {
     const port = await retry(async () => {
-      if (chrome.exitCode !== null) throw new Error('Chrome exited: ' + chrome.exitCode);
-      const file = await readFile(join(profile, 'DevToolsActivePort'), 'utf8');
-      return Number(file.split('\n')[0]) || null;
-    });
+      if (chrome.exitCode !== null) {
+        throw new Error('Chrome exited: ' + chrome.exitCode + (stderrLog ? ' (' + stderrLog.trim() + ')' : ''));
+      }
+      const match = stderrLog.match(/DevTools listening on ws:\/\/[^:]+:(\d+)/);
+      if (match) return Number(match[1]);
+      try {
+        const file = await readFile(join(profile, 'DevToolsActivePort'), 'utf8');
+        return Number(file.split('\n')[0]) || null;
+      } catch (err) {
+        throw new Error(`${err.message}${stderrLog ? ' | stderr: ' + stderrLog.trim() : ''}`);
+      }
+    }, 300);
     const target = await retry(async () => {
       const res = await fetch('http://127.0.0.1:' + port + '/json/list');
       const targets = await res.json();
@@ -139,7 +151,8 @@ async function run() {
 
       const metrics = await devtools.eval(`(() => {
         const ids = ['reveal-button','skip-button','session-limit','topic-limit','new-limit',
-                     'export-button','export-csv-button','import-trigger','lang-toggle','add-card-submit'];
+                     'strategy-select','deck-search','deck-topic-filter',
+                     'export-button','export-csv-button','export-md-button','import-trigger','lang-toggle','add-card-submit'];
         return {
           viewport: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,

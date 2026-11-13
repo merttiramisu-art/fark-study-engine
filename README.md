@@ -13,7 +13,7 @@ It started with a question while exploring a broader exam-preparation platform:
 
 We want to explore transparent review scheduling, meaningful mistake analysis, and eventually adaptive study tools that educators, students, and developers can understand, test, and improve together. The idea is not limited to one exam, subject, or country.
 
-**We're just getting started.** **v0.3.0** expands the small working foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
+**We're just getting started.** **v0.4.0** expands the small working foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
 
 > **Live Interactive Lab (browser-only, zero tracking):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
@@ -31,12 +31,13 @@ A small **dependency-free, offline-capable JavaScript module**:
 - **Self-reported mistake reasons (v0.2):** learners can optionally label an `again` review as `knowledge-gap`, `misconception`, `attention`, or `other`; unclassified mistakes remain explicitly unknown.
 - **Data-integrity checks (v0.2):** reject duplicate card IDs, impossible counters, and corrupt reason histories instead of silently inflating progress.
 - **Portable decks (v0.2):** opt-in, versioned JSON export and import with validation; no automatic storage, encryption, or cloud backup.
-- **CSV deck interchange (`./csv`):** zero-dependency RFC 4180 CSV import/export for `topic,question,answer` (and optional `id`) spreadsheets, with opt-in formula-injection escaping.
+- **CSV & Markdown interchange (`./csv`, `./markdown`):** zero-dependency RFC 4180 CSV import/export (with opt-in formula-injection escaping) plus human-readable Markdown study-sheet export (`exportStudyMarkdown`) and `Q :: A` / `Q:`+`A:` note parsing (`importStudyMarkdown`).
+- **Transparent review strategies (`./strategies`):** compare and test documented spacing presets (`balanced`, `gentle`, `intensive`) with `reviewCardWithStrategy` and `compareStrategies` without claiming cognitive optimality.
 - **Upcoming workload forecast (`getReviewForecast`):** count already-scheduled `dueAt` dates over the next 1–365 days while keeping unreviewed cards explicitly separate.
-- **Zero-dependency CLI (`fark`):** validate, summarize, plan sessions, inspect upcoming workload, and convert JSON/CSV decks from the terminal (`node bin/fark.js --help`).
-- **TypeScript declarations (`types/*.d.ts`):** typed entrypoints for `.`, `./planner`, `./portable`, and `./csv`.
+- **Zero-dependency CLI (`fark`):** `init`, `study` (interactive terminal sessions with optional `--save`), `validate`, `summary`, `plan`, `forecast`, `compare`, and `convert` across JSON, CSV, and Markdown (`node bin/fark.js --help`).
+- **TypeScript declarations (`types/*.d.ts`):** typed entrypoints for `.`, `./planner`, `./portable`, `./csv`, `./markdown`, and `./strategies`.
 - **Explainable study sessions (v0.2):** plan bounded, round-robin review work across topics and explain which items were selected and how many due items were deferred.
-- **Interactive Lab (v0.2):** an accessible-minded browser playground powered by the real scheduling engine, running locally with no cloud, login, analytics, or paid services.
+- **Interactive Lab (v0.4):** an accessible-minded browser playground powered by the real scheduling engine—featuring a live strategy selector, optional recall scratchpad, deck filter/search/delete, bulk Markdown note pasting, keyboard shortcuts (`Space`, `1–4`, `S`), JSON/CSV/Markdown export & import, and EN/TR switching with zero cloud, login, tracking, or localStorage.
 - **Honest skipping and mobile QA (v0.2):** skip without recording a review, keep skipped cards due, and verify phone-sized layouts in headless Chromium.
 - **Predictable behavior:** return new card objects without modifying the original and produce deterministic results for a given date.
 
@@ -77,7 +78,7 @@ console.log(selectReviewQueue([reviewed], '2026-11-14T12:00:00Z'));
 console.log(getStudySummary([reviewed], now));
 ```
 
-See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), [CSV, forecast, CLI & TypeScript notes](docs/csv-and-cli.md), [the explainable session planner](docs/session-planner.md), and [the interactive browser lab](docs/interactive-lab.md), and [mobile browser QA notes](docs/mobile-qa.md).
+See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [transparent strategies & Markdown notes](docs/strategies-and-markdown.md), [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), [CSV, forecast, CLI & TypeScript notes](docs/csv-and-cli.md), [the explainable session planner](docs/session-planner.md), [the interactive browser lab](docs/interactive-lab.md), and [mobile browser QA notes](docs/mobile-qa.md).
 
 ## Where we want to go
 

@@ -16,11 +16,11 @@ You can also try the static browser-only demo directly on GitHub Pages (all stat
 
 ## What you can try
 
-1. Adjust how many questions to include, the maximum per topic, and the number of new cards, then click **Rebuild plan**.
-2. Reveal an answer, self-rate the review with **Again / Hard / Good / Easy**, and optionally select your own reason for an `Again` response. You may **Skip for now** before or after revealing; skipping records no rating and leaves the card due.
-3. Add your own original cards in memory using **Add your own card**, and switch the interface between **EN / TR** using the header toggle.
-4. See the **due count, studied count, self-reported recall rating**, due-versus-total overview by topic, **7-day scheduled load** (`getReviewForecast`), and **self-reported lapses** (`getMistakeBreakdown`) update as you study.
-5. Export a portable FARK deck as **plain JSON** or **RFC 4180 CSV** (`escapeFormulas: true`), or import an existing `.json` / `.csv` deck. Import errors, duplicate IDs and unknown schema versions are reported instead of silently dropping data.
+1. Adjust how many questions to include, the maximum per topic, the new-card cap, and the active spacing **Strategy** (`Balanced`, `Gentle`, or `Intensive`), then click **Rebuild plan**.
+2. Optionally jot down what you remember in the **Recall scratchpad** (never auto-graded), reveal the sample answer (`Space`), self-rate with **Again / Hard / Good / Easy** (`1`–`4`), and optionally label your reason for an `Again` lapse. You may **Skip for now** (`S`) before or after revealing; skipping records no rating and leaves the card due.
+3. Add single cards via **Add your own card**, bulk-paste Markdown Q&A notes (`## Topic`, `- Question :: Answer`) via **Bulk paste**, or search, filter by topic, and delete cards in **Browse & filter cards**.
+4. Switch the interface between **EN / TR** using the header toggle and inspect the live **due count, studied count, self-reported recall rating**, topic overview, **7-day scheduled load** (`getReviewForecast`), and **self-reported lapses** (`getMistakeBreakdown`).
+5. Export decks as **plain JSON**, spreadsheet-safe **RFC 4180 CSV**, or printable **Markdown study sheets**, or import `.json`, `.csv`, or `.md` files locally. Import errors, duplicate IDs, and unknown schema versions are reported cleanly.
 6. Reset the example to its original synthetic cards. Refreshing the tab also resets it because no data is persisted.
 
 ## Why it is not an AI tutor

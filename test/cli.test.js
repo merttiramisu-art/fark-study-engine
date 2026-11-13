@@ -124,3 +124,48 @@ test('bin/fark.js executes end-to-end as a Node CLI process', async t => {
   assert.equal(check.status, 0, check.stderr);
   assert.match(check.stdout, /Valid json deck: 1 card\(s\)/);
 });
+
+test('CLI initializes starter decks, converts Markdown, and compares strategies', async () => {
+  const { store, out, err, io } = makeMemoryIo();
+  assert.equal(await runCli(['init', 'starter.md'], io), 0);
+  assert.match(out[0], /Created starter md deck with 6 card\(s\)/);
+  assert.equal(await runCli(['init', 'starter.md'], io), 1);
+  assert.equal(await runCli(['init', 'starter.md', '--force'], io), 0);
+
+  assert.equal(await runCli(['validate', 'starter.md', '--json'], io), 0);
+  assert.deepEqual(JSON.parse(out[2]), { valid: true, format: 'md', cards: 6, topics: 5 });
+
+  assert.equal(await runCli(['convert', 'starter.md', '--to', 'json', '--out', 'starter.json'], io), 0);
+  assert.equal(await runCli(['convert', 'starter.json', '--to', 'md', '--include-stats', '--collapsible', '--out', 'sheet.md'], io), 0);
+  assert.match(store.get('sheet.md'), /<details><summary>Show answer<\/summary>/);
+
+  assert.equal(await runCli(['compare', 'good,good,again,easy', '--at', NOW, '--json'], io), 0);
+  const cmp = JSON.parse(out[5]);
+  assert.equal(cmp.strategies.length, 3);
+  assert.equal(err.length, 1);
+});
+
+test('CLI runs interactive offline study session and saves updated progress', async () => {
+  const cards = [
+    createCard({ id: 'm1', topic: 'Math', question: '2+2?', answer: '4' }),
+    createCard({ id: 's1', topic: 'Science', question: 'H2O?', answer: 'Water' })
+  ];
+  const answers = ['', '1', '2', 's'];
+  let idx = 0;
+  const { store, out, err, io } = makeMemoryIo({ 'study.json': exportStudyDeck(cards) });
+  io.prompt = async () => answers[idx++] ?? 'q';
+
+  assert.equal(
+    await runCli(['study', 'study.json', '--at', NOW, '--strategy', 'gentle', '--save'], io),
+    0
+  );
+  assert.equal(err.length, 0);
+  assert.match(out.join('\n'), /1 reviewed, 1 skipped/);
+  const updated = JSON.parse(store.get('study.json')).cards;
+  const m1 = updated.find(c => c.id === 'm1');
+  const s1 = updated.find(c => c.id === 's1');
+  assert.equal(m1.reviews, 1);
+  assert.equal(m1.lapses, 1);
+  assert.equal(m1.reasonCounts.misconception, 1);
+  assert.equal(s1.reviews, 0);
+});
