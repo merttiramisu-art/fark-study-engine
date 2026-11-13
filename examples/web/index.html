@@ -117,8 +117,8 @@
             <div><span class="kicker">YOUR DATA, YOUR CHOICE</span><h3>Take it with you.</h3><p>Download the current cards as JSON, or import a compatible FARK deck. Nothing leaves this page unless you choose to export.</p></div>
             <div class="data-actions">
               <button type="button" id="export-button" class="button button-dark">Export JSON <span aria-hidden="true">↗</span></button>
-              <label class="button button-light" for="import-file">Import JSON <span aria-hidden="true">↑</span></label>
-              <input type="file" id="import-file" accept=".json,application/json">
+              <button type="button" id="import-trigger" class="button button-light">Import JSON <span aria-hidden="true">↑</span></button>
+              <input type="file" id="import-file" accept=".json,application/json" hidden>
             </div>
             <button type="button" id="reset-button" class="reset-link">↻ Reset sample data</button>
           </div>
