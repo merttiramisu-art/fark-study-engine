@@ -13,7 +13,9 @@ Bir sınav hazırlık deneyimi geliştirirken kendimize sorduğumuz basit bir so
 
 FARK'ın uzun vadeli hedefi; şeffaf tekrar planlamasını, hata analizini ve kişiye uyarlanabilen çalışma deneyimlerini herkesin geliştirebileceği küçük, bağımsız yazılım bileşenleriyle mümkün kılmak. Yalnızca tek bir sınav için değil; farklı dersler, sınavlar ve kendi kendine öğrenme süreçleri için.
 
-**Bu bir başlangıç.** Bugün yayımlanan v0.1.0, bu büyük fikrin ilk ve küçük teknik çekirdeğidir; tamamlanmış bir yapay zekâ öğretmeni, uyarlanabilir öğrenme sistemi veya sınav platformu değildir.
+**Bu bir başlangıç.** **v0.3.0**, bu büyük fikrin küçük ve bağımsız teknik çekirdeğidir; tamamlanmış bir yapay zekâ öğretmeni, uyarlanabilir öğrenme sistemi veya sınav platformu değildir.
+
+![FARK Study Engine İnteraktif Laboratuvar](docs/images/interactive-lab.png)
 
 ---
 

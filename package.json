@@ -1,7 +1,15 @@
 {
   "name": "fark-study-engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A tiny, dependency-free, offline-first spaced review engine for learning tools.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/merttiramisu-art/fark-study-engine.git"
+  },
+  "homepage": "https://github.com/merttiramisu-art/fark-study-engine#readme",
+  "bugs": {
+    "url": "https://github.com/merttiramisu-art/fark-study-engine/issues"
+  },
   "type": "module",
   "types": "./types/index.d.ts",
   "bin": {

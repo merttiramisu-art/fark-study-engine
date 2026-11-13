@@ -16,6 +16,7 @@ const ROUTES = new Map([
   ['/src/index.js', ['src/index.js', 'text/javascript; charset=utf-8']],
   ['/src/planner.js', ['src/planner.js', 'text/javascript; charset=utf-8']],
   ['/src/portable.js', ['src/portable.js', 'text/javascript; charset=utf-8']],
+  ['/src/csv.js', ['src/csv.js', 'text/javascript; charset=utf-8']],
   ['/README.md', ['README.md', 'text/plain; charset=utf-8']]
 ]);
 

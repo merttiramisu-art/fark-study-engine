@@ -13,7 +13,9 @@ It started with a question while exploring a broader exam-preparation platform:
 
 We want to explore transparent review scheduling, meaningful mistake analysis, and eventually adaptive study tools that educators, students, and developers can understand, test, and improve together. The idea is not limited to one exam, subject, or country.
 
-**We're just getting started.** The proposed **v0.2.0** expands a small working technical foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
+**We're just getting started.** **v0.3.0** expands the small working foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
+
+![FARK Study Engine Interactive Lab](docs/images/interactive-lab.png)
 
 ## What works today
 

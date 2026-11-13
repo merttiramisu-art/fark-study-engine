@@ -18,9 +18,10 @@ This lab is included in the *draft v0.2 pull request*; it is not currently deplo
 
 1. Adjust how many questions to include, the maximum per topic, and the number of new cards, then click **Rebuild plan**.
 2. Reveal an answer, self-rate the review with **Again / Hard / Good / Easy**, and optionally select your own reason for an `Again` response. You may **Skip for now** before or after revealing; skipping records no rating and leaves the card due.
-3. See the **due count, studied count, self-reported recall rating**, and due-versus-total overview by topic change as you work.
-4. Export a portable FARK deck as **plain JSON**, or import an existing compatible deck. Import errors, duplicate IDs and unknown schema versions are reported instead of silently dropping data.
-5. Reset the example to its original synthetic cards. Refreshing the tab also resets it because no data is persisted.
+3. Add your own original cards in memory using **Add your own card**, and switch the interface between **EN / TR** using the header toggle.
+4. See the **due count, studied count, self-reported recall rating**, due-versus-total overview by topic, **7-day scheduled load** (`getReviewForecast`), and **self-reported lapses** (`getMistakeBreakdown`) update as you study.
+5. Export a portable FARK deck as **plain JSON** or **RFC 4180 CSV** (`escapeFormulas: true`), or import an existing `.json` / `.csv` deck. Import errors, duplicate IDs and unknown schema versions are reported instead of silently dropping data.
+6. Reset the example to its original synthetic cards. Refreshing the tab also resets it because no data is persisted.
 
 ## Why it is not an AI tutor
 

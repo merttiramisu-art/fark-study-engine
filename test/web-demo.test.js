@@ -39,8 +39,13 @@ test('demo only imports local engine modules and no external dependencies', asyn
   assert.doesNotMatch(css, /@import|url\(https?:\/\//);
   assert.match(js, /planStudySession\(/);
   assert.match(js, /reviewCard\(/);
+  assert.match(js, /createCard\(/);
+  assert.match(js, /getReviewForecast\(/);
+  assert.match(js, /getMistakeBreakdown\(/);
   assert.match(js, /exportStudyDeck\(/);
   assert.match(js, /importStudyDeck\(/);
+  assert.match(js, /exportStudyCsv\(/);
+  assert.match(js, /importStudyCsv\(/);
 });
 
 test('local demo server routes only allowlisted assets with restrictive headers', async t => {
@@ -60,7 +65,8 @@ test('local demo server routes only allowlisted assets with restrictive headers'
     ['/examples/web/app.js', 'text/javascript', 'planStudySession'],
     ['/src/index.js', 'text/javascript', 'export function reviewCard'],
     ['/src/planner.js', 'text/javascript', 'export function planStudySession'],
-    ['/src/portable.js', 'text/javascript', 'export function importStudyDeck']
+    ['/src/portable.js', 'text/javascript', 'export function importStudyDeck'],
+    ['/src/csv.js', 'text/javascript', 'export function exportStudyCsv']
   ];
   for (const [path, type, expected] of assets) {
     const response = await fetch(base + path);
