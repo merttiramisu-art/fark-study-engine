@@ -13,33 +13,28 @@ It started with a question while exploring a broader exam-preparation platform:
 
 We want to explore transparent review scheduling, meaningful mistake analysis, and eventually adaptive study tools that educators, students, and developers can understand, test, and improve together. The idea is not limited to one exam, subject, or country.
 
-**We're just getting started.** **v0.4.0** expands the small working foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
+**We're just getting started.** **v0.5.0** expands the open-source foundation with SM-2 adaptive scheduling, a deterministic cohort simulator, Cloze & Anki TSV portability, an embeddable Web Component, and a zero-dependency MCP server—still without claiming to be a finished AI tutor or certified clinical learning model.
 
-> **Live Interactive Lab (browser-only, zero tracking):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
+> **Live Interactive Studio (browser-only, zero tracking):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
-![FARK Study Engine Interactive Lab](docs/images/interactive-lab.png)
+![FARK Study Engine Interactive Studio](docs/images/interactive-lab.png)
 
 ## What works today
 
-A small **dependency-free, offline-capable JavaScript module**:
+A **dependency-free, offline-capable JavaScript module**:
 
-- **Study cards:** create cards with an ID, topic, original question, and answer.
-- **Review scheduling:** calculate the next review date from `again`, `hard`, `good`, or `easy` responses.
-- **Mistake-aware queues:** prioritize due cards with more recorded lapses.
-- **Honest progress summaries:** count new, studied, and due cards; report review accuracy only when reviews exist.
-- **Topic-level insights (v0.2):** separately summarize reviews, due counts, and self-reported accuracy for each topic without claiming mastery.
-- **Self-reported mistake reasons (v0.2):** learners can optionally label an `again` review as `knowledge-gap`, `misconception`, `attention`, or `other`; unclassified mistakes remain explicitly unknown.
-- **Data-integrity checks (v0.2):** reject duplicate card IDs, impossible counters, and corrupt reason histories instead of silently inflating progress.
-- **Portable decks (v0.2):** opt-in, versioned JSON export and import with validation; no automatic storage, encryption, or cloud backup.
-- **CSV & Markdown interchange (`./csv`, `./markdown`):** zero-dependency RFC 4180 CSV import/export (with opt-in formula-injection escaping) plus human-readable Markdown study-sheet export (`exportStudyMarkdown`) and `Q :: A` / `Q:`+`A:` note parsing (`importStudyMarkdown`).
-- **Transparent review strategies (`./strategies`):** compare and test documented spacing presets (`balanced`, `gentle`, `intensive`) with `reviewCardWithStrategy` and `compareStrategies` without claiming cognitive optimality.
-- **Upcoming workload forecast (`getReviewForecast`):** count already-scheduled `dueAt` dates over the next 1–365 days while keeping unreviewed cards explicitly separate.
-- **Zero-dependency CLI (`fark`):** `init`, `study` (interactive terminal sessions with optional `--save`), `validate`, `summary`, `plan`, `forecast`, `compare`, and `convert` across JSON, CSV, and Markdown (`node bin/fark.js --help`).
-- **TypeScript declarations (`types/*.d.ts`):** typed entrypoints for `.`, `./planner`, `./portable`, `./csv`, `./markdown`, and `./strategies`.
-- **Explainable study sessions (v0.2):** plan bounded, round-robin review work across topics and explain which items were selected and how many due items were deferred.
-- **Interactive Lab (v0.4):** an accessible-minded browser playground powered by the real scheduling engine—featuring a live strategy selector, optional recall scratchpad, deck filter/search/delete, bulk Markdown note pasting, keyboard shortcuts (`Space`, `1–4`, `S`), JSON/CSV/Markdown export & import, and EN/TR switching with zero cloud, login, tracking, or localStorage.
-- **Honest skipping and mobile QA (v0.2):** skip without recording a review, keep skipped cards due, and verify phone-sized layouts in headless Chromium.
-- **Predictable behavior:** return new card objects without modifying the original and produce deterministic results for a given date.
+- **Study cards & Cloze prompts:** create cards with ID, topic, question, and answer—or inline `{{cloze}}` / `{{c1::answer::hint}}` / `[[blank]]` deletions (`parseClozePrompt`) and ephemeral bi-directional `reverseCardPrompt` views (`./interchange`).
+- **Transparent spacing & SM-2 (`./strategies`):** compare and test documented presets (`balanced`, `gentle`, `intensive`) alongside transparent `sm2` ease-factor scheduling (`1.3–2.8 EF`) derived strictly from observable review history and self-reported lapse categories (`reasonAware: true`), plus seeded 30-day forgetting-curve benchmarks (`simulateCohort`).
+- **Reason-aware explainable sessions (`./planner`):** plan bounded round-robin study queues with explicit reason codes, optional `reasonAware: true` prioritization (`concept-misconception`, `knowledge-gap`, `attention-slip`), and honest topic recommendations (`getStudyRecommendations`).
+- **Self-reported mistake reasons & honest summaries:** learners can optionally label an `again` review as `knowledge-gap`, `misconception`, `attention`, or `other`; unclassified lapses remain explicitly unknown, duplicate IDs and impossible states are rejected, and unknown accuracy stays `null`.
+- **Portable formats (`./portable`, `./csv`, `./markdown`, `./interchange`):** versioned JSON backups, RFC 4180 CSV (with opt-in formula-injection escaping), printable Markdown study sheets + `Q :: A` / `Q:`+`A:` parsing, Anki/Quizlet `.tsv` round-trips (`#separator:tab`, `#deck:Topic`), and 4 curated sample packs (`buildSamplePack`).
+- **Upcoming workload forecast (`getReviewForecast`):** count already-scheduled `dueAt` dates over 1–365 days while keeping unreviewed cards explicitly separate.
+- **Zero-dependency CLI (`fark`):** `init --pack <id>`, `study --reason-aware --save`, `validate`, `summary`, `plan`, `forecast`, `compare`, `simulate`, `convert`, and `mcp` across JSON, CSV, TSV, and Markdown (`node bin/fark.js --help`).
+- **Zero-dependency stdio MCP server (`./mcp`, `fark mcp`):** exposes 7 study tools over JSON-RPC 2.0 stdio so Claude Desktop, Claude Code, or other MCP hosts can validate decks, plan sessions, compare strategies, run simulations, and convert formats using real deterministic code rather than mental math.
+- **Embeddable Web Component (`./widget`):** standalone `<fark-study-deck>` Shadow DOM element + Node-safe `renderWidgetSnapshot` helper ([embed demo](examples/widget-demo.html)).
+- **TypeScript declarations (`types/*.d.ts`):** typed entrypoints for `.`, `./planner`, `./portable`, `./csv`, `./markdown`, `./strategies`, `./interchange`, `./widget`, and `./mcp`.
+- **3-Tab Interactive Studio (`examples/web/`):** `Study Studio` | `Strategy Simulator` | `Deck Studio & Packs` with SM-2 selector, Cloze & `Reverse Q↔A` toggles, honest focus signals, 30-day cohort benchmark, sample pack switching, keyboard shortcuts (`Space`, `1–4`, `S`), JSON/CSV/TSV/Markdown portability, and EN/TR switching with zero cloud, login, tracking, or cookies.
+- **Honest skipping & mobile QA:** skip without recording a review, keep skipped cards due, and verify all 3 studio tabs at `360px`, `393px`, and `1280px` in headless Chromium.
 
 **Important limitations:** Even with the proposed v0.2 insights, the library does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
 
@@ -53,6 +48,22 @@ npm run demo
 npm run demo:planner
 npm run demo:web  # visit http://127.0.0.1:4173/examples/web/
 node bin/fark.js --help
+node bin/fark.js simulate --profile missed-days
+```
+
+### MCP Server integration (Claude Desktop / Claude Code / stdio hosts)
+
+Run FARK as a local zero-dependency stdio MCP server:
+
+```json
+{
+  "mcpServers": {
+    "fark-study-engine": {
+      "command": "node",
+      "args": ["C:/path/to/fark-study-engine/bin/fark.js", "mcp"]
+    }
+  }
+}
 ```
 
 ```js
@@ -108,7 +119,7 @@ Our principles:
 
 This is an early-stage open-source project, and constructive feedback is welcome. You do not need to be an experienced developer to contribute: reproducing a bug, proposing a test, improving accessibility, or clarifying documentation can all help.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or pull request. Turkish and English contributions are welcome.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or pull request, see [CHANGELOG.md](CHANGELOG.md) for release notes, and check [SECURITY.md](SECURITY.md) to report vulnerabilities responsibly. Turkish and English contributions are welcome.
 
 ## License
 

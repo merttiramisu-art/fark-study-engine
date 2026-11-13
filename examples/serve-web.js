@@ -19,6 +19,8 @@ const ROUTES = new Map([
   ['/src/csv.js', ['src/csv.js', 'text/javascript; charset=utf-8']],
   ['/src/markdown.js', ['src/markdown.js', 'text/javascript; charset=utf-8']],
   ['/src/strategies.js', ['src/strategies.js', 'text/javascript; charset=utf-8']],
+  ['/src/interchange.js', ['src/interchange.js', 'text/javascript; charset=utf-8']],
+  ['/src/widget.js', ['src/widget.js', 'text/javascript; charset=utf-8']],
   ['/README.md', ['README.md', 'text/plain; charset=utf-8']]
 ]);
 

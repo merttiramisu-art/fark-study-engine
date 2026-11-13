@@ -150,9 +150,9 @@ async function run() {
         document.getElementById('question-text').textContent !== 'Ready for your first question?'`));
 
       const metrics = await devtools.eval(`(() => {
-        const ids = ['reveal-button','skip-button','session-limit','topic-limit','new-limit',
-                     'strategy-select','deck-search','deck-topic-filter',
-                     'export-button','export-csv-button','export-md-button','import-trigger','lang-toggle','add-card-submit'];
+        const ids = ['tab-study','tab-simulator','tab-decks','reveal-button','skip-button',
+                     'session-limit','topic-limit','new-limit','strategy-select','replan-button',
+                     'export-button','export-csv-button','export-tsv-button','export-md-button','import-trigger','lang-toggle'];
         return {
           viewport: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
@@ -194,7 +194,41 @@ async function run() {
           !interaction.revealed || interaction.focused !== 'rating-again') {
         throw new Error(viewport.label + ' interaction failed: ' + JSON.stringify(interaction));
       }
-      console.log(viewport.label + ' passed: no horizontal overflow, visible controls, skip + rating, screenshot saved');
+
+      const studioChecks = await devtools.eval(`(() => {
+        document.getElementById('tab-simulator').click();
+        const simOverflow = document.documentElement.scrollWidth > window.innerWidth + 1;
+        const simRows = document.querySelectorAll('#sim-results .sim-row').length;
+        const seqRows = document.querySelectorAll('#seq-results .seq-row').length;
+        const simRunBtn = document.getElementById('run-sim-btn').getBoundingClientRect();
+
+        document.getElementById('tab-decks').click();
+        const deckOverflow = document.documentElement.scrollWidth > window.innerWidth + 1;
+        const deckIds = ['pack-starter','pack-cs','pack-biology','pack-language','add-card-submit','deck-search','deck-topic-filter'];
+        const deckControls = deckIds.map(id => {
+          const r = document.getElementById(id).getBoundingClientRect();
+          return { id, width: r.width, left: r.left, right: r.right };
+        });
+        document.getElementById('pack-cs').click();
+        document.getElementById('tab-study').click();
+        const csQuestion = document.getElementById('question-text').textContent;
+        return { simOverflow, simRows, seqRows, simRunWidth: simRunBtn.width, deckOverflow, deckControls, csQuestion };
+      })()`);
+      if (studioChecks.simOverflow || studioChecks.simRows !== 4 || studioChecks.seqRows !== 4 || studioChecks.simRunWidth < 42) {
+        throw new Error(viewport.label + ' simulator tab failed: ' + JSON.stringify(studioChecks));
+      }
+      if (studioChecks.deckOverflow) {
+        throw new Error(viewport.label + ' decks tab has horizontal overflow: ' + JSON.stringify(studioChecks));
+      }
+      for (const control of studioChecks.deckControls) {
+        if (control.width < 42 || control.left < -1 || control.right > viewport.width + 1) {
+          throw new Error(viewport.label + ' decks tab inaccessible control: ' + JSON.stringify(control));
+        }
+      }
+      if (!studioChecks.csQuestion.includes('[ ___ ]')) {
+        throw new Error(viewport.label + ' CS Cloze pack failed to render blanks: ' + JSON.stringify(studioChecks));
+      }
+      console.log(viewport.label + ' passed: 3-tab Studio QA, no overflow, visible controls, skip+rating+cloze, screenshot saved');
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

@@ -14,14 +14,11 @@ Open **http://127.0.0.1:4173/examples/web/** in your browser. Stop the local ser
 
 You can also try the static browser-only demo directly on GitHub Pages (all state stays in your browser tab memory; nothing is uploaded): [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/).
 
-## What you can try
+## What you can try (v0.5.0 3-Tab Studio)
 
-1. Adjust how many questions to include, the maximum per topic, the new-card cap, and the active spacing **Strategy** (`Balanced`, `Gentle`, or `Intensive`), then click **Rebuild plan**.
-2. Optionally jot down what you remember in the **Recall scratchpad** (never auto-graded), reveal the sample answer (`Space`), self-rate with **Again / Hard / Good / Easy** (`1`–`4`), and optionally label your reason for an `Again` lapse. You may **Skip for now** (`S`) before or after revealing; skipping records no rating and leaves the card due.
-3. Add single cards via **Add your own card**, bulk-paste Markdown Q&A notes (`## Topic`, `- Question :: Answer`) via **Bulk paste**, or search, filter by topic, and delete cards in **Browse & filter cards**.
-4. Switch the interface between **EN / TR** using the header toggle and inspect the live **due count, studied count, self-reported recall rating**, topic overview, **7-day scheduled load** (`getReviewForecast`), and **self-reported lapses** (`getMistakeBreakdown`).
-5. Export decks as **plain JSON**, spreadsheet-safe **RFC 4180 CSV**, or printable **Markdown study sheets**, or import `.json`, `.csv`, or `.md` files locally. Import errors, duplicate IDs, and unknown schema versions are reported cleanly.
-6. Reset the example to its original synthetic cards. Refreshing the tab also resets it because no data is persisted.
+1. **Study Studio tab:** Adjust session/topic/new-card caps and switch between **Balanced**, **Gentle**, **Intensive**, and **SM-2 Adaptive** (`sm2`), toggle **Reverse Q ↔ A** for bi-directional practice or **Reason-aware focus** (`reasonAware`), and drill inline `{{cloze}}` prompts with the optional **Recall scratchpad**, keyboard shortcuts (`Space`, `1–4`, `S`), honest skipping, and live **Honest focus signals**.
+2. **Strategy Simulator tab:** Run the seeded deterministic 30-day **Cohort Benchmark Lab** across `'steady'`, `'cramming'`, and `'missed-days'` profiles, alongside a step-by-step exact interval trace across all 4 strategies.
+3. **Deck Studio & Packs tab:** Switch between 4 original curated sample packs (**General Mix**, **CS & Algorithms (Cloze)**, **Cell Biology**, **EN ↔ TR Vocab**), add single/Cloze cards, bulk-paste Markdown `Q :: A` or Anki/Quizlet `.tsv` lines, search/filter/delete cards, and export/import **JSON**, **CSV**, **TSV**, or **Markdown**. For standalone embeds on any site, see [`<fark-study-deck>` Web Component demo](../examples/widget-demo.html).
 
 ## Why it is not an AI tutor
 

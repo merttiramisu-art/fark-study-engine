@@ -13,11 +13,11 @@ Bir sınav hazırlık deneyimi geliştirirken kendimize sorduğumuz basit bir so
 
 FARK'ın uzun vadeli hedefi; şeffaf tekrar planlamasını, hata analizini ve kişiye uyarlanabilen çalışma deneyimlerini herkesin geliştirebileceği küçük, bağımsız yazılım bileşenleriyle mümkün kılmak. Yalnızca tek bir sınav için değil; farklı dersler, sınavlar ve kendi kendine öğrenme süreçleri için.
 
-**Bu bir başlangıç.** **v0.4.0**, bu büyük fikrin küçük ve bağımsız teknik çekirdeğidir; tamamlanmış bir yapay zekâ öğretmeni, uyarlanabilir öğrenme sistemi veya sınav platformu değildir.
+**Bu bir başlangıç.** **v0.5.0**, açık kaynak öğrenme çekirdeğini SM-2 uyarlanabilir tekrar zamanlaması, tohumlanmış kohort simülatörü, Cloze & Anki TSV desteği, gömülebilir `<fark-study-deck>` Web Component ve sıfır bağımlılıklı MCP sunucusuyla genişletiyor — hâlâ kanıtlanmış tek bir "en iyi" yapay zekâ öğretmeni olduğunu iddia etmeden.
 
-> **Canlı İnteraktif Laboratuvar (yalnızca tarayıcıda, sunucusuz):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
+> **Canlı İnteraktif Stüdyo (yalnızca tarayıcıda, sunucusuz):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
-![FARK Study Engine İnteraktif Laboratuvar](docs/images/interactive-lab.png)
+![FARK Study Engine İnteraktif Stüdyo](docs/images/interactive-lab.png)
 
 ---
 
@@ -69,20 +69,14 @@ console.log(getStudySummary([reviewed], now));
 Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorithm.md) açıkça anlatılır. Kullanılan kurallar **deneme amaçlı sezgisel kurallardır**; kanıtlanmış kişisel öğrenme tahminleri değildir.
 
 
-### v0.2 — yeni öğrenme içgörüleri (inceleme aşamasında)
+### v0.5.0 — yeni modüller, simülatör ve 3 sekmeli stüdyo
 
-- **Konu bazlı analiz:** Her ders/konu için çalışılan, tekrar zamanı gelen ve yeni kartları ayrı sayar. Bilinmeyen başarı oranı `null` kalır.
-- **İsteğe bağlı hata nedeni:** Öğrenci bir `again` tekrarında bilgi eksikliği, kavram karışıklığı, dikkatsizlik veya diğer nedenini **kendisi** seçebilir. Sistem neden tahmin etmez.
-- **Kayıt güvenliği:** Aynı kartın iki kez sayılmasını, imkânsız sayaçları ve tutarsız hata kategorilerini reddeder.
-- **Geriye uyumluluk:** v0.1 kartları okunur; geçmişte belirtilmemiş hata nedenleri bilinmiyor olarak kalır.
-
-- **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
-- **CSV / Markdown aktarımı ve strateji karşılaştırması (`./csv`, `./markdown`, `./strategies`):** Sıfır bağımlılıklı RFC 4180 CSV ve Markdown çalışma sayfası (`exportStudyMarkdown` / `importStudyMarkdown`) desteği, şeffaf aralık stratejilerini (`balanced`, `gentle`, `intensive`) karşılaştıran `compareStrategies`, gelecek tekrar yükü tahmini (`getReviewForecast`), TypeScript tip tanımları (`types/*.d.ts`) ve etkileşimli `fark study` dahil terminal CLI (`node bin/fark.js --help`). [Strateji ve Markdown](docs/strategies-and-markdown.md) · [CSV ve CLI](docs/csv-and-cli.md).
-- **Açıklanabilir oturum planı:** Aynı konunun bütün oturumu kaplamasını sınırlayan, çalışma yoğunluğunu konular arasında dağıtan ve ertelenen kartları açıkça sayan planlayıcı. [Kurallar](docs/session-planner.md).
-- **İnteraktif öğrenme laboratuvarı (v0.4):** Strateji seçici, otomatik puanlanmayan hatırlama notu kutusu, kart arama/silme, toplu Markdown `Q :: A` yapıştırma, klavye kısayolları (`Space`, `1–4`, `S`), JSON/CSV/Markdown dışa-içe aktarma ve TR/EN dil değiştirici ile gerçek motoru tarayıcıda deneyimleyin. [Çalıştırma rehberi](docs/interactive-lab.md).
-- **Gerçekçi atlama ve mobil kontrol:** Cevaplamadığın kartı doğru saymadan geçebilirsin. 360 ve 393 piksel genişliğinde Chromium testleri ve ekran görüntüleri: [mobil QA](docs/mobile-qa.md).
-
-Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.
+- **SM-2 stratejisi ve neden-duyarlı planlama (`./strategies`, `./planner`):** Gözlemlenebilir tekrar geçmişinden `1.3–2.8` kolaylık çarpanı hesaplayan `sm2` stratejisi, `reasonAware: true` ile kavram yanılgılarını dikkatsizlik hatalarının önüne alan önceliklendirme ve dürüst konu odaklı öneriler (`getStudyRecommendations`).
+- **30 günlük kohort simülatörü (`simulateCohort`, `fark simulate`):** `steady`, `cramming` ve `missed-days` öğrenen profilleriyle `balanced`, `gentle`, `intensive` ve `sm2` stratejilerinin günlük tekrar yükü ve birikme eğilimini deterministik biçimde karşılaştırır.
+- **Cloze, ters kartlar ve Anki TSV (`./interchange`):** Satır içi `{{boşluk}}`, `{{c1::yanıt::ipucu}}` ve `[[boşluk]]` ayrıştırıcı (`parseClozePrompt`), kartın orijinalini bozmadan Q↔A çeviren `reverseCardPrompt`, Anki/Quizlet `.tsv` dönüştürücüsü (`exportStudyTsv` / `importStudyTsv`) ve 4 örnek konu paketi (`buildSamplePack`).
+- **Sıfır bağımlılıklı Web Component (`./widget`):** Herhangi bir statik HTML sayfasına gömülebilen `<fark-study-deck>` özel öğesi ([örnek sayfa](examples/widget-demo.html)).
+- **Sıfır bağımlılıklı stdio MCP sunucusu (`./mcp`, `fark mcp`):** Claude Desktop / Claude Code gibi yapay zekâ istemcilerine JSON-RPC 2.0 üzerinden 7 deterministik FARK aracını sunar; böylece model zihinden tarih uydurmak yerine gerçek motoru çalıştırır.
+- **3 sekmeli İnteraktif Stüdyo (`examples/web/`):** `Çalışma Stüdyosu`, `Strateji Simülatörü` ve `Deste Stüdyosu & Paketler` sekmeleriyle sadeleştirilmiş tasarım; TR/EN dil desteği, klavye kısayolları ve JSON/CSV/TSV/Markdown aktarımı (v0.2–v0.4 temelleri: [öğrenme içgörüleri](docs/learning-insights.md), [taşınabilir desteler](docs/portable-decks.md), [oturum planı](docs/session-planner.md), [CSV ve CLI](docs/csv-and-cli.md), [stratejiler](docs/strategies-and-markdown.md), [interaktif laboratuvar](docs/interactive-lab.md), [mobil QA](docs/mobile-qa.md)).
 
 ## Nereye gitmek istiyoruz? / Roadmap
 

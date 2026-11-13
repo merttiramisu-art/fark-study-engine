@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCard, reviewCard } from '../src/index.js';
-import { planStudySession } from '../src/planner.js';
+import { planStudySession, getStudyRecommendations } from '../src/planner.js';
 
 const NOW = '2026-11-13T12:00:00Z';
 const card = (id, topic = 'Math') => createCard({
@@ -110,4 +110,36 @@ test('never overstates selection even for hundreds of cards', () => {
   assert.ok(r.newCardsPlanned <= 8);
   assert.ok(Object.values(r.perTopic).every(n => n <= 4));
   assert.equal(new Set(r.planned.map(x => x.id)).size, 35);
+});
+
+test('reasonAware elevates conceptual misconceptions and adds reason detail codes', () => {
+  const slip = reviewCard(card('slip'), 'again', '2026-11-12T10:00:00Z', { reason: 'attention' });
+  const gap = reviewCard(card('gap'), 'again', '2026-11-12T10:05:00Z', { reason: 'knowledge-gap' });
+  const concept = reviewCard(card('concept'), 'again', '2026-11-12T10:10:00Z', { reason: 'misconception' });
+
+  const defaultPlan = planStudySession([slip, gap, concept], NOW);
+  assert.deepEqual(defaultPlan.planned.map((p) => p.id), ['slip', 'gap', 'concept']);
+
+  const awarePlan = planStudySession([slip, gap, concept], NOW, { reasonAware: true });
+  assert.deepEqual(awarePlan.planned.map((p) => p.id), ['concept', 'gap', 'slip']);
+  assert.ok(awarePlan.planned[0].reasonCodes.includes('concept-misconception'));
+  assert.ok(awarePlan.planned[1].reasonCodes.includes('knowledge-gap'));
+  assert.ok(awarePlan.planned[2].reasonCodes.includes('attention-slip'));
+  assert.throws(() => planStudySession([slip], NOW, { reasonAware: 'yes' }), TypeError);
+});
+
+test('getStudyRecommendations flags misconception hotspots, attention slips, and backlogs honestly', () => {
+  const deck = [
+    reviewCard(card('b1', 'Bio'), 'again', '2026-11-12T08:00:00Z', { reason: 'misconception' }),
+    reviewCard(card('b2', 'Bio'), 'again', '2026-11-12T08:00:00Z', { reason: 'misconception' }),
+    reviewCard(card('a1', 'Alg'), 'again', '2026-11-12T08:00:00Z', { reason: 'attention' }),
+    reviewCard(card('a2', 'Alg'), 'again', '2026-11-12T08:00:00Z', { reason: 'attention' }),
+    due('h1', 'Hist'),
+    due('h2', 'Hist')
+  ];
+  const recs = getStudyRecommendations(deck, NOW);
+  const byTopic = Object.fromEntries(recs.map((r) => [r.topic, r.signal]));
+  assert.equal(byTopic.Bio, 'revisit-concepts');
+  assert.equal(byTopic.Alg, 'slow-down-reading');
+  assert.equal(byTopic.Hist, 'clear-backlog');
 });

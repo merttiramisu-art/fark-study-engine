@@ -14,14 +14,22 @@ import {
   getTopicSummaries,
   MISTAKE_REASONS
 } from './index.js';
-import { planStudySession } from './planner.js';
+import { getStudyRecommendations, planStudySession } from './planner.js';
 import { exportStudyDeck, importStudyDeck, PORTABLE_LIMITS } from './portable.js';
 import { exportStudyCsv, importStudyCsv } from './csv.js';
 import { exportStudyMarkdown, importStudyMarkdown } from './markdown.js';
 import {
+  buildSamplePack,
+  exportStudyTsv,
+  importStudyTsv,
+  parseClozePrompt
+} from './interchange.js';
+import { startMcpServer } from './mcp.js';
+import {
   compareStrategies,
   getReviewStrategy,
   reviewCardWithStrategy,
+  simulateCohort,
   STRATEGY_IDS
 } from './strategies.js';
 
@@ -33,31 +41,36 @@ export const CLI_VERSION = PACKAGE_JSON.version;
 const HELP_TEXT = `FARK Study Engine CLI v${CLI_VERSION}
 
 Usage:
-  fark init     <file> [--format json|csv|md] [--force]
-  fark study    <file> [--format json|csv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--strategy balanced|gentle|intensive] [--save] [--out <file>]
-  fark validate <file> [--format json|csv|md] [--json]
-  fark summary  <file> [--format json|csv|md] [--at <iso>] [--json]
-  fark plan     <file> [--format json|csv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--json]
-  fark forecast <file> [--format json|csv|md] [--at <iso>] [--days N] [--json]
-  fark compare  <ratings...> [--strategies balanced,gentle,intensive] [--at <iso>] [--json]
-  fark convert  <file> --to <json|csv|md> [--format json|csv|md] [--out <file>] [--escape-formulas] [--include-stats] [--collapsible]
+  fark init     <file> [--format json|csv|tsv|md] [--pack starter|computer-science|biology|language] [--force]
+  fark study    <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--strategy balanced|gentle|intensive|sm2] [--reason-aware] [--save] [--out <file>]
+  fark validate <file> [--format json|csv|tsv|md] [--json]
+  fark summary  <file> [--format json|csv|tsv|md] [--at <iso>] [--json]
+  fark plan     <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--reason-aware] [--json]
+  fark forecast <file> [--format json|csv|tsv|md] [--at <iso>] [--days N] [--json]
+  fark compare  <ratings...> [--strategies balanced,gentle,intensive,sm2] [--at <iso>] [--json]
+  fark simulate [--cards N] [--days N] [--limit N] [--profile steady|cramming|missed-days] [--seed N] [--json]
+  fark convert  <file> --to <json|csv|tsv|md> [--format json|csv|tsv|md] [--out <file>] [--escape-formulas] [--include-stats] [--collapsible]
+  fark mcp      Start stdio JSON-RPC 2.0 MCP server (zero dependencies)
   fark --help | --version`;
 
 const VALUE_FLAGS = new Set([
-  'format', 'at', 'limit', 'topic-limit', 'new-limit', 'days', 'to', 'out', 'strategy', 'strategies'
+  'format', 'at', 'limit', 'topic-limit', 'new-limit', 'days', 'to', 'out',
+  'strategy', 'strategies', 'pack', 'cards', 'profile', 'seed'
 ]);
 const BOOL_FLAGS = new Set([
-  'json', 'escape-formulas', 'include-stats', 'collapsible', 'save', 'force', 'help', 'version'
+  'json', 'escape-formulas', 'include-stats', 'collapsible', 'save', 'force', 'reason-aware', 'help', 'version'
 ]);
 const COMMAND_FLAGS = {
-  init: new Set(['format', 'force']),
-  study: new Set(['format', 'at', 'limit', 'topic-limit', 'new-limit', 'strategy', 'save', 'out']),
+  init: new Set(['format', 'pack', 'force']),
+  study: new Set(['format', 'at', 'limit', 'topic-limit', 'new-limit', 'strategy', 'reason-aware', 'save', 'out']),
   validate: new Set(['format', 'json']),
   summary: new Set(['format', 'at', 'json']),
-  plan: new Set(['format', 'at', 'limit', 'topic-limit', 'new-limit', 'json']),
+  plan: new Set(['format', 'at', 'limit', 'topic-limit', 'new-limit', 'reason-aware', 'json']),
   forecast: new Set(['format', 'at', 'days', 'json']),
   compare: new Set(['strategies', 'at', 'json']),
-  convert: new Set(['format', 'to', 'out', 'escape-formulas', 'include-stats', 'collapsible'])
+  simulate: new Set(['cards', 'days', 'limit', 'profile', 'seed', 'json']),
+  convert: new Set(['format', 'to', 'out', 'escape-formulas', 'include-stats', 'collapsible']),
+  mcp: new Set([])
 };
 
 const STARTER_SAMPLES = [
@@ -135,20 +148,22 @@ function parseNonNegativeInt(raw, flagName) {
 
 function inferFormat(filePath, explicitFormat) {
   if (explicitFormat != null) {
-    if (explicitFormat !== 'json' && explicitFormat !== 'csv' && explicitFormat !== 'md') {
-      throw new RangeError('--format must be json, csv, or md');
+    if (explicitFormat !== 'json' && explicitFormat !== 'csv' && explicitFormat !== 'tsv' && explicitFormat !== 'md') {
+      throw new RangeError('--format must be json, csv, tsv, or md');
     }
     return explicitFormat;
   }
   const ext = extname(filePath).toLowerCase();
   if (ext === '.json') return 'json';
   if (ext === '.csv') return 'csv';
+  if (ext === '.tsv' || ext === '.txt') return 'tsv';
   if (ext === '.md' || ext === '.markdown') return 'md';
-  throw new RangeError('cannot infer deck format from extension; pass --format json, csv, or md');
+  throw new RangeError('cannot infer deck format from extension; pass --format json, csv, tsv, or md');
 }
 
 function loadDeck(text, format) {
   if (format === 'csv') return importStudyCsv(text);
+  if (format === 'tsv') return importStudyTsv(text);
   if (format === 'md') return importStudyMarkdown(text);
   return importStudyDeck(text);
 }
@@ -156,6 +171,9 @@ function loadDeck(text, format) {
 function serializeDeck(cards, format, flags = {}) {
   if (format === 'csv') {
     return exportStudyCsv(cards, { escapeFormulas: !!flags['escape-formulas'] });
+  }
+  if (format === 'tsv') {
+    return exportStudyTsv(cards);
   }
   if (format === 'md') {
     return exportStudyMarkdown(cards, {
@@ -210,7 +228,7 @@ function formatPercent(value) {
   return value === null ? 'n/a' : `${Math.round(value * 100)}%`;
 }
 
-function formatSummaryText(summary, topics, mistakes) {
+function formatSummaryText(summary, topics, mistakes, recommendations = []) {
   const lines = [
     `Deck summary (${summary.total} cards: ${summary.due} due, ${summary.studied} studied, ${summary.new} new, ${summary.mature} mature)`,
     `Reviews: ${summary.totalReviews} recorded, ${summary.correctReviews} positive, accuracy: ${formatPercent(summary.accuracy)}`
@@ -224,6 +242,26 @@ function formatSummaryText(summary, topics, mistakes) {
   lines.push(
     `Lapses: ${mistakes.totalLapses} total (${mistakes.classified} classified, ${mistakes.unspecified} unspecified)`
   );
+  if (recommendations.length) {
+    lines.push('Study recommendations:');
+    for (const rec of recommendations) {
+      lines.push(`  - [${rec.topic}] (${rec.signal}): ${rec.message}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function formatSimulationText(sim) {
+  const lines = [
+    `Cohort simulation (${sim.cardsCount} cards · ${sim.days}d · daily limit ${sim.dailyLimit} · profile=${sim.profile} · seed=${sim.seed})`
+  ];
+  for (const row of sim.results) {
+    lines.push(
+      `  - ${row.label}: reviews=${row.totalReviews} (avg ${row.avgDailyReviews}/d, peak ${row.peakDailyReviews}), ` +
+      `recall=${formatPercent(row.simulatedRecallRate)}, mature=${row.maturedCards}/${sim.cardsCount}, backlog=${row.finalDueBacklog}`
+    );
+  }
+  lines.push(`Note: ${sim.disclaimer}`);
   return lines.join('\n');
 }
 
@@ -290,10 +328,27 @@ async function runInit(positionals, flags, io, ioFlags) {
   if (exists && !flags.force) {
     throw new RangeError(`file already exists: ${filePath} (pass --force to overwrite)`);
   }
-  const starterCards = STARTER_SAMPLES.map((item) => createCard(item));
+  const starterCards = flags.pack
+    ? buildSamplePack(flags.pack)
+    : STARTER_SAMPLES.map((item) => createCard(item));
   const content = serializeDeck(starterCards, format, flags);
   await io.writeText(filePath, content);
   io.stdout(`Created starter ${format} deck with ${starterCards.length} card(s): ${filePath}`);
+  return 0;
+}
+
+function runSimulate(positionals, flags, io) {
+  if (positionals.length !== 1) {
+    throw new RangeError("'simulate' does not accept positional arguments");
+  }
+  const opts = {};
+  if (flags.cards != null) opts.cardsCount = parseNonNegativeInt(flags.cards, 'cards');
+  if (flags.days != null) opts.days = parseNonNegativeInt(flags.days, 'days');
+  if (flags.limit != null) opts.dailyLimit = parseNonNegativeInt(flags.limit, 'limit');
+  if (flags.seed != null) opts.seed = parseNonNegativeInt(flags.seed, 'seed');
+  if (flags.profile != null) opts.profile = flags.profile;
+  const sim = simulateCohort(opts);
+  io.stdout(flags.json ? JSON.stringify(sim, null, 2) : formatSimulationText(sim));
   return 0;
 }
 
@@ -321,6 +376,7 @@ function buildPlanOptions(flags) {
   if (flags.limit != null) options.limit = parseNonNegativeInt(flags.limit, 'limit');
   if (flags['topic-limit'] != null) options.maxPerTopic = parseNonNegativeInt(flags['topic-limit'], 'topic-limit');
   if (flags['new-limit'] != null) options.maxNewCards = parseNonNegativeInt(flags['new-limit'], 'new-limit');
+  if (flags['reason-aware']) options.reasonAware = true;
   return options;
 }
 
@@ -376,9 +432,10 @@ async function runStudy(cards, filePath, format, at, flags, io) {
       const plannedItem = plan.planned[i];
       const cardIndex = workingDeck.findIndex((c) => c.id === plannedItem.id);
       const card = workingDeck[cardIndex];
+      const cloze = parseClozePrompt(card.question, card.answer);
       io.stdout('');
       io.stdout(`[${i + 1}/${plan.planned.length}] Topic: ${card.topic} (${plannedItem.status})`);
-      io.stdout(`Q: ${card.question}`);
+      io.stdout(`Q: ${cloze.maskedQuestion}`);
 
       const preInput = await prompter.prompt('Press Enter to reveal answer, [s] skip, or [q] quit: ');
       const preCmd = (preInput ?? 'q').trim().toLowerCase();
@@ -389,7 +446,7 @@ async function runStudy(cards, filePath, format, at, flags, io) {
         continue;
       }
 
-      io.stdout(`A: ${card.answer}`);
+      io.stdout(`A: ${cloze.isCloze ? `${cloze.revealedText} (${cloze.targets.join(', ')})` : card.answer}`);
       let rating = null;
       let action = 'rate';
       for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -421,6 +478,7 @@ async function runStudy(cards, filePath, format, at, flags, io) {
       const reviewAt = flags.at ? at : new Date();
       const updated = reviewCardWithStrategy(card, rating, reviewAt, {
         strategy: strategyId,
+        reasonAware: Boolean(flags['reason-aware']),
         ...(reason ? { reason } : {})
       });
       workingDeck[cardIndex] = updated;
@@ -478,6 +536,11 @@ export async function runCli(argv, ioOverrides = {}) {
       });
     }
     if (command === 'compare') return runCompare(positionals, flags, io);
+    if (command === 'simulate') return runSimulate(positionals, flags, io);
+    if (command === 'mcp') {
+      await startMcpServer();
+      return 0;
+    }
 
     if (positionals.length !== 2) {
       throw new RangeError(`'${command}' requires exactly one <file> argument`);
@@ -502,9 +565,10 @@ export async function runCli(argv, ioOverrides = {}) {
       const summary = getStudySummary(cards, at);
       const topics = getTopicSummaries(cards, at);
       const mistakes = getMistakeBreakdown(cards);
+      const recommendations = getStudyRecommendations(cards, at);
       io.stdout(flags.json
-        ? JSON.stringify({ summary, topics, mistakes }, null, 2)
-        : formatSummaryText(summary, topics, mistakes));
+        ? JSON.stringify({ summary, topics, mistakes, recommendations }, null, 2)
+        : formatSummaryText(summary, topics, mistakes, recommendations));
       return 0;
     }
 
@@ -526,8 +590,8 @@ export async function runCli(argv, ioOverrides = {}) {
     }
 
     if (command === 'convert') {
-      if (flags.to !== 'json' && flags.to !== 'csv' && flags.to !== 'md') {
-        throw new RangeError('convert requires --to json, csv, or md');
+      if (flags.to !== 'json' && flags.to !== 'csv' && flags.to !== 'tsv' && flags.to !== 'md') {
+        throw new RangeError('convert requires --to json, csv, tsv, or md');
       }
       if (flags['escape-formulas'] && flags.to !== 'csv') {
         throw new RangeError('--escape-formulas applies only when --to csv');

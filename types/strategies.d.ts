@@ -1,6 +1,6 @@
 import type { MistakeReason, Rating, StudyCard, TimestampInput } from './index.js';
 
-export type ReviewStrategyId = 'balanced' | 'gentle' | 'intensive';
+export type ReviewStrategyId = 'balanced' | 'gentle' | 'intensive' | 'sm2';
 
 export declare const STRATEGY_IDS: readonly ReviewStrategyId[];
 
@@ -11,12 +11,14 @@ export interface ReviewStrategyDefinition {
   againMinutes: number;
   hardHours: number;
   intervalsDays: number[];
+  adaptive: boolean;
   disclaimer: string;
 }
 
 export interface StrategyReviewOptions {
   strategy?: ReviewStrategyId;
   reason?: MistakeReason;
+  reasonAware?: boolean;
 }
 
 export type ComparisonStepInput =
@@ -67,7 +69,42 @@ export function reviewCardWithStrategy(
   options?: StrategyReviewOptions
 ): StudyCard;
 
+export type CohortProfileId = 'steady' | 'cramming' | 'missed-days';
+
+export interface CohortSimulationOptions {
+  cardsCount?: number;
+  days?: number;
+  dailyLimit?: number;
+  profile?: CohortProfileId;
+  seed?: number;
+  strategies?: readonly ReviewStrategyId[];
+}
+
+export interface CohortStrategyResult {
+  strategy: ReviewStrategyId;
+  label: string;
+  totalReviews: number;
+  avgDailyReviews: number;
+  peakDailyReviews: number;
+  activeDays: number;
+  simulatedRecallRate: number | null;
+  finalDueBacklog: number;
+  maturedCards: number;
+}
+
+export interface CohortSimulationResult {
+  days: number;
+  cardsCount: number;
+  dailyLimit: number;
+  profile: CohortProfileId;
+  seed: number;
+  disclaimer: string;
+  results: CohortStrategyResult[];
+}
+
 export function compareStrategies(
   steps: readonly ComparisonStepInput[],
   options?: CompareStrategiesOptions
 ): StrategyComparisonResult;
+
+export function simulateCohort(options?: CohortSimulationOptions): CohortSimulationResult;
