@@ -26,6 +26,7 @@ A small **dependency-free, offline-capable JavaScript module**:
 - **Topic-level insights (v0.2):** separately summarize reviews, due counts, and self-reported accuracy for each topic without claiming mastery.
 - **Self-reported mistake reasons (v0.2):** learners can optionally label an `again` review as `knowledge-gap`, `misconception`, `attention`, or `other`; unclassified mistakes remain explicitly unknown.
 - **Data-integrity checks (v0.2):** reject duplicate card IDs, impossible counters, and corrupt reason histories instead of silently inflating progress.
+- **Portable decks (v0.2):** opt-in, versioned JSON export and import with validation; no automatic storage, encryption, or cloud backup.
 - **Predictable behavior:** return new card objects without modifying the original and produce deterministic results for a given date.
 
 **Important limitations:** Even with the proposed v0.2 insights, the library does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
@@ -62,7 +63,7 @@ console.log(selectReviewQueue([reviewed], '2026-11-14T12:00:00Z'));
 console.log(getStudySummary([reviewed], now));
 ```
 
-See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, and [v0.2 learning insights](docs/learning-insights.md) for the new functions and example usage.
+See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), and the [portable deck format](docs/portable-decks.md).
 
 ## Where we want to go
 
