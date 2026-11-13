@@ -36,6 +36,7 @@ Sıfır harici bağımlılıklı, çevrimdışı kullanılabilen küçük bir Ja
 ```bash
 npm test
 npm run demo
+npm run demo:planner
 ```
 
 ```js
@@ -71,6 +72,7 @@ Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorit
 - **Geriye uyumluluk:** v0.1 kartları okunur; geçmişte belirtilmemiş hata nedenleri bilinmiyor olarak kalır.
 
 - **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
+- **Açıklanabilir oturum planı:** Aynı konunun bütün oturumu kaplamasını sınırlayan, çalışma yoğunluğunu konular arasında dağıtan ve ertelenen kartları açıkça sayan planlayıcı. [Kurallar](docs/session-planner.md).
 
 Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.
 
