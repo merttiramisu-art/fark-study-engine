@@ -231,5 +231,6 @@ $('reset-button').addEventListener('click', () => {
   notify('Sample data reset. Your previous in-memory changes were cleared.');
 });
 $('export-button').addEventListener('click', exportCards);
+$('import-trigger').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', importCards);
 rebuildPlan();
