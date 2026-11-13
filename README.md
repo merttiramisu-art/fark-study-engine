@@ -1,35 +1,35 @@
 # FARK Study Engine 📚
-### Öğrenmenin arkasındaki zekâ. / The thinking behind learning.
+### The thinking behind learning.
 
-> **Her öğrenci farklı öğreniyorsa, neden hepsi aynı şekilde çalışmak zorunda?**
->
-> *If every student learns differently, why should everyone study the same way?*
+> **If every student learns differently, why should everyone have to study the same way?**
 
-**FARK Study Engine**, öğrencilerin yalnızca ne kadar çalıştığını değil, **neyi öğrendiğini, nerede zorlandığını ve neyi ne zaman tekrar etmesi gerektiğini** anlamaya yardımcı olmayı hedefleyen açık kaynak bir öğrenme altyapısıdır.
+[**Türkçe**](README.tr.md) · **English**
 
-Bir sınav hazırlık deneyimi geliştirirken kendimize sorduğumuz basit bir sorudan doğdu: *Daha fazla soru çözmek mi önemli, yoksa gerçekten öğrenmek mi?*
+**FARK Study Engine** is an open-source learning utility with a bigger ambition: helping students understand not only **how much** they study, but **what they learn, where they struggle, and when to review**.
 
-FARK'ın uzun vadeli hedefi; şeffaf tekrar planlamasını, hata analizini ve kişiye uyarlanabilen çalışma deneyimlerini herkesin geliştirebileceği küçük, bağımsız yazılım bileşenleriyle mümkün kılmak. Yalnızca tek bir sınav için değil; farklı dersler, sınavlar ve kendi kendine öğrenme süreçleri için.
+It started with a question while exploring a broader exam-preparation platform:
 
-**Bu bir başlangıç.** Bugün yayımlanan v0.1.0, bu büyük fikrin ilk ve küçük teknik çekirdeğidir; tamamlanmış bir yapay zekâ öğretmeni, uyarlanabilir öğrenme sistemi veya sınav platformu değildir.
+**Does solving more questions necessarily mean learning more?**
 
----
+We want to explore transparent review scheduling, meaningful mistake analysis, and eventually adaptive study tools that educators, students, and developers can understand, test, and improve together. The idea is not limited to one exam, subject, or country.
 
-## Şu anda neler çalışıyor? / What's available today?
+**We're just getting started.** The public **v0.1.0** is a small working technical foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
 
-Sıfır harici bağımlılıklı, çevrimdışı kullanılabilen küçük bir JavaScript modülü:
+## What works today
 
-- **Öğrenme kartı oluşturma:** konu, özgün soru, yanıt ve kimlikle kart tanımlama
-- **Şeffaf tekrar zamanlaması:** `again`, `hard`, `good`, `easy` yanıtlarına göre bir sonraki tekrar tarihini hesaplama
-- **Hataları öne çıkarma:** tekrar zamanı gelmiş kartları, hata geçmişini dikkate alarak sıralama
-- **Dürüst ilerleme özeti:** yeni, çalışılmış, tekrar zamanı gelmiş kartlar ve gerçekten ölçülebilen yanıt istatistikleri
-- **Öngörülebilir davranış:** aynı girdi ve tarihle aynı sonucu veren, değiştirilebilir yerel veri nesneleri
+A small **dependency-free, offline-capable JavaScript module**:
 
-**Önemli sınırlar:** Verileri diske kaydetmez, buluta göndermez, hesap açtırmaz, öğrenmeyi bilimsel olarak kesin ölçtüğünü iddia etmez. Kalıcılık, kullanıcı arayüzü ve gerçek öğrenme etkililiği değerlendirmesi bu sürümde yoktur.
+- **Study cards:** create cards with an ID, topic, original question, and answer.
+- **Review scheduling:** calculate the next review date from `again`, `hard`, `good`, or `easy` responses.
+- **Mistake-aware queues:** prioritize due cards with more recorded lapses.
+- **Honest progress summaries:** count new, studied, and due cards; report review accuracy only when reviews exist.
+- **Predictable behavior:** return new card objects without modifying the original and produce deterministic results for a given date.
 
-## Hemen dene / Quick start
+**Important limitations:** This version does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
 
-**Node.js 20+** yeterli. API anahtarı, abonelik, paket kurulumu veya ücretli servis gerekmez.
+## Quick start
+
+Requires **Node.js 20+**. No API key, subscription, cloud service, or dependency installation required.
 
 ```bash
 npm test
@@ -47,55 +47,50 @@ import {
 const now = '2026-11-13T12:00:00Z';
 const card = createCard({
   id: 'math-01',
-  topic: 'Matematik',
-  question: '2 + 3 kaçtır?',
+  topic: 'Mathematics',
+  question: 'What is 2 + 3?',
   answer: '5'
 });
 
 const reviewed = reviewCard(card, 'good', now);
+
 console.log(reviewed.dueAt); // 2026-11-14T12:00:00.000Z
 console.log(selectReviewQueue([reviewed], '2026-11-14T12:00:00Z'));
 console.log(getStudySummary([reviewed], now));
 ```
 
-Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorithm.md) açıkça anlatılır. Kullanılan kurallar **deneme amaçlı sezgisel kurallardır**; kanıtlanmış kişisel öğrenme tahminleri değildir.
+See [the scheduling rules](docs/algorithm.md) for the exact intervals, ordering rules, and limitations.
 
-## Nereye gitmek istiyoruz? / Roadmap
+## Where we want to go
 
-Bunlar **gelecek hedefleri**, bugün tamamlanmış özellikler değil:
+These are **planned directions**, not completed features.
 
-1. **Hata analizi:** bilgi eksiği, kavram karışıklığı ve dikkatsizlik gibi hata nedenlerini öğrenciye veya öğretmene görünür kılmak
-2. **Daha anlamlı tekrar:** tek tip aralıklar yerine, gerçek öğrenme verileriyle değerlendirilebilir tekrar stratejileri
-3. **Konu bazlı ilerleme:** güçlü ve zayıf alanları, bilinmeyeni uydurmadan ölçmek
-4. **Uyarlanabilir çalışma önerileri:** öğrencinin geçmiş performansından yararlanarak öneriler sunmak; sonuçlarını test etmek
-5. **Taşınabilirlik ve erişilebilirlik:** veri içe/dışa aktarma, farklı diller ve basit erişilebilir örnek arayüzler
+1. **Understand mistakes:** support self-reported reasons such as knowledge gaps, misconceptions, or attention errors.
+2. **Explore smarter review schedules:** compare transparent strategies against real, consented learning outcomes instead of claiming one algorithm works for everyone.
+3. **Measure progress by topic:** identify strengths and uncertainties without fabricating mastery.
+4. **Investigate adaptive study recommendations:** test whether recommendations genuinely help different learners.
+5. **Improve accessibility and portability:** data import/export, localization, and simple accessible example interfaces.
 
-Bu hedefleri adım adım, testler ve açık teknik kararlarla geliştirmek istiyoruz. Eğitimle ilgili iddiaları kanıt olmadan ürün gerçeği gibi sunmayacağız.
+We want to document assumptions, test behavior, and distinguish promising educational ideas from evidence-backed results.
 
-## Why FARK? (English)
+## Why open source?
 
-FARK Study Engine grew out of a broader idea for better exam preparation: **studying longer is not the same as learning better**.
+FARK grew out of an exam-learning vision, but learning challenges extend far beyond any one test. A reusable, understandable core can help others experiment without depending on a proprietary service.
 
-Our goal is to build transparent, reusable tools for spaced review, mistake analysis, and eventually adaptive study experiences. The project is intended for learners, educators, and developers working across many subjects and exams—not a single test.
+Our principles:
 
-**Current status: early prototype (v0.1.0).** The repository currently contains a small dependency-free review scheduler, mistake-aware due queue, basic progress summaries, tests, documentation, and an example. Advanced learner modeling, validated adaptive algorithms, persistence, and a user interface are **not implemented**.
+- **Honest measurement:** unknown learning outcomes stay unknown.
+- **Privacy by design:** no personal student data, secrets, private project files, or telemetry in the repository.
+- **Original materials:** no copied exam questions, commercial textbooks, or content published without permission.
+- **Transparency:** explain algorithms and their limitations.
+- **Careful engineering:** test behavior rather than assuming that code is correct because it runs.
 
-We welcome careful experimentation, constructive criticism, test cases, documentation improvements, and reproducible evidence.
+## Contributing
 
-## Açık kaynak yaklaşımımız / Open-source principles
+This is an early-stage open-source project, and constructive feedback is welcome. You do not need to be an experienced developer to contribute: reproducing a bug, proposing a test, improving accessibility, or clarifying documentation can all help.
 
-- **Şeffaflık:** Kullanıcıya gösterilen ilerlemenin neye dayandığı anlaşılabilir olmalı
-- **Gizlilik:** Örnek veri dışında gerçek öğrenci bilgileri, kimlik bilgileri veya özel proje dosyaları burada yayımlanmaz
-- **Özgünlük:** Telifli yayın soruları, kitap içerikleri ve izinsiz materyaller paylaşılmaz
-- **Bağımsızlık:** Çekirdek, ücretli API veya takip servisine bağlı değildir
-- **Titizlik:** Çalışıyor görünmesi yeterli değil; davranışların test edilmesi önemli
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or pull request. Turkish and English contributions are welcome.
 
-## Katılmak ister misin? / Contributing
+## License
 
-Projeye katkı yapmak için deneyimli bir geliştirici olman gerekmiyor. Bir hatayı tekrar üretmek, test önermek, dokümantasyonu iyileştirmek veya küçük bir özellik geliştirmek bile değerli olabilir.
-
-Önce [katkı rehberini](CONTRIBUTING.md) inceleyebilirsin. Özellikle öğrenme bilimiyle ilgili fikirlerin test edilebilir ve sınırlılıkları açık olacak biçimde sunulmasını önemsiyoruz.
-
-## Lisans / License
-
-[MIT](LICENSE) — özgürce kullanılabilir ve geliştirilebilir.
+[MIT](LICENSE) — free to use, study, modify, and share.
