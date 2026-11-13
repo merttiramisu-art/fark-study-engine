@@ -141,7 +141,15 @@ test('CLI initializes starter decks, converts Markdown, and compares strategies'
 
   assert.equal(await runCli(['compare', 'good,good,again,easy', '--at', NOW, '--json'], io), 0);
   const cmp = JSON.parse(out[5]);
-  assert.equal(cmp.strategies.length, 3);
+  assert.equal(cmp.strategies.length, 4);
+
+  assert.equal(await runCli(['init', 'cs.tsv', '--pack', 'computer-science'], io), 0);
+  assert.match(out[6], /Created starter tsv deck with 8 card\(s\)/);
+  assert.equal(await runCli(['convert', 'cs.tsv', '--to', 'json', '--out', 'cs.json'], io), 0);
+  assert.equal(await runCli(['simulate', '--cards', '20', '--days', '10', '--profile', 'missed-days', '--json'], io), 0);
+  const sim = JSON.parse(out.at(-1));
+  assert.equal(sim.profile, 'missed-days');
+  assert.equal(sim.results.length, 4);
   assert.equal(err.length, 1);
 });
 

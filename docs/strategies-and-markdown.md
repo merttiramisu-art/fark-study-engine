@@ -1,16 +1,19 @@
 # Transparent Spacing Strategies & Markdown Notes
 
-**FARK Study Engine v0.4.0** adds two pure, dependency-free modules to help educators, learners, and developers inspect how interval presets behave and turn everyday Markdown notes into portable flashcards.
+**FARK Study Engine v0.5.0** expands `./strategies` with transparent SM-2 adaptive easing and deterministic cohort simulations, adds `./interchange` for Cloze + Anki/Quizlet `.tsv`, and complements `./markdown` study sheets.
 
 ## 1. Transparent Review Strategies (`fark-study-engine/strategies`)
 
-Different courses, exam timelines, and study materials tolerate different spacing cadences. Rather than claiming a single black-box schedule is cognitively optimal for everyone, `./strategies` exposes three documented interval presets that share identical `0..6` box bounds and card validation with `reviewCard`:
+Different courses, exam timelines, and study materials tolerate different spacing cadences. Rather than claiming a single black-box schedule is cognitively optimal for everyone, `./strategies` exposes four documented rules sharing identical `0..6` box bounds and card validation with `reviewCard`:
 
-| Strategy ID | `again` | `hard` | `good` intervals (boxes `1..6`) | Best suited for experimenting with |
+| Strategy ID | `again` | `hard` | `good` intervals / behavior | Best suited for experimenting with |
 | --- | --- | --- | --- | --- |
 | `balanced` | 10 min | 6 hours | `1d · 3d · 7d · 14d · 30d · 60d` | Default FARK spacing |
 | `gentle` | 10 min | 4 hours | `1d · 2d · 4d · 7d · 14d · 30d` | Denser or unfamiliar concepts |
 | `intensive` | 5 min | 2 hours | `0.5d · 1d · 2d · 4d · 7d · 14d` | Compressed short-horizon prep |
+| `sm2` | 5–15 min | max(12h, prev×1.15) | Adaptive `1.3–2.8 EF` multiplier from observed streak & lapses | Testing streak-sensitive easing transparently |
+
+Passing `reasonAware: true` to `reviewCardWithStrategy` slows `again` retries slightly more on conceptual `misconception` (0.5x retry delay) than minor `attention` slips (1.5x) and dampens premature leaps on cards with recorded misconceptions. Use `simulateCohort({ cardsCount, days, dailyLimit, profile, seed })` across `'steady'`, `'cramming'`, or `'missed-days'` profiles to compare synthetic forgetting curves deterministically.
 
 ```js
 import { createCard } from 'fark-study-engine';

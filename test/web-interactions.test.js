@@ -17,6 +17,7 @@ class FakeElement {
   }
   addEventListener(event, callback) { this.listeners.set(event, callback); }
   click() { this.listeners.get('click')?.({ preventDefault() {} }); }
+  change() { this.listeners.get('change')?.({ preventDefault() {} }); }
   submit() { this.listeners.get('submit')?.({ preventDefault() {} }); }
   focus() { this.focusCount++; }
   setAttribute(key, value) { this.attributes.set(key, String(value)); }
@@ -35,15 +36,31 @@ function createFakeDocument() {
   node('topic-limit').value = '2';
   node('new-limit').value = '2';
   node('mistake-reason').value = '';
+  node('reason-aware-toggle').checked = true;
+  node('reverse-toggle').checked = false;
+  node('sim-cards').value = '30';
+  node('sim-days').value = '30';
+  node('sim-limit').value = '20';
+  node('sim-profile').value = 'steady';
   const ratings = ['again', 'hard', 'good', 'easy'].map(rating => {
     const element = node('rating-' + rating);
     element.dataset.rating = rating;
     return element;
   });
+  const packs = [
+    ['pack-starter', 'starter'],
+    ['pack-cs', 'computer-science'],
+    ['pack-biology', 'biology'],
+    ['pack-language', 'language']
+  ].map(([id, pack]) => {
+    const el = node(id);
+    el.dataset.pack = pack;
+    return el;
+  });
   const doc = {
     getElementById: node,
     createElement: tag => new FakeElement(tag),
-    querySelectorAll: query => query === '[data-rating]' ? ratings : [],
+    querySelectorAll: query => query === '[data-rating]' ? ratings : query === '[data-pack]' ? packs : [],
     body: new FakeElement('body')
   };
   return { doc, node };
@@ -119,11 +136,13 @@ test('skip never grades or reschedules; a rated answer does; finish receives foc
     assert.equal(node('lang-toggle').textContent, 'TR');
 
     node('strategy-select').value = 'intensive';
+    node('reason-aware-toggle').checked = false;
     node('reveal-button').click();
     node('rating-good').click();
     const afterIntensive = await exportDeck();
     const reviewed = afterIntensive.find(c => c.lastReviewedAt && Date.parse(c.dueAt) - Date.parse(c.lastReviewedAt) === 12 * 3600 * 1000);
     assert.ok(reviewed, 'intensive strategy box-1 good should schedule 12h interval');
+    node('reason-aware-toggle').checked = true;
 
     node('bulk-input').value = '## Astronomy\n- Nearest star to Earth? :: Sun\n- Planet with rings? :: Saturn';
     node('bulk-import-btn').click();
@@ -134,6 +153,38 @@ test('skip never grades or reschedules; a rated answer does; finish receives foc
     const mdText = await exportedBlob.text();
     assert.match(mdText, /^# FARK Study Sheet/);
     assert.match(mdText, /## Astronomy/);
+
+    node('export-tsv-button').click();
+    const tsvText = await exportedBlob.text();
+    assert.match(tsvText, /^topic\tquestion\tanswer/);
+    assert.match(tsvText, /Astronomy\tNearest star to Earth\?\tSun/);
+
+    node('tab-simulator').click();
+    assert.equal(node('panel-simulator').hidden, false);
+    assert.equal(node('panel-study').hidden, true);
+    assert.equal(node('tab-simulator').attributes.get('aria-selected'), 'true');
+    assert.equal(node('sim-results').children.length, 4);
+    assert.equal(node('seq-results').children.length, 4);
+
+    node('tab-decks').click();
+    assert.equal(node('panel-decks').hidden, false);
+    node('pack-cs').click();
+    const csDeck = await exportDeck();
+    assert.equal(csDeck.length, 8);
+    node('tab-study').click();
+    assert.match(node('question-text').textContent, /\[ ___ \]/);
+
+    node('pack-language').click();
+    const normalPrompt = node('question-text').textContent;
+    node('reverse-toggle').checked = true;
+    node('reverse-toggle').change();
+    const reversedPrompt = node('question-text').textContent;
+    assert.notEqual(reversedPrompt, normalPrompt);
+    node('reverse-toggle').checked = false;
+    node('reverse-toggle').change();
+    node('strategy-select').value = 'sm2';
+    node('strategy-select').change();
+    assert.match(node('strategy-note').textContent, /1\.3–2\.8 EF/);
   } finally {
     globalThis.document = previousDocument;
     URL.createObjectURL = originalCreateObjectURL;

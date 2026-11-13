@@ -6,7 +6,8 @@ import {
   listReviewStrategies,
   getReviewStrategy,
   reviewCardWithStrategy,
-  compareStrategies
+  compareStrategies,
+  simulateCohort
 } from '../src/strategies.js';
 
 const NOW = '2026-11-13T12:00:00.000Z';
@@ -58,15 +59,58 @@ test('compareStrategies compares identical sequences deterministically', () => {
     { startAt: NOW }
   );
   assert.equal(result.startedAt, NOW);
-  assert.equal(result.strategies.length, 3);
-  const [bal, gen, intv] = result.strategies;
+  assert.equal(result.strategies.length, 4);
+  const [bal, gen, intv, sm2] = result.strategies;
   assert.equal(bal.strategy, 'balanced');
   assert.equal(gen.strategy, 'gentle');
   assert.equal(intv.strategy, 'intensive');
+  assert.equal(sm2.strategy, 'sm2');
   assert.equal(bal.timeline.length, 5);
   assert.ok(bal.totalSpanDays > gen.totalSpanDays);
   assert.ok(gen.totalSpanDays > intv.totalSpanDays);
   assert.equal(bal.finalBox, intv.finalBox);
+});
+
+test('sm2 strategy and reasonAware scheduling remain transparent and bounded', () => {
+  const sm2Def = getReviewStrategy('sm2');
+  assert.equal(sm2Def.adaptive, true);
+  assert.equal(getReviewStrategy('balanced').adaptive, false);
+
+  let clean = createCard({ id: 's-clean', topic: 'Math', question: 'Q', answer: 'A' });
+  let misc = createCard({ id: 's-misc', topic: 'Math', question: 'Q', answer: 'A' });
+  clean = reviewCardWithStrategy(clean, 'good', NOW, { strategy: 'sm2' });
+  misc = reviewCardWithStrategy(misc, 'again', NOW, { strategy: 'sm2', reason: 'misconception', reasonAware: true });
+  assert.equal(Date.parse(misc.dueAt) - Date.parse(NOW), 10 * 60 * 1000);
+
+  const attention = reviewCardWithStrategy(
+    createCard({ id: 's-att', topic: 'Math', question: 'Q', answer: 'A' }),
+    'again',
+    NOW,
+    { strategy: 'balanced', reason: 'attention', reasonAware: true }
+  );
+  assert.equal(Date.parse(attention.dueAt) - Date.parse(NOW), 15 * 60 * 1000);
+
+  clean = reviewCardWithStrategy(clean, 'good', clean.dueAt, { strategy: 'sm2' });
+  clean = reviewCardWithStrategy(clean, 'good', clean.dueAt, { strategy: 'sm2' });
+  misc = reviewCardWithStrategy(misc, 'good', misc.dueAt, { strategy: 'sm2' });
+  misc = reviewCardWithStrategy(misc, 'good', misc.dueAt, { strategy: 'sm2' });
+  const cleanSpan = Date.parse(clean.dueAt) - Date.parse(clean.lastReviewedAt);
+  const miscSpan = Date.parse(misc.dueAt) - Date.parse(misc.lastReviewedAt);
+  assert.ok(cleanSpan > miscSpan, 'misconception lapse lowers ease factor relative to clean streak');
+});
+
+test('simulateCohort is deterministic by seed and validates inputs', () => {
+  const runA = simulateCohort({ cardsCount: 20, days: 14, dailyLimit: 10, profile: 'missed-days', seed: 99 });
+  const runB = simulateCohort({ cardsCount: 20, days: 14, dailyLimit: 10, profile: 'missed-days', seed: 99 });
+  assert.deepEqual(runA, runB);
+  assert.equal(runA.results.length, 4);
+  assert.match(runA.disclaimer, /Synthetic/i);
+  assert.ok(runA.results.every((r) => r.totalReviews > 0 && r.activeDays <= 14));
+
+  assert.throws(() => simulateCohort({ profile: 'unknown' }), RangeError);
+  assert.throws(() => simulateCohort({ days: 0 }), RangeError);
+  assert.throws(() => simulateCohort({ seed: 1.5 }), TypeError);
+  assert.throws(() => simulateCohort({ extra: true }), RangeError);
 });
 
 test('compareStrategies validates steps, options, and strategy selections', () => {

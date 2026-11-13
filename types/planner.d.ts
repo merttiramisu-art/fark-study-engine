@@ -4,12 +4,16 @@ export type SelectionReasonCode =
   | 'new-card'
   | 'scheduled-review'
   | 'overdue'
-  | 'previous-mistakes';
+  | 'previous-mistakes'
+  | 'concept-misconception'
+  | 'knowledge-gap'
+  | 'attention-slip';
 
 export interface PlanOptions {
   limit?: number;
   maxPerTopic?: number;
   maxNewCards?: number;
+  reasonAware?: boolean;
 }
 
 export interface PlannedCardItem {
@@ -30,8 +34,21 @@ export interface StudyPlan {
   perTopic: Record<string, number>;
 }
 
+export interface StudyRecommendation {
+  topic: string;
+  signal: 'revisit-concepts' | 'fill-missing-facts' | 'slow-down-reading' | 'clear-backlog';
+  due: number;
+  total: number;
+  message: string;
+}
+
 export function planStudySession(
   cards: readonly StudyCard[],
   at?: TimestampInput,
   options?: PlanOptions
 ): StudyPlan;
+
+export function getStudyRecommendations(
+  cards: readonly StudyCard[],
+  at?: TimestampInput
+): StudyRecommendation[];

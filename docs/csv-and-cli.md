@@ -39,21 +39,40 @@ const importedCards = importStudyCsv(csv, { idPrefix: 'bio' });
 Run locally with `node bin/fark.js` (or `fark` when installed):
 
 ```bash
-node bin/fark.js init starter.json
-node bin/fark.js study starter.json --limit 5 --strategy gentle --save
+node bin/fark.js init cs.tsv --pack computer-science
+node bin/fark.js study starter.json --limit 5 --strategy sm2 --reason-aware --save
 node bin/fark.js validate cards.csv
-node bin/fark.js convert cards.csv --to md --include-stats --out sheet.md
+node bin/fark.js convert cards.csv --to tsv --out anki.tsv
 node bin/fark.js summary deck.json --at 2026-11-13T12:00:00Z
-node bin/fark.js plan deck.json --limit 6 --topic-limit 2 --new-limit 2
+node bin/fark.js plan deck.json --limit 6 --topic-limit 2 --new-limit 2 --reason-aware
 node bin/fark.js forecast deck.json --days 7 --json
 node bin/fark.js compare good,good,again,easy
+node bin/fark.js simulate --cards 40 --days 30 --profile missed-days
+node bin/fark.js mcp
 ```
 
 All commands exit with `0` on valid input and `1` with an explicit error on invalid input or malformed decks.
 
-## 4. TypeScript support
+## 4. Zero-dependency MCP Server (`fark mcp` / `fark-study-engine/mcp`)
 
-Bundled `.d.ts` declarations (`types/*.d.ts`) cover `.`, `./planner`, `./portable`, `./csv`, `./markdown`, and `./strategies` with zero runtime overhead.
+Connect any stdio JSON-RPC 2.0 MCP client (Claude Desktop, Claude Code, etc.) directly with zero third-party SDKs:
+
+```json
+{
+  "mcpServers": {
+    "fark-study-engine": {
+      "command": "node",
+      "args": ["C:/path/to/fark-study-engine/bin/fark.js", "mcp"]
+    }
+  }
+}
+```
+
+Available tools: `fark_validate_deck`, `fark_get_study_summary`, `fark_plan_session`, `fark_forecast_workload`, `fark_compare_strategies`, `fark_simulate_cohort`, and `fark_convert_deck`.
+
+## 5. TypeScript support
+
+Bundled `.d.ts` declarations (`types/*.d.ts`) cover `.`, `./planner`, `./portable`, `./csv`, `./markdown`, `./strategies`, `./interchange`, `./widget`, and `./mcp` with zero runtime overhead.
 
 ## Türkçe özet
 
