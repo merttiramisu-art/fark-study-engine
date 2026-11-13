@@ -73,6 +73,7 @@ Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorit
 - **Geriye uyumluluk:** v0.1 kartları okunur; geçmişte belirtilmemiş hata nedenleri bilinmiyor olarak kalır.
 
 - **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
+- **CSV içe/dışa aktarma (`./csv`) ve CLI (`fark`):** Sıfır bağımlılıklı RFC 4180 CSV desteği (`topic,question,answer` veya `id`), gelecek tekrar yükü tahmini (`getReviewForecast`), TypeScript tip tanımları (`types/*.d.ts`) ve `node bin/fark.js` terminal aracı. [Ayrıntılar](docs/csv-and-cli.md).
 - **Açıklanabilir oturum planı:** Aynı konunun bütün oturumu kaplamasını sınırlayan, çalışma yoğunluğunu konular arasında dağıtan ve ertelenen kartları açıkça sayan planlayıcı. [Kurallar](docs/session-planner.md).
 - **İnteraktif öğrenme laboratuvarı:** Gerçek tekrar motorunu ve çalışma planlayıcısını tarayıcıda deneyebilirsin. Ücretsiz ve çevrimdışı çalışan yerel örnek, gerçek öğrenci verisi içermez. [Çalıştırma rehberi](docs/interactive-lab.md).
 - **Gerçekçi atlama ve mobil kontrol:** Cevaplamadığın kartı doğru saymadan geçebilirsin. 360 ve 393 piksel genişliğinde Chromium testleri ve ekran görüntüleri: [mobil QA](docs/mobile-qa.md).

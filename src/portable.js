@@ -8,6 +8,10 @@ const FORMAT = 'fark-study-deck';
 const SCHEMA_VERSION = 1;
 const MAX_CARDS = 10_000;
 const MAX_JSON_CHARS = 2_000_000;
+export const PORTABLE_LIMITS = Object.freeze({
+  maxCards: MAX_CARDS,
+  maxChars: MAX_JSON_CHARS
+});
 const FIELDS = [
   'id', 'topic', 'question', 'answer', 'box', 'dueAt',
   'lastReviewedAt', 'reviews', 'correct', 'lapses', 'reasonCounts'
