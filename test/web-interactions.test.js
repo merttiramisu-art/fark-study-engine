@@ -17,6 +17,7 @@ class FakeElement {
   }
   addEventListener(event, callback) { this.listeners.set(event, callback); }
   click() { this.listeners.get('click')?.({ preventDefault() {} }); }
+  submit() { this.listeners.get('submit')?.({ preventDefault() {} }); }
   focus() { this.focusCount++; }
   setAttribute(key, value) { this.attributes.set(key, String(value)); }
   append(...children) { this.children.push(...children); }
@@ -97,6 +98,25 @@ test('skip never grades or reschedules; a rated answer does; finish receives foc
     assert.match(node('finish-description').textContent, /skipped/);
     const afterAllSkips = await exportDeck();
     assert.deepEqual(afterAllSkips, afterRating);
+
+    node('card-topic').value = 'Physics';
+    node('card-question').value = 'SI unit of force?';
+    node('card-answer').value = 'Newton';
+    node('add-card-form').submit();
+    const afterAdd = await exportDeck();
+    assert.equal(afterAdd.length, 10);
+    assert.ok(afterAdd.some(c => c.topic === 'Physics' && c.question === 'SI unit of force?'));
+
+    node('export-csv-button').click();
+    const csvText = await exportedBlob.text();
+    assert.match(csvText, /^id,topic,question,answer/);
+    assert.match(csvText, /Physics,SI unit of force\?,Newton/);
+
+    node('lang-toggle').click();
+    assert.equal(node('lang-toggle').textContent, 'EN');
+    assert.match(node('add-card-heading').textContent, /Kendi kartını ekle/);
+    node('lang-toggle').click();
+    assert.equal(node('lang-toggle').textContent, 'TR');
   } finally {
     globalThis.document = previousDocument;
     URL.createObjectURL = originalCreateObjectURL;

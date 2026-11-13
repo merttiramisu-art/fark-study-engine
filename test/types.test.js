@@ -1,0 +1,44 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { readFile, access } from 'node:fs/promises';
+import * as indexMod from '../src/index.js';
+import * as plannerMod from '../src/planner.js';
+import * as portableMod from '../src/portable.js';
+import * as csvMod from '../src/csv.js';
+
+const MODULE_CHECKS = [
+  ['.', indexMod, 'types/index.d.ts'],
+  ['./planner', plannerMod, 'types/planner.d.ts'],
+  ['./portable', portableMod, 'types/portable.d.ts'],
+  ['./csv', csvMod, 'types/csv.d.ts']
+];
+
+test('every runtime export has a matching TypeScript declaration', async () => {
+  for (const [subpath, mod, dtsPath] of MODULE_CHECKS) {
+    const dts = await readFile(dtsPath, 'utf8');
+    for (const exportName of Object.keys(mod)) {
+      const pattern = new RegExp(`export\\s+(?:declare\\s+const|function)\\s+${exportName}\\b`);
+      assert.match(dts, pattern, `${subpath} export '${exportName}' missing from ${dtsPath}`);
+    }
+  }
+});
+
+test('package.json exports, types, and bin targets resolve to existing files', async () => {
+  const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+  await access(pkg.types);
+  for (const binPath of Object.values(pkg.bin)) {
+    await access(binPath);
+  }
+  for (const entry of Object.values(pkg.exports)) {
+    await access(entry.types);
+    await access(entry.default);
+  }
+});
+
+test('all added JavaScript source and CLI files pass node --check', () => {
+  for (const file of ['src/csv.js', 'src/cli.js', 'bin/fark.js']) {
+    const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+    assert.equal(result.status, 0, `${file}: ${result.stderr}`);
+  }
+});

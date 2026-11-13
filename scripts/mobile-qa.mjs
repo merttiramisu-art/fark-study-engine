@@ -6,7 +6,7 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { readFile, writeFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createDemoServer } from '../examples/serve-web.js';
 
@@ -14,7 +14,7 @@ function chromeExecutable() {
   for (const binary of [process.env.CHROME_BIN, 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser']) {
     if (!binary) continue;
     try {
-      if (binary.startsWith('/')) return binary;
+      if (isAbsolute(binary)) return binary;
       return execFileSync('which', [binary], { encoding: 'utf8' }).trim();
     } catch { /* Try the next supported Chrome binary. */ }
   }
@@ -139,7 +139,7 @@ async function run() {
 
       const metrics = await devtools.eval(`(() => {
         const ids = ['reveal-button','skip-button','session-limit','topic-limit','new-limit',
-                     'export-button','import-trigger'];
+                     'export-button','export-csv-button','import-trigger','lang-toggle','add-card-submit'];
         return {
           viewport: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,

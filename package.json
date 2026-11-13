@@ -1,12 +1,37 @@
 {
   "name": "fark-study-engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A tiny, dependency-free, offline-first spaced review engine for learning tools.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/merttiramisu-art/fark-study-engine.git"
+  },
+  "homepage": "https://github.com/merttiramisu-art/fark-study-engine#readme",
+  "bugs": {
+    "url": "https://github.com/merttiramisu-art/fark-study-engine/issues"
+  },
   "type": "module",
+  "types": "./types/index.d.ts",
+  "bin": {
+    "fark": "./bin/fark.js"
+  },
   "exports": {
-    ".": "./src/index.js",
-    "./portable": "./src/portable.js",
-    "./planner": "./src/planner.js"
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./planner": {
+      "types": "./types/planner.d.ts",
+      "default": "./src/planner.js"
+    },
+    "./portable": {
+      "types": "./types/portable.d.ts",
+      "default": "./src/portable.js"
+    },
+    "./csv": {
+      "types": "./types/csv.d.ts",
+      "default": "./src/csv.js"
+    }
   },
   "engines": {
     "node": ">=20"

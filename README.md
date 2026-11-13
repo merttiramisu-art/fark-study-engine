@@ -13,7 +13,9 @@ It started with a question while exploring a broader exam-preparation platform:
 
 We want to explore transparent review scheduling, meaningful mistake analysis, and eventually adaptive study tools that educators, students, and developers can understand, test, and improve together. The idea is not limited to one exam, subject, or country.
 
-**We're just getting started.** The proposed **v0.2.0** expands a small working technical foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
+**We're just getting started.** **v0.3.0** expands the small working foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
+
+![FARK Study Engine Interactive Lab](docs/images/interactive-lab.png)
 
 ## What works today
 
@@ -27,6 +29,10 @@ A small **dependency-free, offline-capable JavaScript module**:
 - **Self-reported mistake reasons (v0.2):** learners can optionally label an `again` review as `knowledge-gap`, `misconception`, `attention`, or `other`; unclassified mistakes remain explicitly unknown.
 - **Data-integrity checks (v0.2):** reject duplicate card IDs, impossible counters, and corrupt reason histories instead of silently inflating progress.
 - **Portable decks (v0.2):** opt-in, versioned JSON export and import with validation; no automatic storage, encryption, or cloud backup.
+- **CSV deck interchange (`./csv`):** zero-dependency RFC 4180 CSV import/export for `topic,question,answer` (and optional `id`) spreadsheets, with opt-in formula-injection escaping.
+- **Upcoming workload forecast (`getReviewForecast`):** count already-scheduled `dueAt` dates over the next 1–365 days while keeping unreviewed cards explicitly separate.
+- **Zero-dependency CLI (`fark`):** validate, summarize, plan sessions, inspect upcoming workload, and convert JSON/CSV decks from the terminal (`node bin/fark.js --help`).
+- **TypeScript declarations (`types/*.d.ts`):** typed entrypoints for `.`, `./planner`, `./portable`, and `./csv`.
 - **Explainable study sessions (v0.2):** plan bounded, round-robin review work across topics and explain which items were selected and how many due items were deferred.
 - **Interactive Lab (v0.2):** an accessible-minded browser playground powered by the real scheduling engine, running locally with no cloud, login, analytics, or paid services.
 - **Honest skipping and mobile QA (v0.2):** skip without recording a review, keep skipped cards due, and verify phone-sized layouts in headless Chromium.
@@ -43,6 +49,7 @@ npm test
 npm run demo
 npm run demo:planner
 npm run demo:web  # visit http://127.0.0.1:4173/examples/web/
+node bin/fark.js --help
 ```
 
 ```js
@@ -68,7 +75,7 @@ console.log(selectReviewQueue([reviewed], '2026-11-14T12:00:00Z'));
 console.log(getStudySummary([reviewed], now));
 ```
 
-See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), [the explainable session planner](docs/session-planner.md), and [the interactive browser lab](docs/interactive-lab.md), and [mobile browser QA notes](docs/mobile-qa.md).
+See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), [CSV, forecast, CLI & TypeScript notes](docs/csv-and-cli.md), [the explainable session planner](docs/session-planner.md), and [the interactive browser lab](docs/interactive-lab.md), and [mobile browser QA notes](docs/mobile-qa.md).
 
 ## Where we want to go
 

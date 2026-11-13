@@ -242,3 +242,66 @@ export function validateDeck(cards) {
   checkCards(cards);
   return true;
 }
+
+/**
+ * Project already-scheduled review workload across the next `days` 24-hour windows.
+ * Unreviewed cards remain separate as `unreviewed`; nothing invents future answers.
+ */
+export function getReviewForecast(cards, at = new Date(), days = 7) {
+  checkCards(cards);
+  const nowMs = timestamp(at, 'at');
+  if (!Number.isSafeInteger(days) || days < 1 || days > 365) {
+    throw new RangeError('days must be an integer from 1 to 365');
+  }
+
+  const buckets = Array.from({ length: days }, (_, index) => ({
+    day: index + 1,
+    from: new Date(nowMs + index * DAY_MS).toISOString(),
+    to: new Date(nowMs + (index + 1) * DAY_MS).toISOString(),
+    dueCount: 0,
+    topicCounts: new Map()
+  }));
+
+  let dueNow = 0;
+  let unreviewed = 0;
+  let later = 0;
+  const horizonMs = nowMs + days * DAY_MS;
+
+  for (const card of cards) {
+    if (card.reviews === 0) {
+      unreviewed++;
+      continue;
+    }
+    const dueMs = timestamp(card.dueAt, 'card.dueAt');
+    if (dueMs <= nowMs) {
+      dueNow++;
+      continue;
+    }
+    if (dueMs > horizonMs) {
+      later++;
+      continue;
+    }
+    const bucketIndex = Math.floor((dueMs - nowMs - 1) / DAY_MS);
+    const bucket = buckets[bucketIndex];
+    bucket.dueCount++;
+    bucket.topicCounts.set(card.topic, (bucket.topicCounts.get(card.topic) ?? 0) + 1);
+  }
+
+  return {
+    asOf: new Date(nowMs).toISOString(),
+    days,
+    total: cards.length,
+    dueNow,
+    unreviewed,
+    later,
+    schedule: buckets.map(({ day, from, to, dueCount, topicCounts }) => ({
+      day,
+      from,
+      to,
+      dueCount,
+      byTopic: Object.fromEntries(
+        [...topicCounts.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      )
+    }))
+  };
+}
