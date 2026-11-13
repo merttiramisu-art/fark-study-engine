@@ -189,8 +189,21 @@ async function run() {
   } finally {
     devtools?.close();
     chrome.kill('SIGTERM');
+    // Chrome may still be writing its temporary profile after SIGTERM.
+    // Wait for exit before cleanup; a temporary-directory race must not
+    // turn an otherwise successful browser QA run into a false failure.
+    if (chrome.exitCode === null && chrome.signalCode === null) {
+      await Promise.race([
+        new Promise(resolve => chrome.once('exit', resolve)),
+        delay(3000)
+      ]);
+    }
     await new Promise(resolve => server.close(resolve));
-    await rm(profile, { recursive: true, force: true });
+    try {
+      await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
+    } catch (error) {
+      console.warn('Temporary Chromium profile cleanup warning:', error.message);
+    }
   }
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });
