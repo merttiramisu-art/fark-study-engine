@@ -29,6 +29,7 @@ A small **dependency-free, offline-capable JavaScript module**:
 - **Portable decks (v0.2):** opt-in, versioned JSON export and import with validation; no automatic storage, encryption, or cloud backup.
 - **Explainable study sessions (v0.2):** plan bounded, round-robin review work across topics and explain which items were selected and how many due items were deferred.
 - **Interactive Lab (v0.2):** an accessible-minded browser playground powered by the real scheduling engine, running locally with no cloud, login, analytics, or paid services.
+- **Honest skipping and mobile QA (v0.2):** skip without recording a review, keep skipped cards due, and verify phone-sized layouts in headless Chromium.
 - **Predictable behavior:** return new card objects without modifying the original and produce deterministic results for a given date.
 
 **Important limitations:** Even with the proposed v0.2 insights, the library does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
@@ -67,7 +68,7 @@ console.log(selectReviewQueue([reviewed], '2026-11-14T12:00:00Z'));
 console.log(getStudySummary([reviewed], now));
 ```
 
-See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), [the explainable session planner](docs/session-planner.md), and [the interactive browser lab](docs/interactive-lab.md).
+See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), [the explainable session planner](docs/session-planner.md), and [the interactive browser lab](docs/interactive-lab.md), and [mobile browser QA notes](docs/mobile-qa.md).
 
 ## Where we want to go
 
