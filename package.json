@@ -14,7 +14,8 @@
   "scripts": {
     "test": "node --test",
     "demo": "node examples/demo.js",
-    "demo:planner": "node examples/session-planning.js"
+    "demo:planner": "node examples/session-planning.js",
+    "demo:web": "node examples/serve-web.js"
   },
   "license": "MIT",
   "keywords": [
