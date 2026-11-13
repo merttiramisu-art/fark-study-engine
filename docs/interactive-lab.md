@@ -17,7 +17,7 @@ This lab is included in the *draft v0.2 pull request*; it is not currently deplo
 ## What you can try
 
 1. Adjust how many questions to include, the maximum per topic, and the number of new cards, then click **Rebuild plan**.
-2. Reveal an answer, self-rate the review with **Again / Hard / Good / Easy**, and optionally select your own reason for an `Again` response.
+2. Reveal an answer, self-rate the review with **Again / Hard / Good / Easy**, and optionally select your own reason for an `Again` response. You may **Skip for now** before or after revealing; skipping records no rating and leaves the card due.
 3. See the **due count, studied count, self-reported recall rating**, and due-versus-total overview by topic change as you work.
 4. Export a portable FARK deck as **plain JSON**, or import an existing compatible deck. Import errors, duplicate IDs and unknown schema versions are reported instead of silently dropping data.
 5. Reset the example to its original synthetic cards. Refreshing the tab also resets it because no data is persisted.
@@ -35,6 +35,10 @@ The plan alternates due cards across topics under configurable limits. The label
 - All ratings and imported records stay **in this browser tab's memory**. Closing or refreshing the tab resets them.
 - The optional **Export JSON** button downloads a **plain-text** backup; it is *not encrypted*. Treat exported study data as private.
 - The local Node HTTP server uses an explicit file allowlist, binds only to `127.0.0.1`, sets a restrictive Content Security Policy and serves nothing from private project repositories.
+
+## Phone preview and accessibility
+
+Automated Chromium QA checks 360 × 640, 393 × 852 and desktop widths and publishes 7-day screenshot artifacts. See [mobile browser QA](mobile-qa.md). A real Android/iPhone and screen-reader audit is **still pending**.
 
 ## Tests
 
