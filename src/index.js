@@ -236,3 +236,9 @@ export function getMistakeBreakdown(cards) {
   }
   return { totalLapses, classified, unspecified: totalLapses - classified, byReason };
 }
+
+/** Validate a complete deck without requiring a clock or computing statistics. */
+export function validateDeck(cards) {
+  checkCards(cards);
+  return true;
+}
