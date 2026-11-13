@@ -57,9 +57,9 @@
             <div><span id="session-stage" class="tiny-label">QUESTION 01 / 06</span><div id="session-description" class="session-description">A balanced session, based on your example review history.</div></div>
             <span id="session-counter" class="count-pill" aria-live="polite">0 / 6</span>
           </div>
-          <div class="progress-track" role="progressbar" id="progress-bar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" aria-label="Questions completed"><span id="progress-fill"></span></div>
+          <div class="progress-track" role="progressbar" id="progress-bar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" aria-label="Cards processed (rated or skipped)"><span id="progress-fill"></span></div>
 
-          <div id="question-content" class="question-content">
+          <div id="question-content" class="question-content" aria-live="off">
             <div class="question-header"><span id="question-topic" class="topic-tag">Mathematics</span><span id="question-kind" class="status-tag">DUE REVIEW</span></div>
             <h3 id="question-text" tabindex="-1">Ready for your first question?</h3>
             <div id="question-reasons" class="reason-row" aria-label="Why this card was selected"></div>
@@ -69,6 +69,7 @@
             </div>
             <div id="reveal-controls" class="action-area">
               <button id="reveal-button" class="button button-primary" type="button">Reveal answer <span aria-hidden="true">↗</span></button>
+              <button id="skip-button" class="button button-skip" type="button">Skip for now <span aria-hidden="true">↷</span></button>
               <p>Think of your answer before revealing it.</p>
             </div>
             <div id="rating-controls" class="rating-controls" hidden>
@@ -88,12 +89,13 @@
                 <button type="button" data-rating="easy" class="rating-button rating-easy">Easy <small>Space it out</small></button>
               </div>
               <p class="feedback-note">Your rating is self-reported, not independently graded.</p>
+              <button id="skip-after-reveal" class="skip-inline" type="button">Skip this card without rating it <span aria-hidden="true">↷</span></button>
             </div>
           </div>
 
           <div id="finished-content" class="finished-content" hidden>
             <span class="finish-symbol" aria-hidden="true">✳</span>
-            <h3 id="finish-heading">Session completed.</h3>
+            <h3 id="finish-heading" tabindex="-1">Session finished.</h3>
             <p id="finish-description">Your study data has been updated in this browser tab only.</p>
             <button id="next-plan-button" type="button" class="button button-primary">Plan another session <span aria-hidden="true">↗</span></button>
           </div>
