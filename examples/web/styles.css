@@ -7,3 +7,18 @@
 @media(max-width:950px){.site-shell{padding:0 22px}.intro-graphic{flex-basis:220px;transform:scale(.85);transform-origin:center left;margin-right:-30px}.workspace{grid-template-columns:1fr}.insights{grid-template-columns:1fr 1fr}.data-card{align-self:start}.intro h1{font-size:58px}.intro{min-height:300px}.intro-copy{padding:42px 0}}
 @media(max-width:650px){.site-shell{padding:0 16px}.site-header{height:76px}.brand-mark{width:42px;height:42px;font-size:25px}.brand-words{font-size:17px}.header-right{gap:13px}.privacy-label{font-size:0}.privacy-dot{margin-right:0}.intro{min-height:auto}.intro-copy{padding:45px 0 35px}.intro-graphic{display:none}.intro h1{font-size:clamp(43px,10vw,59px)}.intro p{font-size:13px}.workspace{gap:13px}.work-card{padding:22px 19px}.work-card h2{font-size:24px}.settings{gap:7px}.settings label{min-width:75px;flex:1}.settings select{width:100%;min-width:0}.button-outline{flex-basis:100%}.question-content h3{font-size:25px;margin:22px 0}.rating-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.insights{grid-template-columns:1fr;gap:13px}.insight-main,.data-card{padding:24px 20px}.principles{grid-template-columns:1fr;gap:11px}.principle{padding:22px}.bottom-overline{margin-top:34px}.footer{flex-direction:column;font-size:8px}.stats-grid .stat{padding:15px 11px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Touch-friendly controls and accessible optional skipping. */
+.button-skip{border:1px solid #dcdde8;background:#fff;color:#4b506e;min-height:46px}
+.button-skip:hover{background:#f3f3fb}
+.skip-inline{margin-top:12px;border:0;background:transparent;padding:11px 0;color:#5247a5;text-decoration:underline;text-underline-offset:4px;font-size:12px;font-weight:750}
+.skip-inline:hover{color:#372a93}
+.button:focus-visible,.rating-button:focus-visible,.skip-inline:focus-visible,.reset-link:focus-visible{outline:3px solid #5444b6;outline-offset:3px}
+.session-description,.action-area p,.insight-blurb,.insight-footnote,.stat span,.stat small,.topic-row-header span:last-child,.feedback-note,.principle p,.footer,.intro p{color:#62677b}
+@media(pointer:coarse){.button,.rating-button,select,.reset-link,.skip-inline{min-height:44px}}
+@media(max-width:420px){
+  .action-area{display:flex;flex-direction:column;align-items:stretch}
+  .action-area .button{width:100%}
+  .action-area p{max-width:none}
+  .notice{left:14px;right:14px;bottom:14px;max-width:none}
+}
