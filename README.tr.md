@@ -62,6 +62,16 @@ console.log(getStudySummary([reviewed], now));
 
 Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorithm.md) açıkça anlatılır. Kullanılan kurallar **deneme amaçlı sezgisel kurallardır**; kanıtlanmış kişisel öğrenme tahminleri değildir.
 
+
+### v0.2 — yeni öğrenme içgörüleri (inceleme aşamasında)
+
+- **Konu bazlı analiz:** Her ders/konu için çalışılan, tekrar zamanı gelen ve yeni kartları ayrı sayar. Bilinmeyen başarı oranı `null` kalır.
+- **İsteğe bağlı hata nedeni:** Öğrenci bir `again` tekrarında bilgi eksikliği, kavram karışıklığı, dikkatsizlik veya diğer nedenini **kendisi** seçebilir. Sistem neden tahmin etmez.
+- **Kayıt güvenliği:** Aynı kartın iki kez sayılmasını, imkânsız sayaçları ve tutarsız hata kategorilerini reddeder.
+- **Geriye uyumluluk:** v0.1 kartları okunur; geçmişte belirtilmemiş hata nedenleri bilinmiyor olarak kalır.
+
+Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.
+
 ## Nereye gitmek istiyoruz? / Roadmap
 
 Bunlar **gelecek hedefleri**, bugün tamamlanmış özellikler değil:
