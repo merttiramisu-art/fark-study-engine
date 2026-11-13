@@ -5,14 +5,16 @@
   "type": "module",
   "exports": {
     ".": "./src/index.js",
-    "./portable": "./src/portable.js"
+    "./portable": "./src/portable.js",
+    "./planner": "./src/planner.js"
   },
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "test": "node --test",
-    "demo": "node examples/demo.js"
+    "demo": "node examples/demo.js",
+    "demo:planner": "node examples/session-planning.js"
   },
   "license": "MIT",
   "keywords": [
