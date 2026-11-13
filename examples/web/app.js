@@ -13,6 +13,8 @@ const REASONS = {
 let cards = buildSampleCards();
 let plan = null;
 let position = 0;
+let ratedCount = 0;
+let skippedCount = 0;
 let answerVisible = false;
 let messageTimer;
 
@@ -55,6 +57,8 @@ function planOptions() {
 function rebuildPlan() {
   plan = planStudySession(cards, new Date(), planOptions());
   position = 0;
+  ratedCount = 0;
+  skippedCount = 0;
   answerVisible = false;
   $('mistake-reason').value = '';
   render();
@@ -75,8 +79,9 @@ function progress() {
   $('progress-bar').setAttribute('aria-valuenow', String(completed));
   $('progress-fill').style.width = total ? Math.round(completed / total * 100) + '%' : '0%';
   const deferred = plan?.deferredCount ?? 0;
+  const skipMessage = skippedCount ? ' · ' + skippedCount + ' skipped (still due)' : '';
   $('session-description').textContent = total
-    ? total + ' selected · ' + deferred + ' due card' + (deferred === 1 ? '' : 's') + ' deferred to another session'
+    ? total + ' selected · ' + deferred + ' not selected' + skipMessage
     : 'No eligible cards fit these limits.';
 }
 
@@ -86,11 +91,11 @@ function renderCard() {
   $('question-content').hidden = !hasQuestion;
   $('finished-content').hidden = hasQuestion;
   if (!hasQuestion) {
-    $('finish-heading').textContent = plan.dueCount === 0 ? 'All caught up.' : position > 0 ? 'Session completed.' : 'No cards selected.';
+    $('finish-heading').textContent = plan.dueCount === 0 ? 'All caught up.' : position > 0 ? 'Session finished.' : 'No cards selected.';
     $('finish-description').textContent = plan.dueCount === 0
       ? 'No reviews are due right now. You can import a deck or reset the example.'
       : position > 0
-        ? 'Nice work. Your ratings updated the local demo only. ' + plan.deferredCount + ' eligible card(s) were left for another session.'
+        ? ratedCount + ' rated · ' + skippedCount + ' skipped. Skipped cards remain due. ' + plan.deferredCount + ' other card(s) were not selected. Review history stays in this browser tab only.'
         : 'Your current limits excluded all due cards. Increase the limits and rebuild your plan.';
     return;
   }
@@ -171,12 +176,34 @@ function rate(rating) {
     : {};
   const updated = reviewCard(cards[index], rating, new Date(), options);
   cards[index] = updated;
+  ratedCount++;
   position++;
   answerVisible = false;
   $('mistake-reason').value = '';
   render();
   notify('Saved: ' + rating + ' · next review ' + new Date(updated.dueAt).toLocaleString());
-  if (currentItem()) $('question-text').focus();
+  focusAfterAdvance();
+}
+
+/** Move on without recording a review. The card remains due. */
+function skipCurrentCard() {
+  const item = currentItem();
+  if (!item) return;
+  skippedCount++;
+  position++;
+  answerVisible = false;
+  $('mistake-reason').value = '';
+  render();
+  notify('Skipped ' + item.topic + ' card. No review was recorded; it stays due.');
+  focusAfterAdvance();
+}
+
+function focusAfterAdvance() {
+  if (currentItem()) {
+    $('question-text').focus();
+  } else {
+    $('finish-heading').focus();
+  }
 }
 
 function exportCards() {
@@ -221,6 +248,8 @@ $('settings-form').addEventListener('submit', event => {
   notify('Study plan rebuilt using current review history.');
 });
 $('reveal-button').addEventListener('click', revealAnswer);
+$('skip-button').addEventListener('click', skipCurrentCard);
+$('skip-after-reveal').addEventListener('click', skipCurrentCard);
 document.querySelectorAll('[data-rating]').forEach(button =>
   button.addEventListener('click', () => rate(button.dataset.rating))
 );
