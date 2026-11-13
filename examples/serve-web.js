@@ -35,14 +35,14 @@ export function createDemoServer() {
       res.end('Bad request');
       return;
     }
-    if (pathname === '/') {
-      res.writeHead(302, { ...HEADERS, Location: '/examples/web/' });
-      res.end();
-      return;
-    }
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405, { ...HEADERS, Allow: 'GET, HEAD' });
       res.end('Method not allowed');
+      return;
+    }
+    if (pathname === '/') {
+      res.writeHead(302, { ...HEADERS, Location: '/examples/web/' });
+      res.end();
       return;
     }
     const entry = ROUTES.get(pathname);
