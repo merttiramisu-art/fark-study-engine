@@ -1,0 +1,18 @@
+{
+  "name": "fark-study-engine",
+  "version": "0.1.0",
+  "description": "A tiny, dependency-free, offline-first spaced review engine for learning tools.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "demo": "node examples/demo.js"
+  },
+  "license": "MIT",
+  "keywords": ["learning", "spaced-review", "flashcards", "offline", "education"]
+}
