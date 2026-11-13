@@ -4,7 +4,8 @@
   "description": "A tiny, dependency-free, offline-first spaced review engine for learning tools.",
   "type": "module",
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.js",
+    "./portable": "./src/portable.js"
   },
   "engines": {
     "node": ">=20"
@@ -14,5 +15,11 @@
     "demo": "node examples/demo.js"
   },
   "license": "MIT",
-  "keywords": ["learning", "spaced-review", "flashcards", "offline", "education"]
+  "keywords": [
+    "learning",
+    "spaced-review",
+    "flashcards",
+    "offline",
+    "education"
+  ]
 }
