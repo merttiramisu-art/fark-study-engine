@@ -75,6 +75,7 @@ Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorit
 - **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
 - **Açıklanabilir oturum planı:** Aynı konunun bütün oturumu kaplamasını sınırlayan, çalışma yoğunluğunu konular arasında dağıtan ve ertelenen kartları açıkça sayan planlayıcı. [Kurallar](docs/session-planner.md).
 - **İnteraktif öğrenme laboratuvarı:** Gerçek tekrar motorunu ve çalışma planlayıcısını tarayıcıda deneyebilirsin. Ücretsiz ve çevrimdışı çalışan yerel örnek, gerçek öğrenci verisi içermez. [Çalıştırma rehberi](docs/interactive-lab.md).
+- **Gerçekçi atlama ve mobil kontrol:** Cevaplamadığın kartı doğru saymadan geçebilirsin. 360 ve 393 piksel genişliğinde Chromium testleri ve ekran görüntüleri: [mobil QA](docs/mobile-qa.md).
 
 Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.
 
