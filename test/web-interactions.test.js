@@ -73,11 +73,11 @@ test('skip never grades or reschedules; a rated answer does; finish receives foc
     const firstCard = original.find(card => card.question === firstQuestion);
     assert.ok(firstCard);
     node('skip-button').click();
+    assert.match(node('notice').textContent, /No review was recorded/);
+    assert.match(node('session-description').textContent, /1 skipped/);
+    assert.equal(node('progress-bar').attributes.get('aria-valuenow'), '1');
     const afterSkip = await exportDeck();
     assert.deepEqual(afterSkip, original, 'skipping must not change card data or counters');
-    assert.match(node('session-description').textContent, /1 skipped/);
-    assert.match(node('notice').textContent, /No review was recorded/);
-    assert.equal(node('progress-bar').attributes.get('aria-valuenow'), '1');
 
     const secondQuestion = node('question-text').textContent;
     const secondCard = afterSkip.find(card => card.question === secondQuestion);
