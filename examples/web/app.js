@@ -9,6 +9,8 @@ import {
 import { planStudySession } from '../../src/planner.js';
 import { exportStudyDeck, importStudyDeck } from '../../src/portable.js';
 import { exportStudyCsv, importStudyCsv } from '../../src/csv.js';
+import { exportStudyMarkdown, importStudyMarkdown } from '../../src/markdown.js';
+import { getReviewStrategy, reviewCardWithStrategy } from '../../src/strategies.js';
 
 const $ = id => document.getElementById(id);
 
@@ -17,14 +19,18 @@ const I18N = {
     privacyText: 'Local-only demo',
     eyebrowText: 'INTERACTIVE LAB',
     pageTitleHtml: 'A clearer way<br>to <em>keep learning.</em>',
-    introLead: 'See how the FARK engine turns review history into a balanced study session. Add your own cards, test CSV/JSON portability, and inspect scheduled load—no account, no AI guesswork, no cloud.',
+    introLead: 'See how the FARK engine turns review history into a balanced study session. Compare transparent spacing strategies, add cards or paste Markdown notes, and export cleanly—no account, no AI guesswork, no cloud.',
     overlineWorkspace: 'YOUR STUDY WORKSPACE',
     kickerActive: 'ACTIVE LEARNING',
     sessionHeading: "Today's session",
     labelQuestions: 'Questions',
     labelPerTopic: 'Per topic',
     labelNewCards: 'New cards',
+    labelStrategy: 'Strategy',
     replanBtn: 'Rebuild plan ↻',
+    labelScratchpad: 'Recall scratchpad',
+    scratchpadHint: '(optional · never auto-graded)',
+    scratchpadPlaceholder: 'Type what you remember before revealing...',
     sampleAnswerLabel: 'SAMPLE ANSWER',
     revealBtn: 'Reveal answer ↗',
     skipBtn: 'Skip for now ↷',
@@ -34,14 +40,23 @@ const I18N = {
     ratingTitle: 'HOW WELL DID YOU RECALL IT?',
     feedbackNote: 'Your rating is self-reported, not independently graded.',
     skipInline: 'Skip this card without rating it ↷',
+    shortcutHint: 'Keyboard: Space = Reveal · 1–4 = Rate · S = Skip',
     nextPlanBtn: 'Plan another session ↗',
     kickerAuthor: 'CUSTOM STUDY DECK',
     addCardHeading: 'Add your own card',
-    addCardBlurb: 'Create original study cards in memory to test scheduling, CSV export, and round-robin balancing.',
+    addCardBlurb: 'Create original study cards in memory or bulk-paste Markdown notes (## Topic, - Q :: A) to test scheduling and portability.',
     labelCardTopic: 'Topic',
     labelCardQuestion: 'Question',
     labelCardAnswer: 'Answer',
     addCardSubmit: 'Add card to deck +',
+    bulkPasteSummary: 'Bulk paste Markdown Q :: A notes',
+    bulkImportBtn: 'Append pasted cards +',
+    kickerExplorer: 'DECK EXPLORER',
+    deckManagerHeading: 'Browse & filter cards',
+    labelDeckSearch: 'Filter text',
+    deckSearchPlaceholder: 'Search question or topic...',
+    labelDeckTopic: 'Topic',
+    allTopicsOption: 'All topics',
     kickerSnapshot: 'LIVE SNAPSHOT',
     liveIndicator: '● IN MEMORY',
     insightsHeading: 'The bigger picture.',
@@ -61,10 +76,11 @@ const I18N = {
     insightFootnote: 'These counts are not a measure of true mastery.',
     kickerData: 'YOUR DATA, YOUR CHOICE',
     dataHeading: 'Take it with you.',
-    dataBlurb: 'Download full review history as JSON, share deck content as RFC 4180 CSV, or import a file. Nothing leaves this tab.',
+    dataBlurb: 'Download full review history as JSON, share spreadsheet-safe CSV, export printable Markdown, or import a file. Nothing leaves this tab.',
     exportJsonBtn: 'Export JSON ↗',
     exportCsvBtn: 'Export CSV ↗',
-    importBtn: 'Import JSON / CSV ↑',
+    exportMdBtn: 'Export MD ↗',
+    importBtn: 'Import File ↑',
     resetBtn: '↻ Reset sample data',
     overlineHow: 'HOW IT WORKS',
     p1Title: 'Review what matters.',
@@ -73,6 +89,13 @@ const I18N = {
     p2Body: 'Topic limits and round-robin selection help prevent one subject from taking over.',
     p3Title: 'Stay honest about learning.',
     p3Body: 'FARK reports what the data can support—and keeps unknowns unknown.',
+    strategyNames: {
+      balanced: 'Balanced',
+      gentle: 'Gentle',
+      intensive: 'Intensive'
+    },
+    strategyNote: def =>
+      `${def.label}: again ${def.againMinutes}m · hard ${def.hardHours}h · good boxes ${def.intervalsDays.slice(1).map(d => d + 'd').join(' / ')} (transparent preset, not cognitive truth).`,
     reasons: {
       'new-card': 'New card',
       'scheduled-review': 'Scheduled review',
@@ -103,6 +126,12 @@ const I18N = {
     stageSummary: 'SESSION SUMMARY',
     newCardBadge: 'NEW CARD',
     dueReviewBadge: 'DUE REVIEW',
+    deckCount: n => `${n} ${n === 1 ? 'card' : 'cards'}`,
+    deckStatusNew: 'New',
+    deckStatusDue: 'Due now',
+    deckStatusScheduled: 'Scheduled',
+    deckRemoveLabel: 'Delete',
+    deckNoMatches: 'No cards match the current filter.',
     sessionDesc: (total, deferred, skipped) =>
       total
         ? `${total} selected · ${deferred} not selected${skipped ? ` · ${skipped} skipped (still due)` : ''}`
@@ -122,11 +151,16 @@ const I18N = {
     noticeSkip: topic => `Skipped ${topic} card. No review was recorded; it stays due.`,
     noticeSaved: (rating, dueStr) => `Saved: ${rating} · next review ${dueStr}`,
     noticePlanRebuilt: 'Study plan rebuilt using current review history.',
+    noticeStrategyChanged: label => `Spacing strategy switched to ${label}.`,
     noticeReset: 'Sample data reset. Your previous in-memory changes were cleared.',
     noticeCardAdded: topic => `Added new ${topic} card to the deck and rebuilt plan.`,
     noticeCardError: msg => `Could not add card: ${msg}`,
+    noticeBulkAdded: count => `Appended ${count} card(s) from pasted notes and rebuilt plan.`,
+    noticeBulkError: msg => `Could not parse pasted notes: ${msg}`,
+    noticeCardDeleted: topic => `Removed card from ${topic} and rebuilt plan.`,
     noticeExportJson: 'Deck exported as plain-text JSON. Keep it private.',
     noticeExportCsv: 'Deck content exported as RFC 4180 CSV (formula-safe).',
+    noticeExportMd: 'Deck exported as a Markdown study sheet.',
     noticeExportFail: msg => `Export failed: ${msg}`,
     noticeFileTooLarge: 'File too large. Choose a smaller deck.',
     noticeImported: (count, fmt) => `Imported ${count} card(s) from ${fmt} locally. Nothing was uploaded.`,
@@ -136,14 +170,18 @@ const I18N = {
     privacyText: 'Yalnızca yerel demo',
     eyebrowText: 'İNTERAKTİF LABORATUVAR',
     pageTitleHtml: 'Öğrenmeyi sürdürmenin<br><em>daha net</em> yolu.',
-    introLead: 'FARK motorunun tekrar geçmişini nasıl dengeli bir çalışma oturumuna dönüştürdüğünü görün. Kendi kartınızı ekleyin, CSV/JSON taşıyın ve 7 günlük yükü inceleyin—hesap veya bulut yok.',
+    introLead: 'FARK motorunun tekrar geçmişini nasıl dengeli bir çalışma oturumuna dönüştürdüğünü görün. Şeffaf aralık stratejilerini karşılaştırın, kart ekleyin veya Markdown notları yapıştırın—hesap veya bulut yok.',
     overlineWorkspace: 'ÇALIŞMA ALANINIZ',
     kickerActive: 'AKTİF ÇALIŞMA',
     sessionHeading: 'Bugünkü oturum',
     labelQuestions: 'Soru sayısı',
     labelPerTopic: 'Konu başı',
     labelNewCards: 'Yeni kart',
+    labelStrategy: 'Strateji',
     replanBtn: 'Planı yenile ↻',
+    labelScratchpad: 'Hatırlama notu',
+    scratchpadHint: '(isteğe bağlı · otomatik puanlanmaz)',
+    scratchpadPlaceholder: 'Yanıtı görmeden önce hatırladığını kısaca yaz...',
     sampleAnswerLabel: 'ÖRNEK YANIT',
     revealBtn: 'Yanıtı göster ↗',
     skipBtn: 'Şimdilik atla ↷',
@@ -153,14 +191,23 @@ const I18N = {
     ratingTitle: 'NE KADAR İYİ HATIRLADIN?',
     feedbackNote: 'Puanlama öz-bildirime dayanır; sistem yanıtı otomatik notlandırmaz.',
     skipInline: 'Bu kartı puanlamadan atla ↷',
+    shortcutHint: 'Klavye: Boşluk = Göster · 1–4 = Puanla · S = Atla',
     nextPlanBtn: 'Yeni oturum planla ↗',
     kickerAuthor: 'KİŞİSEL KART DESTESİ',
     addCardHeading: 'Kendi kartını ekle',
-    addCardBlurb: 'Tekrar zamanlamasını, CSV dışa aktarmayı ve konu dengesini denemek için belleğe yeni kartlar ekle.',
+    addCardBlurb: 'Zamanlamayı ve dışa aktarmayı denemek için belleğe yeni kart ekle ya da toplu Markdown (## Konu, - Soru :: Yanıt) yapıştır.',
     labelCardTopic: 'Konu',
     labelCardQuestion: 'Soru',
     labelCardAnswer: 'Yanıt',
     addCardSubmit: 'Desteye kart ekle +',
+    bulkPasteSummary: 'Toplu Markdown Q :: A notu yapıştır',
+    bulkImportBtn: 'Yapıştırılan kartları ekle +',
+    kickerExplorer: 'DESTE GEZGİNİ',
+    deckManagerHeading: 'Kartları ara ve yönet',
+    labelDeckSearch: 'Metin filtresi',
+    deckSearchPlaceholder: 'Soru veya konu ara...',
+    labelDeckTopic: 'Konu',
+    allTopicsOption: 'Tüm konular',
     kickerSnapshot: 'CANLI ÖZET',
     liveIndicator: '● BELLEKTE',
     insightsHeading: 'Genel görünüm.',
@@ -180,10 +227,11 @@ const I18N = {
     insightFootnote: 'Bu sayılar kesin bilgi düzeyini veya ustalığı ölçmez.',
     kickerData: 'VERİN SENİN KONTROLÜNDE',
     dataHeading: 'Dışa veya içe aktar.',
-    dataBlurb: 'Tam tekrar geçmişini JSON, kart içeriklerini RFC 4180 CSV olarak indir veya dosya yükle. Veriler bu sekmeden dışarı çıkmaz.',
+    dataBlurb: 'Tam tekrar geçmişini JSON, formül korumalı CSV veya yazdırılabilir Markdown olarak indir ya da dosya yükle. Veriler bu sekmeden çıkmaz.',
     exportJsonBtn: 'JSON İndir ↗',
     exportCsvBtn: 'CSV İndir ↗',
-    importBtn: 'JSON / CSV Yükle ↑',
+    exportMdBtn: 'MD İndir ↗',
+    importBtn: 'Dosya Yükle ↑',
     resetBtn: '↻ Örnek veriyi sıfırla',
     overlineHow: 'NASIL ÇALIŞIR?',
     p1Title: 'Önemli olanı tekrar et.',
@@ -192,6 +240,13 @@ const I18N = {
     p2Body: 'Konu başı sınırlar ve sıralı seçim tek bir konunun oturumu kaplamasını önler.',
     p3Title: 'Ölçümde dürüst kal.',
     p3Body: 'FARK yalnızca verinin desteklediğini raporlar; bilinmeyeni bilinmiyor bırakır.',
+    strategyNames: {
+      balanced: 'Dengeli',
+      gentle: 'Yumuşak',
+      intensive: 'Yoğun'
+    },
+    strategyNote: def =>
+      `${def.label}: tekrar ${def.againMinutes}dk · zor ${def.hardHours}sa · kutular ${def.intervalsDays.slice(1).map(d => d + 'g').join(' / ')} (şeffaf ön ayar, kesin bellek kuralı değil).`,
     reasons: {
       'new-card': 'Yeni kart',
       'scheduled-review': 'Planlı tekrar',
@@ -222,6 +277,12 @@ const I18N = {
     stageSummary: 'OTURUM ÖZETİ',
     newCardBadge: 'YENİ KART',
     dueReviewBadge: 'TEKRAR ZAMANI',
+    deckCount: n => `${n} kart`,
+    deckStatusNew: 'Yeni',
+    deckStatusDue: 'Şimdi',
+    deckStatusScheduled: 'Planlı',
+    deckRemoveLabel: 'Sil',
+    deckNoMatches: 'Filtreyle eşleşen kart yok.',
     sessionDesc: (total, deferred, skipped) =>
       total
         ? `${total} seçildi · ${deferred} ertelendi${skipped ? ` · ${skipped} atlandı (hâlâ bekliyor)` : ''}`
@@ -241,11 +302,16 @@ const I18N = {
     noticeSkip: topic => `${topic} kartı atlandı. Tekrar kaydedilmedi; sırada kalır.`,
     noticeSaved: (rating, dueStr) => `Kaydedildi: ${rating} · sonraki tekrar ${dueStr}`,
     noticePlanRebuilt: 'Çalışma planı güncel tekrar geçmişine göre yenilendi.',
+    noticeStrategyChanged: label => `Aralık stratejisi değişti: ${label}.`,
     noticeReset: 'Örnek veriler sıfırlandı. Bellekteki değişiklikler temizlendi.',
     noticeCardAdded: topic => `${topic} konusuna yeni kart eklendi ve plan güncellendi.`,
     noticeCardError: msg => `Kart eklenemedi: ${msg}`,
+    noticeBulkAdded: count => `Yapıştırılan notlardan ${count} kart eklendi ve plan güncellendi.`,
+    noticeBulkError: msg => `Notlar ayrıştırılamadı: ${msg}`,
+    noticeCardDeleted: topic => `${topic} konusundan bir kart silindi ve plan güncellendi.`,
     noticeExportJson: 'Deste düz metin JSON olarak indirildi. Gizli tutun.',
     noticeExportCsv: 'Kart içerikleri RFC 4180 CSV olarak indirildi (formül korumalı).',
+    noticeExportMd: 'Deste Markdown çalışma sayfası olarak indirildi.',
     noticeExportFail: msg => `Dışa aktarma başarısız: ${msg}`,
     noticeFileTooLarge: 'Dosya çok büyük. Daha küçük bir deste seçin.',
     noticeImported: (count, fmt) => `${fmt} dosyasından ${count} kart yerel olarak içe aktarıldı. Sunucuya yükleme yapılmadı.`,
@@ -264,6 +330,7 @@ let customCounter = 1;
 let messageTimer;
 
 const t = () => I18N[lang];
+const activeStrategyId = () => $('strategy-select').value || 'balanced';
 
 function hoursAgo(hours, from) {
   return new Date(from.getTime() - hours * 60 * 60 * 1000).toISOString();
@@ -301,6 +368,11 @@ function setRatingButtonCopy(id, title, sub) {
   el.append(small);
 }
 
+function updateStrategyNote() {
+  const def = getReviewStrategy(activeStrategyId());
+  $('strategy-note').textContent = t().strategyNote(def);
+}
+
 function applyLanguage() {
   const copy = t();
   document.documentElement?.setAttribute('lang', lang);
@@ -315,7 +387,11 @@ function applyLanguage() {
   $('label-questions').textContent = copy.labelQuestions;
   $('label-per-topic').textContent = copy.labelPerTopic;
   $('label-new-cards').textContent = copy.labelNewCards;
+  $('label-strategy').textContent = copy.labelStrategy;
   $('replan-button').textContent = copy.replanBtn;
+  $('label-scratchpad').textContent = copy.labelScratchpad;
+  $('scratchpad-hint').textContent = copy.scratchpadHint;
+  $('self-answer-input').placeholder = copy.scratchpadPlaceholder;
   $('sample-answer-label').textContent = copy.sampleAnswerLabel;
   $('reveal-button').textContent = copy.revealBtn;
   $('skip-button').textContent = copy.skipBtn;
@@ -325,6 +401,7 @@ function applyLanguage() {
   $('rating-title').textContent = copy.ratingTitle;
   $('feedback-note').textContent = copy.feedbackNote;
   $('skip-after-reveal').textContent = copy.skipInline;
+  $('shortcut-hint').textContent = copy.shortcutHint;
   $('next-plan-button').textContent = copy.nextPlanBtn;
   $('kicker-author').textContent = copy.kickerAuthor;
   $('add-card-heading').textContent = copy.addCardHeading;
@@ -333,6 +410,13 @@ function applyLanguage() {
   $('label-card-question').textContent = copy.labelCardQuestion;
   $('label-card-answer').textContent = copy.labelCardAnswer;
   $('add-card-submit').textContent = copy.addCardSubmit;
+  $('bulk-paste-summary').textContent = copy.bulkPasteSummary;
+  $('bulk-import-btn').textContent = copy.bulkImportBtn;
+  $('kicker-explorer').textContent = copy.kickerExplorer;
+  $('deck-manager-heading').textContent = copy.deckManagerHeading;
+  $('label-deck-search').textContent = copy.labelDeckSearch;
+  $('deck-search').placeholder = copy.deckSearchPlaceholder;
+  $('label-deck-topic').textContent = copy.labelDeckTopic;
   $('kicker-snapshot').textContent = copy.kickerSnapshot;
   $('live-indicator').textContent = copy.liveIndicator;
   $('insights-heading').textContent = copy.insightsHeading;
@@ -355,6 +439,7 @@ function applyLanguage() {
   $('data-blurb').textContent = copy.dataBlurb;
   $('export-button').textContent = copy.exportJsonBtn;
   $('export-csv-button').textContent = copy.exportCsvBtn;
+  $('export-md-button').textContent = copy.exportMdBtn;
   $('import-trigger').textContent = copy.importBtn;
   $('reset-button').textContent = copy.resetBtn;
   $('overline-how').textContent = copy.overlineHow;
@@ -376,6 +461,15 @@ function applyLanguage() {
       }
     }
   }
+  const stratSelect = $('strategy-select');
+  if (stratSelect.options) {
+    for (const opt of stratSelect.options) {
+      if (Object.hasOwn(copy.strategyNames, opt.value)) {
+        opt.textContent = copy.strategyNames[opt.value];
+      }
+    }
+  }
+  updateStrategyNote();
 }
 
 function planOptions() {
@@ -393,6 +487,7 @@ function rebuildPlan() {
   skippedCount = 0;
   answerVisible = false;
   $('mistake-reason').value = '';
+  $('self-answer-input').value = '';
   render();
 }
 
@@ -537,10 +632,96 @@ function renderInsights() {
   renderForecastAndMistakes(now);
 }
 
+function cardStatusLabel(card, nowMs, copy) {
+  if (card.reviews === 0) return copy.deckStatusNew;
+  return Date.parse(card.dueAt) <= nowMs ? copy.deckStatusDue : copy.deckStatusScheduled;
+}
+
+function renderDeckManager() {
+  const copy = t();
+  const nowMs = Date.now();
+  const topicSelect = $('deck-topic-filter');
+  const prevTopic = topicSelect.value;
+  const uniqueTopics = [...new Set(cards.map(c => c.topic))].sort((a, b) => a.localeCompare(b));
+
+  const allOpt = document.createElement('option');
+  allOpt.value = '';
+  allOpt.textContent = copy.allTopicsOption;
+  const opts = [allOpt, ...uniqueTopics.map(topic => {
+    const opt = document.createElement('option');
+    opt.value = topic;
+    opt.textContent = topic;
+    return opt;
+  })];
+  topicSelect.replaceChildren(...opts);
+  topicSelect.value = uniqueTopics.includes(prevTopic) ? prevTopic : '';
+
+  const query = ($('deck-search').value || '').trim().toLowerCase();
+  const topicFilter = topicSelect.value;
+  const filtered = cards.filter(card => {
+    if (topicFilter && card.topic !== topicFilter) return false;
+    if (!query) return true;
+    return (
+      card.question.toLowerCase().includes(query) ||
+      card.answer.toLowerCase().includes(query) ||
+      card.topic.toLowerCase().includes(query)
+    );
+  });
+
+  $('deck-count-pill').textContent = copy.deckCount(cards.length);
+  const container = $('deck-list');
+  container.replaceChildren();
+  if (!filtered.length) {
+    const empty = document.createElement('p');
+    empty.className = 'insight-subnote';
+    empty.textContent = copy.deckNoMatches;
+    container.append(empty);
+    return;
+  }
+
+  for (const card of filtered) {
+    const item = document.createElement('div');
+    item.className = 'deck-item';
+    const main = document.createElement('div');
+    main.className = 'deck-item-main';
+    const meta = document.createElement('div');
+    meta.className = 'deck-item-meta';
+    const topicSpan = document.createElement('span');
+    topicSpan.textContent = card.topic;
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 'deck-item-status';
+    statusSpan.textContent = `${cardStatusLabel(card, nowMs, copy)} · box ${card.box} · ${card.reviews}r`;
+    meta.append(topicSpan, statusSpan);
+    const q = document.createElement('div');
+    q.className = 'deck-item-q';
+    q.textContent = card.question;
+    main.append(meta, q);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'deck-delete-btn';
+    del.textContent = copy.deckRemoveLabel;
+    del.setAttribute('aria-label', `${copy.deckRemoveLabel}: ${card.question}`);
+    del.addEventListener('click', () => removeCardById(card.id));
+
+    item.append(main, del);
+    container.append(item);
+  }
+}
+
+function removeCardById(id) {
+  const target = cards.find(c => c.id === id);
+  if (!target) return;
+  cards = cards.filter(c => c.id !== id);
+  rebuildPlan();
+  notify(t().noticeCardDeleted(target.topic));
+}
+
 function render() {
   progress();
   renderCard();
   renderInsights();
+  renderDeckManager();
 }
 
 function revealAnswer() {
@@ -555,15 +736,17 @@ function rate(rating) {
   if (!item || !answerVisible) return;
   const index = cards.findIndex(card => card.id === item.id);
   if (index < 0) return;
-  const options = rating === 'again' && $('mistake-reason').value
-    ? { reason: $('mistake-reason').value }
-    : {};
-  const updated = reviewCard(cards[index], rating, new Date(), options);
+  const options = { strategy: activeStrategyId() };
+  if (rating === 'again' && $('mistake-reason').value) {
+    options.reason = $('mistake-reason').value;
+  }
+  const updated = reviewCardWithStrategy(cards[index], rating, new Date(), options);
   cards[index] = updated;
   ratedCount++;
   position++;
   answerVisible = false;
   $('mistake-reason').value = '';
+  $('self-answer-input').value = '';
   render();
   notify(t().noticeSaved(rating, new Date(updated.dueAt).toLocaleString()));
   focusAfterAdvance();
@@ -577,6 +760,7 @@ function skipCurrentCard() {
   position++;
   answerVisible = false;
   $('mistake-reason').value = '';
+  $('self-answer-input').value = '';
   render();
   notify(t().noticeSkip(item.topic));
   focusAfterAdvance();
@@ -618,6 +802,30 @@ function addCustomCard(event) {
   }
 }
 
+function appendBulkNotes() {
+  try {
+    const raw = $('bulk-input').value;
+    const parsed = importStudyMarkdown(raw, { idPrefix: 'paste-' + customCounter });
+    const existing = new Set(cards.map(card => card.id));
+    const unique = parsed.map(card => {
+      if (!existing.has(card.id)) {
+        existing.add(card.id);
+        return card;
+      }
+      const freshId = nextCustomId();
+      existing.add(freshId);
+      return { ...card, id: freshId };
+    });
+    customCounter += unique.length;
+    cards = [...cards, ...unique];
+    $('bulk-input').value = '';
+    rebuildPlan();
+    notify(t().noticeBulkAdded(unique.length));
+  } catch (error) {
+    notify(t().noticeBulkError(error.message));
+  }
+}
+
 function downloadText(filename, content, mimeType) {
   const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
   const link = document.createElement('a');
@@ -647,6 +855,15 @@ function exportCardsCsv() {
   }
 }
 
+function exportCardsMarkdown() {
+  try {
+    downloadText('fark-study-sheet.md', exportStudyMarkdown(cards, { includeStats: true }), 'text/markdown;charset=utf-8');
+    notify(t().noticeExportMd);
+  } catch (error) {
+    notify(t().noticeExportFail(error.message));
+  }
+}
+
 async function importCards(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
@@ -657,13 +874,53 @@ async function importCards(event) {
   }
   try {
     const text = await file.text();
-    const isCsv = file.name?.toLowerCase().endsWith('.csv') || file.type?.includes('csv');
-    const restored = isCsv ? importStudyCsv(text) : importStudyDeck(text);
+    const name = (file.name || '').toLowerCase();
+    const type = file.type || '';
+    const isCsv = name.endsWith('.csv') || type.includes('csv');
+    const isMd = name.endsWith('.md') || name.endsWith('.markdown') || type.includes('markdown');
+    let restored;
+    let label;
+    if (isCsv) {
+      restored = importStudyCsv(text);
+      label = 'CSV';
+    } else if (isMd) {
+      restored = importStudyMarkdown(text);
+      label = 'Markdown';
+    } else {
+      restored = importStudyDeck(text);
+      label = 'JSON';
+    }
     cards = restored;
     rebuildPlan();
-    notify(t().noticeImported(cards.length, isCsv ? 'CSV' : 'JSON'));
+    notify(t().noticeImported(cards.length, label));
   } catch (error) {
     notify(t().noticeImportFail(error.message));
+  }
+}
+
+function handleKeyboardShortcut(event) {
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  const tag = event.target?.tagName?.toUpperCase?.() || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  const item = currentItem();
+  if (!item) return;
+
+  if (event.key === ' ' && !answerVisible && tag !== 'BUTTON') {
+    event.preventDefault();
+    revealAnswer();
+    return;
+  }
+  if ((event.key === 's' || event.key === 'S') && tag !== 'BUTTON') {
+    event.preventDefault();
+    skipCurrentCard();
+    return;
+  }
+  if (answerVisible) {
+    const map = { '1': 'again', '2': 'hard', '3': 'good', '4': 'easy' };
+    if (Object.hasOwn(map, event.key)) {
+      event.preventDefault();
+      rate(map[event.key]);
+    }
   }
 }
 
@@ -672,12 +929,19 @@ $('lang-toggle').addEventListener('click', () => {
   applyLanguage();
   render();
 });
+$('strategy-select').addEventListener('change', () => {
+  updateStrategyNote();
+  notify(t().noticeStrategyChanged(t().strategyNames[activeStrategyId()] ?? activeStrategyId()));
+});
 $('settings-form').addEventListener('submit', event => {
   event.preventDefault();
   rebuildPlan();
   notify(t().noticePlanRebuilt);
 });
 $('add-card-form').addEventListener('submit', addCustomCard);
+$('bulk-import-btn').addEventListener('click', appendBulkNotes);
+$('deck-search').addEventListener('input', renderDeckManager);
+$('deck-topic-filter').addEventListener('change', renderDeckManager);
 $('reveal-button').addEventListener('click', revealAnswer);
 $('skip-button').addEventListener('click', skipCurrentCard);
 $('skip-after-reveal').addEventListener('click', skipCurrentCard);
@@ -692,8 +956,10 @@ $('reset-button').addEventListener('click', () => {
 });
 $('export-button').addEventListener('click', exportCardsJson);
 $('export-csv-button').addEventListener('click', exportCardsCsv);
+$('export-md-button').addEventListener('click', exportCardsMarkdown);
 $('import-trigger').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', importCards);
+document.addEventListener?.('keydown', handleKeyboardShortcut);
 
 applyLanguage();
 rebuildPlan();

@@ -139,7 +139,8 @@ async function run() {
 
       const metrics = await devtools.eval(`(() => {
         const ids = ['reveal-button','skip-button','session-limit','topic-limit','new-limit',
-                     'export-button','export-csv-button','import-trigger','lang-toggle','add-card-submit'];
+                     'strategy-select','deck-search','deck-topic-filter',
+                     'export-button','export-csv-button','export-md-button','import-trigger','lang-toggle','add-card-submit'];
         return {
           viewport: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,

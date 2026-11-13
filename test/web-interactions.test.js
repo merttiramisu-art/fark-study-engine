@@ -117,6 +117,23 @@ test('skip never grades or reschedules; a rated answer does; finish receives foc
     assert.match(node('add-card-heading').textContent, /Kendi kartını ekle/);
     node('lang-toggle').click();
     assert.equal(node('lang-toggle').textContent, 'TR');
+
+    node('strategy-select').value = 'intensive';
+    node('reveal-button').click();
+    node('rating-good').click();
+    const afterIntensive = await exportDeck();
+    const reviewed = afterIntensive.find(c => c.lastReviewedAt && Date.parse(c.dueAt) - Date.parse(c.lastReviewedAt) === 12 * 3600 * 1000);
+    assert.ok(reviewed, 'intensive strategy box-1 good should schedule 12h interval');
+
+    node('bulk-input').value = '## Astronomy\n- Nearest star to Earth? :: Sun\n- Planet with rings? :: Saturn';
+    node('bulk-import-btn').click();
+    const afterBulk = await exportDeck();
+    assert.equal(afterBulk.length, 12);
+
+    node('export-md-button').click();
+    const mdText = await exportedBlob.text();
+    assert.match(mdText, /^# FARK Study Sheet/);
+    assert.match(mdText, /## Astronomy/);
   } finally {
     globalThis.document = previousDocument;
     URL.createObjectURL = originalCreateObjectURL;

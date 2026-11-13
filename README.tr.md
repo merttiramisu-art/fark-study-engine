@@ -13,7 +13,7 @@ Bir sınav hazırlık deneyimi geliştirirken kendimize sorduğumuz basit bir so
 
 FARK'ın uzun vadeli hedefi; şeffaf tekrar planlamasını, hata analizini ve kişiye uyarlanabilen çalışma deneyimlerini herkesin geliştirebileceği küçük, bağımsız yazılım bileşenleriyle mümkün kılmak. Yalnızca tek bir sınav için değil; farklı dersler, sınavlar ve kendi kendine öğrenme süreçleri için.
 
-**Bu bir başlangıç.** **v0.3.0**, bu büyük fikrin küçük ve bağımsız teknik çekirdeğidir; tamamlanmış bir yapay zekâ öğretmeni, uyarlanabilir öğrenme sistemi veya sınav platformu değildir.
+**Bu bir başlangıç.** **v0.4.0**, bu büyük fikrin küçük ve bağımsız teknik çekirdeğidir; tamamlanmış bir yapay zekâ öğretmeni, uyarlanabilir öğrenme sistemi veya sınav platformu değildir.
 
 > **Canlı İnteraktif Laboratuvar (yalnızca tarayıcıda, sunucusuz):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
@@ -77,9 +77,9 @@ Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorit
 - **Geriye uyumluluk:** v0.1 kartları okunur; geçmişte belirtilmemiş hata nedenleri bilinmiyor olarak kalır.
 
 - **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
-- **CSV içe/dışa aktarma (`./csv`) ve CLI (`fark`):** Sıfır bağımlılıklı RFC 4180 CSV desteği (`topic,question,answer` veya `id`), gelecek tekrar yükü tahmini (`getReviewForecast`), TypeScript tip tanımları (`types/*.d.ts`) ve `node bin/fark.js` terminal aracı. [Ayrıntılar](docs/csv-and-cli.md).
+- **CSV / Markdown aktarımı ve strateji karşılaştırması (`./csv`, `./markdown`, `./strategies`):** Sıfır bağımlılıklı RFC 4180 CSV ve Markdown çalışma sayfası (`exportStudyMarkdown` / `importStudyMarkdown`) desteği, şeffaf aralık stratejilerini (`balanced`, `gentle`, `intensive`) karşılaştıran `compareStrategies`, gelecek tekrar yükü tahmini (`getReviewForecast`), TypeScript tip tanımları (`types/*.d.ts`) ve etkileşimli `fark study` dahil terminal CLI (`node bin/fark.js --help`). [Strateji ve Markdown](docs/strategies-and-markdown.md) · [CSV ve CLI](docs/csv-and-cli.md).
 - **Açıklanabilir oturum planı:** Aynı konunun bütün oturumu kaplamasını sınırlayan, çalışma yoğunluğunu konular arasında dağıtan ve ertelenen kartları açıkça sayan planlayıcı. [Kurallar](docs/session-planner.md).
-- **İnteraktif öğrenme laboratuvarı:** Gerçek tekrar motorunu ve çalışma planlayıcısını tarayıcıda deneyebilirsin. Ücretsiz ve çevrimdışı çalışan yerel örnek, gerçek öğrenci verisi içermez. [Çalıştırma rehberi](docs/interactive-lab.md).
+- **İnteraktif öğrenme laboratuvarı (v0.4):** Strateji seçici, otomatik puanlanmayan hatırlama notu kutusu, kart arama/silme, toplu Markdown `Q :: A` yapıştırma, klavye kısayolları (`Space`, `1–4`, `S`), JSON/CSV/Markdown dışa-içe aktarma ve TR/EN dil değiştirici ile gerçek motoru tarayıcıda deneyimleyin. [Çalıştırma rehberi](docs/interactive-lab.md).
 - **Gerçekçi atlama ve mobil kontrol:** Cevaplamadığın kartı doğru saymadan geçebilirsin. 360 ve 393 piksel genişliğinde Chromium testleri ve ekran görüntüleri: [mobil QA](docs/mobile-qa.md).
 
 Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.

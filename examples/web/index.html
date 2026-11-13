@@ -26,9 +26,9 @@
     <main>
       <section class="intro" aria-labelledby="page-title">
         <div class="intro-copy">
-          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="eyebrow-text">INTERACTIVE LAB</span> <span class="version">V0.3</span></div>
+          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="eyebrow-text">INTERACTIVE LAB</span> <span class="version">V0.4</span></div>
           <h1 id="page-title">A clearer way<br>to <em>keep learning.</em></h1>
-          <p id="intro-lead">See how the FARK engine turns review history into a balanced study session. Add your own cards, test CSV/JSON portability, and inspect scheduled load—no account, no AI guesswork, no cloud.</p>
+          <p id="intro-lead">See how the FARK engine turns review history into a balanced study session. Compare transparent spacing strategies, add cards or paste Markdown notes, and export cleanly—no account, no AI guesswork, no cloud.</p>
         </div>
         <div class="intro-graphic" aria-hidden="true">
           <div class="orbit orbit-one"></div>
@@ -52,8 +52,10 @@
               <label for="session-limit"><span id="label-questions">Questions</span> <select id="session-limit"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="12">12</option></select></label>
               <label for="topic-limit"><span id="label-per-topic">Per topic</span> <select id="topic-limit"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option></select></label>
               <label for="new-limit"><span id="label-new-cards">New cards</span> <select id="new-limit"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="4">4</option></select></label>
+              <label for="strategy-select"><span id="label-strategy">Strategy</span> <select id="strategy-select"><option value="balanced" selected>Balanced</option><option value="gentle">Gentle</option><option value="intensive">Intensive</option></select></label>
               <button id="replan-button" type="submit" class="button button-outline">Rebuild plan <span aria-hidden="true">↻</span></button>
             </form>
+            <p id="strategy-note" class="strategy-note"></p>
 
             <div class="session-info">
               <div><span id="session-stage" class="tiny-label">QUESTION 01 / 06</span><div id="session-description" class="session-description">A balanced session, based on your example review history.</div></div>
@@ -65,6 +67,12 @@
               <div class="question-header"><span id="question-topic" class="topic-tag">Mathematics</span><span id="question-kind" class="status-tag">DUE REVIEW</span></div>
               <h3 id="question-text" tabindex="-1">Ready for your first question?</h3>
               <div id="question-reasons" class="reason-row" aria-label="Why this card was selected"></div>
+
+              <div class="scratchpad-wrap">
+                <label for="self-answer-input" class="scratchpad-label"><span id="label-scratchpad">Recall scratchpad</span> <span id="scratchpad-hint">(optional · never auto-graded)</span></label>
+                <textarea id="self-answer-input" rows="2" maxlength="300" placeholder="Type what you remember before revealing..."></textarea>
+              </div>
+
               <div id="answer-panel" class="answer-panel" hidden>
                 <span id="sample-answer-label" class="tiny-label">SAMPLE ANSWER</span>
                 <p id="answer-text"></p>
@@ -93,6 +101,7 @@
                 <p id="feedback-note" class="feedback-note">Your rating is self-reported, not independently graded.</p>
                 <button id="skip-after-reveal" class="skip-inline" type="button">Skip this card without rating it <span aria-hidden="true">↷</span></button>
               </div>
+              <p id="shortcut-hint" class="shortcut-hint">Keyboard: Space = Reveal · 1–4 = Rate · S = Skip</p>
             </div>
 
             <div id="finished-content" class="finished-content" hidden>
@@ -108,13 +117,32 @@
               <div><span id="kicker-author" class="kicker">CUSTOM STUDY DECK</span><h2 id="add-card-heading">Add your own card</h2></div>
               <span class="work-icon" aria-hidden="true">+</span>
             </div>
-            <p id="add-card-blurb" class="add-card-blurb">Create original study cards in memory to test scheduling, CSV export, and round-robin balancing.</p>
+            <p id="add-card-blurb" class="add-card-blurb">Create original study cards in memory or bulk-paste Markdown notes (`## Topic`, `- Q :: A`) to test scheduling and portability.</p>
             <form id="add-card-form" class="add-card-form">
               <label for="card-topic"><span id="label-card-topic">Topic</span><input id="card-topic" type="text" placeholder="e.g. Physics" maxlength="80"></label>
               <label for="card-question"><span id="label-card-question">Question</span><input id="card-question" type="text" placeholder="e.g. What is the SI unit of force?" maxlength="300"></label>
               <label for="card-answer"><span id="label-card-answer">Answer</span><input id="card-answer" type="text" placeholder="e.g. Newton (N)" maxlength="300"></label>
               <button id="add-card-submit" type="submit" class="button button-primary add-card-btn">Add card to deck +</button>
             </form>
+            <details id="bulk-paste-details" class="bulk-paste-details">
+              <summary id="bulk-paste-summary">Bulk paste Markdown Q :: A notes</summary>
+              <div class="bulk-paste-body">
+                <textarea id="bulk-input" rows="4" maxlength="50000" placeholder="## Physics&#10;- SI unit of force? :: Newton (N)&#10;- F = ma law? :: Newton's second law"></textarea>
+                <button id="bulk-import-btn" type="button" class="button button-outline">Append pasted cards +</button>
+              </div>
+            </details>
+          </section>
+
+          <section id="deck-manager" class="work-card deck-manager-card" aria-labelledby="deck-manager-heading">
+            <div class="section-title-row">
+              <div><span id="kicker-explorer" class="kicker">DECK EXPLORER</span><h2 id="deck-manager-heading">Browse &amp; filter cards</h2></div>
+              <span id="deck-count-pill" class="count-pill">9 cards</span>
+            </div>
+            <div class="deck-filter-row">
+              <label for="deck-search"><span id="label-deck-search">Filter text</span><input id="deck-search" type="search" placeholder="Search question or topic..."></label>
+              <label for="deck-topic-filter"><span id="label-deck-topic">Topic</span><select id="deck-topic-filter"><option value="">All topics</option></select></label>
+            </div>
+            <div id="deck-list" class="deck-list" aria-live="polite"></div>
           </section>
         </div>
 
@@ -143,12 +171,13 @@
           </div>
 
           <div class="data-card">
-            <div><span id="kicker-data" class="kicker">YOUR DATA, YOUR CHOICE</span><h3 id="data-heading">Take it with you.</h3><p id="data-blurb">Download full review history as JSON, share deck content as RFC 4180 CSV, or import a file. Nothing leaves this tab.</p></div>
+            <div><span id="kicker-data" class="kicker">YOUR DATA, YOUR CHOICE</span><h3 id="data-heading">Take it with you.</h3><p id="data-blurb">Download full review history as JSON, share spreadsheet-safe CSV, export printable Markdown, or import a file. Nothing leaves this tab.</p></div>
             <div class="data-actions">
               <button type="button" id="export-button" class="button button-dark">Export JSON <span aria-hidden="true">↗</span></button>
               <button type="button" id="export-csv-button" class="button button-dark">Export CSV <span aria-hidden="true">↗</span></button>
-              <button type="button" id="import-trigger" class="button button-light">Import JSON / CSV <span aria-hidden="true">↑</span></button>
-              <input type="file" id="import-file" accept=".json,.csv,application/json,text/csv" hidden>
+              <button type="button" id="export-md-button" class="button button-dark">Export MD <span aria-hidden="true">↗</span></button>
+              <button type="button" id="import-trigger" class="button button-light">Import File ↑</button>
+              <input type="file" id="import-file" accept=".json,.csv,.md,.markdown,application/json,text/csv,text/markdown,text/plain" hidden>
             </div>
             <button type="button" id="reset-button" class="reset-link">↻ Reset sample data</button>
           </div>
