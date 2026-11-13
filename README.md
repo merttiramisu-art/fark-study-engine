@@ -13,7 +13,7 @@ It started with a question while exploring a broader exam-preparation platform:
 
 We want to explore transparent review scheduling, meaningful mistake analysis, and eventually adaptive study tools that educators, students, and developers can understand, test, and improve together. The idea is not limited to one exam, subject, or country.
 
-**We're just getting started.** The public **v0.1.0** is a small working technical foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
+**We're just getting started.** The proposed **v0.2.0** expands a small working technical foundation—not a finished AI tutor, scientifically validated personalization model, or complete exam-preparation product.
 
 ## What works today
 
@@ -23,9 +23,16 @@ A small **dependency-free, offline-capable JavaScript module**:
 - **Review scheduling:** calculate the next review date from `again`, `hard`, `good`, or `easy` responses.
 - **Mistake-aware queues:** prioritize due cards with more recorded lapses.
 - **Honest progress summaries:** count new, studied, and due cards; report review accuracy only when reviews exist.
+- **Topic-level insights (v0.2):** separately summarize reviews, due counts, and self-reported accuracy for each topic without claiming mastery.
+- **Self-reported mistake reasons (v0.2):** learners can optionally label an `again` review as `knowledge-gap`, `misconception`, `attention`, or `other`; unclassified mistakes remain explicitly unknown.
+- **Data-integrity checks (v0.2):** reject duplicate card IDs, impossible counters, and corrupt reason histories instead of silently inflating progress.
+- **Portable decks (v0.2):** opt-in, versioned JSON export and import with validation; no automatic storage, encryption, or cloud backup.
+- **Explainable study sessions (v0.2):** plan bounded, round-robin review work across topics and explain which items were selected and how many due items were deferred.
+- **Interactive Lab (v0.2):** an accessible-minded browser playground powered by the real scheduling engine, running locally with no cloud, login, analytics, or paid services.
+- **Honest skipping and mobile QA (v0.2):** skip without recording a review, keep skipped cards due, and verify phone-sized layouts in headless Chromium.
 - **Predictable behavior:** return new card objects without modifying the original and produce deterministic results for a given date.
 
-**Important limitations:** This version does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
+**Important limitations:** Even with the proposed v0.2 insights, the library does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
 
 ## Quick start
 
@@ -34,6 +41,8 @@ Requires **Node.js 20+**. No API key, subscription, cloud service, or dependency
 ```bash
 npm test
 npm run demo
+npm run demo:planner
+npm run demo:web  # visit http://127.0.0.1:4173/examples/web/
 ```
 
 ```js
@@ -59,17 +68,17 @@ console.log(selectReviewQueue([reviewed], '2026-11-14T12:00:00Z'));
 console.log(getStudySummary([reviewed], now));
 ```
 
-See [the scheduling rules](docs/algorithm.md) for the exact intervals, ordering rules, and limitations.
+See [the scheduling rules](docs/algorithm.md) for exact intervals and limitations, [v0.2 learning insights](docs/learning-insights.md), the [portable deck format](docs/portable-decks.md), [the explainable session planner](docs/session-planner.md), and [the interactive browser lab](docs/interactive-lab.md), and [mobile browser QA notes](docs/mobile-qa.md).
 
 ## Where we want to go
 
 These are **planned directions**, not completed features.
 
-1. **Understand mistakes:** support self-reported reasons such as knowledge gaps, misconceptions, or attention errors.
+1. **Evaluate mistake patterns:** study whether optional, self-reported categories lead to better feedback; automatic mistake diagnosis is not implemented.
 2. **Explore smarter review schedules:** compare transparent strategies against real, consented learning outcomes instead of claiming one algorithm works for everyone.
-3. **Measure progress by topic:** identify strengths and uncertainties without fabricating mastery.
+3. **Validate progress by topic:** evaluate usefulness and fairness of topic summaries; do not present them as knowledge measurements.
 4. **Investigate adaptive study recommendations:** test whether recommendations genuinely help different learners.
-5. **Improve accessibility and portability:** data import/export, localization, and simple accessible example interfaces.
+5. **Improve accessibility and usability:** localization, simple accessible example interfaces and evidence-based evaluation of session-planning limits.
 
 We want to document assumptions, test behavior, and distinguish promising educational ideas from evidence-backed results.
 

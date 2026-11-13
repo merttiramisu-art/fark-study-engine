@@ -36,6 +36,8 @@ Sıfır harici bağımlılıklı, çevrimdışı kullanılabilen küçük bir Ja
 ```bash
 npm test
 npm run demo
+npm run demo:planner
+npm run demo:web  # http://127.0.0.1:4173/examples/web/
 ```
 
 ```js
@@ -61,6 +63,21 @@ console.log(getStudySummary([reviewed], now));
 ```
 
 Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorithm.md) açıkça anlatılır. Kullanılan kurallar **deneme amaçlı sezgisel kurallardır**; kanıtlanmış kişisel öğrenme tahminleri değildir.
+
+
+### v0.2 — yeni öğrenme içgörüleri (inceleme aşamasında)
+
+- **Konu bazlı analiz:** Her ders/konu için çalışılan, tekrar zamanı gelen ve yeni kartları ayrı sayar. Bilinmeyen başarı oranı `null` kalır.
+- **İsteğe bağlı hata nedeni:** Öğrenci bir `again` tekrarında bilgi eksikliği, kavram karışıklığı, dikkatsizlik veya diğer nedenini **kendisi** seçebilir. Sistem neden tahmin etmez.
+- **Kayıt güvenliği:** Aynı kartın iki kez sayılmasını, imkânsız sayaçları ve tutarsız hata kategorilerini reddeder.
+- **Geriye uyumluluk:** v0.1 kartları okunur; geçmişte belirtilmemiş hata nedenleri bilinmiyor olarak kalır.
+
+- **Taşınabilir çalışma kartları:** Kartları sürümlü JSON olarak dışa aktarıp geri alabiliriz; veriler otomatik kaydedilmez ve dosyalar şifreli değildir. [Ayrıntılar](docs/portable-decks.md).
+- **Açıklanabilir oturum planı:** Aynı konunun bütün oturumu kaplamasını sınırlayan, çalışma yoğunluğunu konular arasında dağıtan ve ertelenen kartları açıkça sayan planlayıcı. [Kurallar](docs/session-planner.md).
+- **İnteraktif öğrenme laboratuvarı:** Gerçek tekrar motorunu ve çalışma planlayıcısını tarayıcıda deneyebilirsin. Ücretsiz ve çevrimdışı çalışan yerel örnek, gerçek öğrenci verisi içermez. [Çalıştırma rehberi](docs/interactive-lab.md).
+- **Gerçekçi atlama ve mobil kontrol:** Cevaplamadığın kartı doğru saymadan geçebilirsin. 360 ve 393 piksel genişliğinde Chromium testleri ve ekran görüntüleri: [mobil QA](docs/mobile-qa.md).
+
+Kod incelemesi ve ayrıntılı sınırlar: [v0.2 teknik belge](docs/learning-insights.md). Bu özellikler **henüz bilimsel olarak doğrulanmış öğrenme teşhisi veya uyarlanabilir eğitim sistemi değildir**.
 
 ## Nereye gitmek istiyoruz? / Roadmap
 

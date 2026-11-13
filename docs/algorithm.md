@@ -20,3 +20,13 @@ This repository intentionally uses a **transparent demonstration heuristic**, no
 ## Türkçe not
 
 Bu tekrar zamanlaması **deneme amaçlı bir sezgiseldir**; bilimsel olarak doğrulanmış bir kişisel öğrenme modeli olduğu iddia edilmez. Kendi eğitim uygulamanızda kullanmadan önce kullanıcı deneyimi ve öğrenme sonuçlarıyla değerlendirin.
+
+## v0.2: Learning insights, not learning diagnosis
+
+- `getTopicSummaries(cards, at)` groups by card topic and reports basic review statistics. It does not infer what a student truly knows.
+- `reviewCard(card, 'again', at, { reason })` records an *optional, self-reported* category: `knowledge-gap`, `misconception`, `attention`, or `other`. It never assigns a diagnosis automatically.
+- `getMistakeBreakdown(cards)` reports category totals and an explicit `unspecified` count for unclassified `again` responses. Existing v0.1 cards without `reasonCounts` remain supported.
+- The review queue and summaries reject duplicate card IDs, inconsistent counters, invalid dates, and impossible reason histories rather than silently double-counting.
+- Topic-level `accuracy` measures review responses (`hard`/`good`/`easy` counted as successful) and must **not** be interpreted as mastery or independently graded correctness.
+
+Read [the complete v0.2 API notes](learning-insights.md) before importing cards from another application.

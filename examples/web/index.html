@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eef0f7">
+  <meta name="description" content="Explore the FARK Study Engine in a privacy-friendly interactive browser lab.">
+  <title>FARK Study Engine — Interactive Lab</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" type="module"></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="../../README.md" aria-label="FARK Study Engine documentation">
+        <span class="brand-mark" aria-hidden="true">F<span class="brand-period">.</span></span>
+        <span class="brand-words"><strong>FARK</strong><small>STUDY ENGINE</small></span>
+      </a>
+      <div class="header-right">
+        <span class="privacy-label"><span class="privacy-dot" aria-hidden="true"></span> Local-only demo</span>
+        <a class="header-link" href="https://github.com/merttiramisu-art/fark-study-engine" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy">
+          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> INTERACTIVE LAB <span class="version">V0.2 PREVIEW</span></div>
+          <h1 id="page-title">A clearer way<br>to <em>keep learning.</em></h1>
+          <p>See how the FARK engine turns review history into a balanced study session. No account, no AI guesswork, no cloud connection.</p>
+        </div>
+        <div class="intro-graphic" aria-hidden="true">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="graphic-center"><span class="graphic-spark">✳</span><span>LEARN<br>BETTER</span></div>
+          <span class="orbit-chip chip-one">Review</span>
+          <span class="orbit-chip chip-two">Reflect</span>
+          <span class="orbit-chip chip-three">Progress</span>
+        </div>
+      </section>
+
+      <div class="section-overline">YOUR STUDY WORKSPACE <span class="line-fill"></span> 01 / 02</div>
+      <div class="workspace">
+        <section class="work-card" aria-labelledby="session-heading">
+          <div class="section-title-row">
+            <div><span class="kicker">ACTIVE LEARNING</span><h2 id="session-heading">Today's session</h2></div>
+            <span class="work-icon" aria-hidden="true">↗</span>
+          </div>
+          <form id="settings-form" class="settings" aria-label="Study session settings">
+            <label for="session-limit">Questions <select id="session-limit"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="12">12</option></select></label>
+            <label for="topic-limit">Per topic <select id="topic-limit"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option></select></label>
+            <label for="new-limit">New cards <select id="new-limit"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="4">4</option></select></label>
+            <button id="replan-button" type="submit" class="button button-outline">Rebuild plan <span aria-hidden="true">↻</span></button>
+          </form>
+
+          <div class="session-info">
+            <div><span id="session-stage" class="tiny-label">QUESTION 01 / 06</span><div id="session-description" class="session-description">A balanced session, based on your example review history.</div></div>
+            <span id="session-counter" class="count-pill" aria-live="polite">0 / 6</span>
+          </div>
+          <div class="progress-track" role="progressbar" id="progress-bar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" aria-label="Cards processed (rated or skipped)"><span id="progress-fill"></span></div>
+
+          <div id="question-content" class="question-content" aria-live="off">
+            <div class="question-header"><span id="question-topic" class="topic-tag">Mathematics</span><span id="question-kind" class="status-tag">DUE REVIEW</span></div>
+            <h3 id="question-text" tabindex="-1">Ready for your first question?</h3>
+            <div id="question-reasons" class="reason-row" aria-label="Why this card was selected"></div>
+            <div id="answer-panel" class="answer-panel" hidden>
+              <span class="tiny-label">SAMPLE ANSWER</span>
+              <p id="answer-text"></p>
+            </div>
+            <div id="reveal-controls" class="action-area">
+              <button id="reveal-button" class="button button-primary" type="button">Reveal answer <span aria-hidden="true">↗</span></button>
+              <button id="skip-button" class="button button-skip" type="button">Skip for now <span aria-hidden="true">↷</span></button>
+              <p>Think of your answer before revealing it.</p>
+            </div>
+            <div id="rating-controls" class="rating-controls" hidden>
+              <label for="mistake-reason" class="reason-label">If you missed it, what was the reason? <span>(optional)</span></label>
+              <select id="mistake-reason">
+                <option value="">Not specified</option>
+                <option value="knowledge-gap">Knowledge gap</option>
+                <option value="misconception">Concept mix-up</option>
+                <option value="attention">Attention slip</option>
+                <option value="other">Other</option>
+              </select>
+              <span class="tiny-label rating-title">HOW WELL DID YOU RECALL IT?</span>
+              <div class="rating-grid">
+                <button id="rating-again" type="button" data-rating="again" class="rating-button rating-again">Again <small>Retry soon</small></button>
+                <button type="button" data-rating="hard" class="rating-button">Hard <small>Keep close</small></button>
+                <button type="button" data-rating="good" class="rating-button">Good <small>Move ahead</small></button>
+                <button type="button" data-rating="easy" class="rating-button rating-easy">Easy <small>Space it out</small></button>
+              </div>
+              <p class="feedback-note">Your rating is self-reported, not independently graded.</p>
+              <button id="skip-after-reveal" class="skip-inline" type="button">Skip this card without rating it <span aria-hidden="true">↷</span></button>
+            </div>
+          </div>
+
+          <div id="finished-content" class="finished-content" hidden>
+            <span class="finish-symbol" aria-hidden="true">✳</span>
+            <h3 id="finish-heading" tabindex="-1">Session finished.</h3>
+            <p id="finish-description">Your study data has been updated in this browser tab only.</p>
+            <button id="next-plan-button" type="button" class="button button-primary">Plan another session <span aria-hidden="true">↗</span></button>
+          </div>
+        </section>
+
+        <aside class="insights" aria-labelledby="insights-heading">
+          <div class="insight-card insight-main">
+            <div class="insight-header"><span class="kicker">LIVE SNAPSHOT</span><span class="live-indicator">● IN MEMORY</span></div>
+            <h2 id="insights-heading">The bigger picture.</h2>
+            <p class="insight-blurb">Updated from the actual review engine as you study.</p>
+            <div class="stats-grid">
+              <div class="stat"><span>Due now</span><strong id="stat-due">—</strong><small>Ready to revisit</small></div>
+              <div class="stat"><span>Reviewed</span><strong id="stat-reviewed">—</strong><small>Cards with history</small></div>
+              <div class="stat"><span>Recall rating</span><strong id="stat-accuracy">—</strong><small>Self-reported</small></div>
+            </div>
+            <div class="topic-heading"><strong>Topic overview</strong><span>Due / total cards</span></div>
+            <div id="topic-list" class="topic-list" aria-live="polite"></div>
+            <p class="insight-footnote">These counts are not a measure of true mastery.</p>
+          </div>
+          <div class="data-card">
+            <div><span class="kicker">YOUR DATA, YOUR CHOICE</span><h3>Take it with you.</h3><p>Download the current cards as JSON, or import a compatible FARK deck. Nothing leaves this page unless you choose to export.</p></div>
+            <div class="data-actions">
+              <button type="button" id="export-button" class="button button-dark">Export JSON <span aria-hidden="true">↗</span></button>
+              <button type="button" id="import-trigger" class="button button-light">Import JSON <span aria-hidden="true">↑</span></button>
+              <input type="file" id="import-file" accept=".json,application/json" hidden>
+            </div>
+            <button type="button" id="reset-button" class="reset-link">↻ Reset sample data</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="section-overline bottom-overline">HOW IT WORKS <span class="line-fill"></span> 02 / 02</div>
+      <div class="principles">
+        <div class="principle"><span class="principle-num">01</span><h3>Review what matters.</h3><p>Cards become eligible when their review time arrives. Previous mistakes influence their priority.</p></div>
+        <div class="principle"><span class="principle-num">02</span><h3>Make room for variety.</h3><p>Topic limits and round-robin selection help prevent one subject from taking over.</p></div>
+        <div class="principle"><span class="principle-num">03</span><h3>Stay honest about learning.</h3><p>FARK reports what the data can support—and keeps unknowns unknown.</p></div>
+      </div>
+    </main>
+    <footer class="footer"><span>FARK STUDY ENGINE © 2026</span><span>OPEN SOURCE · MIT LICENSE · NO TRACKING</span></footer>
+  </div>
+  <div id="notice" class="notice" role="status" aria-live="polite"></div>
+</body>
+</html>

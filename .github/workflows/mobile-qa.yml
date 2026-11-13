@@ -1,0 +1,28 @@
+name: Mobile Browser QA
+on:
+  pull_request:
+    paths:
+      - 'examples/web/**'
+      - 'examples/serve-web.js'
+      - 'src/**'
+      - 'scripts/mobile-qa.mjs'
+      - '.github/workflows/mobile-qa.yml'
+  workflow_dispatch:
+jobs:
+  responsive-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run responsive browser smoke with installed Chrome
+        run: node scripts/mobile-qa.mjs
+      - name: Upload screenshots for human review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fark-responsive-qa
+          path: artifacts/screenshots/*.png
+          if-no-files-found: warn
+          retention-days: 7
