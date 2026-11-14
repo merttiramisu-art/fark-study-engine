@@ -150,7 +150,7 @@ async function run() {
         document.getElementById('question-text').textContent !== 'Ready for your first question?'`));
 
       const metrics = await devtools.eval(`(() => {
-        const ids = ['tab-study','tab-simulator','tab-decks','reveal-button','skip-button',
+        const ids = ['tab-study','tab-simulator','tab-decks','tab-intelligence','reveal-button','skip-button',
                      'session-limit','topic-limit','new-limit','strategy-select','replan-button',
                      'export-button','export-csv-button','export-tsv-button','export-md-button','import-trigger','lang-toggle'];
         return {
@@ -210,15 +210,50 @@ async function run() {
           return { id, width: r.width, left: r.left, right: r.right };
         });
         document.getElementById('pack-cs').click();
+        document.getElementById('tab-intelligence').click();
+        const intelOverflow = document.documentElement.scrollWidth > window.innerWidth + 1;
+        const intelDiagCount = document.querySelectorAll('#intel-diagnosis-list .focus-item').length;
+        const sealBtn = document.querySelector('#intel-diagnosis-list .intel-seal-btn');
+        if (sealBtn) sealBtn.click();
+        const intelIntvCount = document.querySelectorAll('#intel-intervention-list .focus-item').length;
+        const exportLedgerRect = document.getElementById('export-ledger-button').getBoundingClientRect();
+        const intelExportBtn = {
+          id: 'export-ledger-button',
+          width: exportLedgerRect.width,
+          left: exportLedgerRect.left,
+          right: exportLedgerRect.right
+        };
         document.getElementById('tab-study').click();
         const csQuestion = document.getElementById('question-text').textContent;
-        return { simOverflow, simRows, seqRows, simRunWidth: simRunBtn.width, deckOverflow, deckControls, csQuestion };
+        return {
+          simOverflow,
+          simRows,
+          seqRows,
+          simRunWidth: simRunBtn.width,
+          deckOverflow,
+          deckControls,
+          intelOverflow,
+          intelDiagCount,
+          intelIntvCount,
+          intelExportBtn,
+          csQuestion
+        };
       })()`);
-      if (studioChecks.simOverflow || studioChecks.simRows !== 4 || studioChecks.seqRows !== 4 || studioChecks.simRunWidth < 42) {
+      if (studioChecks.simOverflow || studioChecks.simRows !== 5 || studioChecks.seqRows !== 5 || studioChecks.simRunWidth < 42) {
         throw new Error(viewport.label + ' simulator tab failed: ' + JSON.stringify(studioChecks));
       }
       if (studioChecks.deckOverflow) {
         throw new Error(viewport.label + ' decks tab has horizontal overflow: ' + JSON.stringify(studioChecks));
+      }
+      if (studioChecks.intelOverflow || studioChecks.intelDiagCount < 1 || studioChecks.intelIntvCount < 1) {
+        throw new Error(viewport.label + ' intelligence tab failed: ' + JSON.stringify(studioChecks));
+      }
+      if (
+        studioChecks.intelExportBtn.width < 42 ||
+        studioChecks.intelExportBtn.left < -1 ||
+        studioChecks.intelExportBtn.right > viewport.width + 1
+      ) {
+        throw new Error(viewport.label + ' intelligence tab export control clipped: ' + JSON.stringify(studioChecks.intelExportBtn));
       }
       for (const control of studioChecks.deckControls) {
         if (control.width < 42 || control.left < -1 || control.right > viewport.width + 1) {
@@ -228,7 +263,7 @@ async function run() {
       if (!studioChecks.csQuestion.includes('[ ___ ]')) {
         throw new Error(viewport.label + ' CS Cloze pack failed to render blanks: ' + JSON.stringify(studioChecks));
       }
-      console.log(viewport.label + ' passed: 3-tab Studio QA, no overflow, visible controls, skip+rating+cloze, screenshot saved');
+      console.log(viewport.label + ' passed: 4-tab Studio QA, no overflow, visible controls, skip+rating+cloze+intelligence, screenshot saved');
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

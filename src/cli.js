@@ -25,6 +25,8 @@ import {
   parseClozePrompt
 } from './interchange.js';
 import { startMcpServer } from './mcp.js';
+import { createLedger, importLedger } from './ledger.js';
+import { diagnoseLearner, evaluateAllInterventions } from './diagnosis.js';
 import {
   compareStrategies,
   getReviewStrategy,
@@ -42,12 +44,13 @@ const HELP_TEXT = `FARK Study Engine CLI v${CLI_VERSION}
 
 Usage:
   fark init     <file> [--format json|csv|tsv|md] [--pack starter|computer-science|biology|language] [--force]
-  fark study    <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--strategy balanced|gentle|intensive|sm2] [--reason-aware] [--save] [--out <file>]
+  fark study    <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--strategy balanced|gentle|intensive|sm2|dsr] [--reason-aware] [--save] [--out <file>]
   fark validate <file> [--format json|csv|tsv|md] [--json]
   fark summary  <file> [--format json|csv|tsv|md] [--at <iso>] [--json]
+  fark diagnose <file> [--format json|csv|tsv|md] [--at <iso>] [--json]
   fark plan     <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--reason-aware] [--json]
   fark forecast <file> [--format json|csv|tsv|md] [--at <iso>] [--days N] [--json]
-  fark compare  <ratings...> [--strategies balanced,gentle,intensive,sm2] [--at <iso>] [--json]
+  fark compare  <ratings...> [--strategies balanced,gentle,intensive,sm2,dsr] [--at <iso>] [--json]
   fark simulate [--cards N] [--days N] [--limit N] [--profile steady|cramming|missed-days] [--seed N] [--json]
   fark convert  <file> --to <json|csv|tsv|md> [--format json|csv|tsv|md] [--out <file>] [--escape-formulas] [--include-stats] [--collapsible]
   fark mcp      Start stdio JSON-RPC 2.0 MCP server (zero dependencies)
@@ -65,6 +68,7 @@ const COMMAND_FLAGS = {
   study: new Set(['format', 'at', 'limit', 'topic-limit', 'new-limit', 'strategy', 'reason-aware', 'save', 'out']),
   validate: new Set(['format', 'json']),
   summary: new Set(['format', 'at', 'json']),
+  diagnose: new Set(['format', 'at', 'json']),
   plan: new Set(['format', 'at', 'limit', 'topic-limit', 'new-limit', 'reason-aware', 'json']),
   forecast: new Set(['format', 'at', 'days', 'json']),
   compare: new Set(['strategies', 'at', 'json']),
@@ -297,6 +301,35 @@ function formatComparisonText(comparison) {
     lines.push(`      ${seq}`);
   }
   lines.push(`Note: ${comparison.disclaimer}`);
+  return lines.join('\n');
+}
+
+function formatDiagnosisText(diag, evaluations) {
+  const lines = [`Learner Diagnosis (evaluated at ${diag.evaluatedAt})`];
+  if (diag.calibration.sampleCount > 0) {
+    lines.push(
+      `Calibration: Brier=${diag.calibration.brierScore}, predictedR=${formatPercent(diag.calibration.meanPredictedR)}, observed=${formatPercent(diag.calibration.observedRecallRate)} (${diag.calibration.sampleCount} scored events)`
+    );
+  }
+  lines.push('Concept Dynamics:');
+  for (const item of Object.values(diag.concepts)) {
+    lines.push(
+      `  - ${item.label}: recentRecall=${formatPercent(item.recentRecallRate)}, trend=${item.trend}, ` +
+      `R(now)=${formatPercent(item.meanRetrievability)}, S=${item.meanStabilityDays ?? 'n/a'}d, due=${item.dueCount}/${item.cardCount}`
+    );
+  }
+  if (diag.recommendations.length) {
+    lines.push('Recommendations:');
+    for (const rec of diag.recommendations) {
+      lines.push(`  - [${rec.signal} | confidence=${rec.confidence}] ${rec.headline} -> ${rec.recommendedAction}`);
+    }
+  }
+  if (evaluations.length) {
+    lines.push('Intervention Evaluations:');
+    for (const ev of evaluations) {
+      lines.push(`  - ${ev.interventionId} (${ev.targetTopic}): verdict=${ev.verdict}, recallDelta=${ev.deltas.recallDelta ?? 'n/a'}`);
+    }
+  }
   return lines.join('\n');
 }
 
@@ -549,8 +582,25 @@ export async function runCli(argv, ioOverrides = {}) {
     const filePath = positionals[1];
     const format = inferFormat(filePath, flags.format);
     const rawText = await io.readText(filePath);
-    const cards = loadDeck(rawText, format);
     const at = flags.at ?? new Date();
+
+    if (command === 'diagnose') {
+      let ledger;
+      try {
+        ledger = importLedger(rawText);
+      } catch {
+        const deckCards = loadDeck(rawText, format);
+        ledger = createLedger({ cards: deckCards, createdAt: at });
+      }
+      const diagnosis = diagnoseLearner(ledger, at);
+      const interventions = evaluateAllInterventions(ledger, at);
+      io.stdout(flags.json
+        ? JSON.stringify({ diagnosis, interventions }, null, 2)
+        : formatDiagnosisText(diagnosis, interventions));
+      return 0;
+    }
+
+    const cards = loadDeck(rawText, format);
 
     if (command === 'validate') {
       const topics = new Set(cards.map((card) => card.topic)).size;

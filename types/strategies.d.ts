@@ -1,6 +1,6 @@
 import type { MistakeReason, Rating, StudyCard, TimestampInput } from './index.js';
 
-export type ReviewStrategyId = 'balanced' | 'gentle' | 'intensive' | 'sm2';
+export type ReviewStrategyId = 'balanced' | 'gentle' | 'intensive' | 'sm2' | 'dsr';
 
 export declare const STRATEGY_IDS: readonly ReviewStrategyId[];
 

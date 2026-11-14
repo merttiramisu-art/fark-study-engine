@@ -2,6 +2,16 @@
 
 All notable changes to **FARK Study Engine** are documented in this file.
 
+## [0.6.0] - 2026-11-14
+
+### Added
+- **Append-only Event-Sourced Learning Ledger (`./ledger`):** `createLedger`, `linkConceptPrerequisites`, `upsertLedgerCard`, `recordLedgerReview`, `projectCardsFromLedger`, `exportLedger`, and `importLedger` implement `fark-study-ledger` v1 without discarding review chronology or fabricating missing historical timestamps.
+- **Transparent DSR Memory & Calibration Engine (`./memory`, `dsr` strategy):** `computeRetrievability` ($R(t) = (1 + t/(9S))^{-1}$), `computeOptimalIntervalDays`, mean-reverting `updateDsrMemory` distinguishing `attention` slips from `misconception` lapses, and `evaluatePredictionCalibration` (Brier score, log loss, 5 calibration bins); wired as the 5th scheduling strategy `'dsr'` in `./strategies`.
+- **Prerequisite Graph, Diagnosis & Closed-Loop Uplift Evaluation (`./diagnosis`):** acyclic prerequisite DAG checks, `recentSlice` vs `priorSlice` recovery detection (`computeConceptDynamics`), ranked evidence-backed signals (`diagnoseLearner`), and pre/post + non-target-topic control intervention auditing (`recordIntervention`, `evaluateIntervention`, `evaluateAllInterventions`).
+- **Closed-loop CLI & 11-tool MCP Server (`./cli`, `./mcp`):** added `fark diagnose <file>`, `'dsr'` strategy support across `fark study` / `fark compare`, and 4 closed-loop MCP tools (`fark_diagnose_learner`, `fark_log_review_event`, `fark_record_intervention`, `fark_evaluate_interventions`).
+- **4-Tab Interactive Studio (`examples/web/`):** added **Learning Intelligence** tab (`#tab-intelligence`) displaying calibration metrics, prerequisite/misconception diagnoses with one-click **Seal & Track Intervention +**, closed-loop delta verdicts, concept dynamics, and MCP JSON ledger export/import.
+- **Open Learning Infrastructure Manifesto & Benchmark (`docs/open-learning-architecture.md`, `scripts/benchmark-learning.mjs`):** documents the 4-layer architecture, benchmark comparisons across `balanced`/`sm2`/`dsr`, and explicit observational limitations.
+
 ## [0.5.0] - 2026-11-14
 
 ### Added

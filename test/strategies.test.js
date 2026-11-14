@@ -59,12 +59,13 @@ test('compareStrategies compares identical sequences deterministically', () => {
     { startAt: NOW }
   );
   assert.equal(result.startedAt, NOW);
-  assert.equal(result.strategies.length, 4);
-  const [bal, gen, intv, sm2] = result.strategies;
+  assert.equal(result.strategies.length, 5);
+  const [bal, gen, intv, sm2, dsr] = result.strategies;
   assert.equal(bal.strategy, 'balanced');
   assert.equal(gen.strategy, 'gentle');
   assert.equal(intv.strategy, 'intensive');
   assert.equal(sm2.strategy, 'sm2');
+  assert.equal(dsr.strategy, 'dsr');
   assert.equal(bal.timeline.length, 5);
   assert.ok(bal.totalSpanDays > gen.totalSpanDays);
   assert.ok(gen.totalSpanDays > intv.totalSpanDays);
@@ -103,7 +104,7 @@ test('simulateCohort is deterministic by seed and validates inputs', () => {
   const runA = simulateCohort({ cardsCount: 20, days: 14, dailyLimit: 10, profile: 'missed-days', seed: 99 });
   const runB = simulateCohort({ cardsCount: 20, days: 14, dailyLimit: 10, profile: 'missed-days', seed: 99 });
   assert.deepEqual(runA, runB);
-  assert.equal(runA.results.length, 4);
+  assert.equal(runA.results.length, 5);
   assert.match(runA.disclaimer, /Synthetic/i);
   assert.ok(runA.results.every((r) => r.totalReviews > 0 && r.activeDays <= 14));
 

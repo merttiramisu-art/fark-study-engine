@@ -21,6 +21,9 @@ const ROUTES = new Map([
   ['/src/strategies.js', ['src/strategies.js', 'text/javascript; charset=utf-8']],
   ['/src/interchange.js', ['src/interchange.js', 'text/javascript; charset=utf-8']],
   ['/src/widget.js', ['src/widget.js', 'text/javascript; charset=utf-8']],
+  ['/src/memory.js', ['src/memory.js', 'text/javascript; charset=utf-8']],
+  ['/src/ledger.js', ['src/ledger.js', 'text/javascript; charset=utf-8']],
+  ['/src/diagnosis.js', ['src/diagnosis.js', 'text/javascript; charset=utf-8']],
   ['/README.md', ['README.md', 'text/plain; charset=utf-8']]
 ]);
 

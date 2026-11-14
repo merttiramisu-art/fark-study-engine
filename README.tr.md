@@ -7,13 +7,11 @@
 >
 > *If every student learns differently, why should everyone study the same way?*
 
-**FARK Study Engine**, öğrencilerin yalnızca ne kadar çalıştığını değil, **neyi öğrendiğini, nerede zorlandığını ve neyi ne zaman tekrar etmesi gerektiğini** anlamaya yardımcı olmayı hedefleyen açık kaynak bir öğrenme altyapısıdır.
+**FARK Study Engine**, açık kaynaklı, çevrimdışı ve sıfır maliyetli bir **Öğrenme Defteri (Ledger), Bilişsel Tanı ve Kapalı Döngü Müdahale Altyapısıdır**. Yalnızca başka bir SM-2 tekrar uygulaması üretmek yerine; öğrencinin **ne zaman neyi çalıştığını, hatanın dikkatsizlik mi kavram yanılgısı mı olduğunu, hangi önkoşulun tıkandığını ve verilen önerinin sonrasında işe yarayıp yaramadığını** ölçülebilir biçimde ortaya koyar.
 
-Bir sınav hazırlık deneyimi geliştirirken kendimize sorduğumuz basit bir sorudan doğdu: *Daha fazla soru çözmek mi önemli, yoksa gerçekten öğrenmek mi?*
+> **Mimari Manifesto & Kıyaslama Raporu:** [Neden FARK Var? Açık Öğrenme Altyapısı (v0.6.0)](docs/open-learning-architecture.md) · `node scripts/benchmark-learning.mjs`
 
-FARK'ın uzun vadeli hedefi; şeffaf tekrar planlamasını, hata analizini ve kişiye uyarlanabilen çalışma deneyimlerini herkesin geliştirebileceği küçük, bağımsız yazılım bileşenleriyle mümkün kılmak. Yalnızca tek bir sınav için değil; farklı dersler, sınavlar ve kendi kendine öğrenme süreçleri için.
-
-**Bu bir başlangıç.** **v0.5.0**, açık kaynak öğrenme çekirdeğini SM-2 uyarlanabilir tekrar zamanlaması, tohumlanmış kohort simülatörü, Cloze & Anki TSV desteği, gömülebilir `<fark-study-deck>` Web Component ve sıfır bağımlılıklı MCP sunucusuyla genişletiyor — hâlâ kanıtlanmış tek bir "en iyi" yapay zekâ öğretmeni olduğunu iddia etmeden.
+**v0.6.0 yenilikleri:** eklemeli olay defteri (`./ledger`), FSRS tarzı DSR bellek modeli & Brier kalibrasyonu (`./memory`, `dsr` stratejisi), önkoşul grafiği & kapalı döngü müdahale değerlendirmesi (`./diagnosis`), 11 araçlı sıfır bağımlılıklı MCP sunucusu (`./mcp`), `fark diagnose` CLI komutu ve 4 sekmeli İnteraktif Stüdyo (`examples/web/`) — yine de sentetik simülasyonların klinik çalışma olmadığını açıkça belirterek.
 
 > **Canlı İnteraktif Stüdyo (yalnızca tarayıcıda, sunucusuz):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
@@ -69,14 +67,13 @@ console.log(getStudySummary([reviewed], now));
 Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorithm.md) açıkça anlatılır. Kullanılan kurallar **deneme amaçlı sezgisel kurallardır**; kanıtlanmış kişisel öğrenme tahminleri değildir.
 
 
-### v0.5.0 — yeni modüller, simülatör ve 3 sekmeli stüdyo
+### v0.6.0 — Öğrenme Defteri, DSR Bellek, Kapalı Döngü Müdahale ve 4 Sekmeli Stüdyo
 
-- **SM-2 stratejisi ve neden-duyarlı planlama (`./strategies`, `./planner`):** Gözlemlenebilir tekrar geçmişinden `1.3–2.8` kolaylık çarpanı hesaplayan `sm2` stratejisi, `reasonAware: true` ile kavram yanılgılarını dikkatsizlik hatalarının önüne alan önceliklendirme ve dürüst konu odaklı öneriler (`getStudyRecommendations`).
-- **30 günlük kohort simülatörü (`simulateCohort`, `fark simulate`):** `steady`, `cramming` ve `missed-days` öğrenen profilleriyle `balanced`, `gentle`, `intensive` ve `sm2` stratejilerinin günlük tekrar yükü ve birikme eğilimini deterministik biçimde karşılaştırır.
-- **Cloze, ters kartlar ve Anki TSV (`./interchange`):** Satır içi `{{boşluk}}`, `{{c1::yanıt::ipucu}}` ve `[[boşluk]]` ayrıştırıcı (`parseClozePrompt`), kartın orijinalini bozmadan Q↔A çeviren `reverseCardPrompt`, Anki/Quizlet `.tsv` dönüştürücüsü (`exportStudyTsv` / `importStudyTsv`) ve 4 örnek konu paketi (`buildSamplePack`).
-- **Sıfır bağımlılıklı Web Component (`./widget`):** Herhangi bir statik HTML sayfasına gömülebilen `<fark-study-deck>` özel öğesi ([örnek sayfa](examples/widget-demo.html)).
-- **Sıfır bağımlılıklı stdio MCP sunucusu (`./mcp`, `fark mcp`):** Claude Desktop / Claude Code gibi yapay zekâ istemcilerine JSON-RPC 2.0 üzerinden 7 deterministik FARK aracını sunar; böylece model zihinden tarih uydurmak yerine gerçek motoru çalıştırır.
-- **3 sekmeli İnteraktif Stüdyo (`examples/web/`):** `Çalışma Stüdyosu`, `Strateji Simülatörü` ve `Deste Stüdyosu & Paketler` sekmeleriyle sadeleştirilmiş tasarım; TR/EN dil desteği, klavye kısayolları ve JSON/CSV/TSV/Markdown aktarımı (v0.2–v0.4 temelleri: [öğrenme içgörüleri](docs/learning-insights.md), [taşınabilir desteler](docs/portable-decks.md), [oturum planı](docs/session-planner.md), [CSV ve CLI](docs/csv-and-cli.md), [stratejiler](docs/strategies-and-markdown.md), [interaktif laboratuvar](docs/interactive-lab.md), [mobil QA](docs/mobile-qa.md)).
+- **Eklemeli Öğrenme Defteri (`./ledger`):** Her çalışmayı geçen süre (`elapsedDays`), ön-tahmin (`predictedR`) ve kavram önkoşul grafiği (`linkConceptPrerequisites`) ile değişmez biçimde kaydeder; eski kart destelerini sahte tarih uydurmadan içeri alır.
+- **DSR Bellek & Brier Kalibrasyonu (`./memory`, `dsr` stratejisi):** Güç yasası $R(t) = (1 + t/(9S))^{-1}$ ile bellek izini modeller, dikkatsizlik hatalarını (`attention`) kavram yanılgılarından (`misconception`) ayırarak SM-2 kolaylık cehenneminden kaçar ve tahmin tutarlılığını Brier skoru ile puanlar (`scripts/benchmark-learning.mjs`).
+- **Önkoşul Tanısı ve Müdahale Doğrulama (`./diagnosis`):** Tıkanan önkoşulları yakalar (`diagnoseLearner`), öneri mühürlendiğinde (`recordIntervention`) başlangıç ve kontrol konusu oranlarını dondurur, sonrasında gerçekten gelişim sağlayıp sağlamadığını (`evaluateIntervention`) hesaplar.
+- **11 Araçlı Kapalı Döngü MCP Sunucusu (`./mcp`, `fark mcp`) ve `fark diagnose` CLI:** Claude gibi yapay zekâ istemcileri `fark_diagnose_learner`, `fark_log_review_event`, `fark_record_intervention` ve `fark_evaluate_interventions` ile uydurmadan, kanıtlı rehberlik sunar.
+- **4 Sekmeli İnteraktif Stüdyo (`examples/web/`):** `Öğrenme Analitiği` sekmesi eklendi; canlı Brier kalibrasyonu, tek tıkla müdahale mühürleme, öncesi/sonrası etki farkları ve MCP Ledger JSON dışa/içe aktarımı desteklenir ([mimari manifesto](docs/open-learning-architecture.md), [öğrenme içgörüleri](docs/learning-insights.md), [taşınabilir desteler](docs/portable-decks.md), [oturum planı](docs/session-planner.md), [CSV ve CLI](docs/csv-and-cli.md), [stratejiler](docs/strategies-and-markdown.md), [interaktif laboratuvar](docs/interactive-lab.md), [mobil QA](docs/mobile-qa.md)).
 
 ## Nereye gitmek istiyoruz? / Roadmap
 
