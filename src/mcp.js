@@ -17,6 +17,8 @@ import { exportStudyCsv, importStudyCsv } from './csv.js';
 import { exportStudyMarkdown, importStudyMarkdown } from './markdown.js';
 import { exportStudyTsv, importStudyTsv } from './interchange.js';
 import { compareStrategies, simulateCohort } from './strategies.js';
+import { createLedger, importLedger, recordLedgerReview } from './ledger.js';
+import { diagnoseLearner, evaluateAllInterventions, evaluateIntervention, recordIntervention } from './diagnosis.js';
 
 const PACKAGE_JSON = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8')
@@ -101,7 +103,7 @@ export const MCP_TOOLS = Object.freeze([
         startAt: { type: 'string' },
         strategies: {
           type: 'array',
-          items: { type: 'string', enum: ['balanced', 'gentle', 'intensive', 'sm2'] }
+          items: { type: 'string', enum: ['balanced', 'gentle', 'intensive', 'sm2', 'dsr'] }
         }
       }
     }
@@ -135,6 +137,81 @@ export const MCP_TOOLS = Object.freeze([
         escapeFormulas: { type: 'boolean' },
         includeStats: { type: 'boolean' },
         collapsibleAnswers: { type: 'boolean' }
+      }
+    }
+  },
+  {
+    name: 'fark_diagnose_learner',
+    description: 'Analyze a learning ledger (or portable deck + optional prerequisite graph) using DSR memory retrievability, recent recall trends, Brier calibration, and evidence-backed intervention recommendations.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        ledgerText: { type: 'string', description: 'Serialized fark-study-ledger JSON' },
+        deckText: { type: 'string', description: 'Optional serialized deck when no ledger exists yet' },
+        format: { type: 'string', enum: ['json', 'csv', 'tsv', 'md'] },
+        concepts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              label: { type: 'string' },
+              prerequisites: { type: 'array', items: { type: 'string' } }
+            }
+          }
+        },
+        at: { type: 'string' }
+      }
+    }
+  },
+  {
+    name: 'fark_log_review_event',
+    description: 'Append one immutable review event into a Learning Ledger and return updated DSR memory state and pre-review predictedR.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['ledgerText', 'cardId', 'rating'],
+      properties: {
+        ledgerText: { type: 'string' },
+        cardId: { type: 'string' },
+        rating: { type: 'string', enum: ['again', 'hard', 'good', 'easy'] },
+        reason: { type: 'string', enum: ['knowledge-gap', 'misconception', 'attention', 'other'] },
+        at: { type: 'string' }
+      }
+    }
+  },
+  {
+    name: 'fark_record_intervention',
+    description: 'Seal an educational intervention proposal into the ledger with a frozen baseline and matched control-topic baseline.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['ledgerText', 'targetTopic'],
+      properties: {
+        ledgerText: { type: 'string' },
+        id: { type: 'string' },
+        targetTopic: { type: 'string' },
+        targetConcepts: { type: 'array', items: { type: 'string' } },
+        signal: { type: 'string' },
+        action: { type: 'string' },
+        hypothesis: { type: 'string' },
+        at: { type: 'string' }
+      }
+    }
+  },
+  {
+    name: 'fark_evaluate_interventions',
+    description: 'Measure post-intervention recall delta, misconception reduction, DSR stability gain, and net uplift vs non-target topics.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['ledgerText'],
+      properties: {
+        ledgerText: { type: 'string' },
+        interventionId: { type: 'string' },
+        minFollowUpReviews: { type: 'integer', minimum: 1 },
+        at: { type: 'string' }
       }
     }
   }
@@ -212,6 +289,45 @@ function callTool(name, args = {}) {
         to: args.to,
         cards: cards.length,
         output: serializeDeckByFormat(cards, args.to, args)
+      };
+    }
+    case 'fark_diagnose_learner': {
+      let ledger;
+      if (args.ledgerText) {
+        ledger = importLedger(args.ledgerText);
+      } else if (args.deckText && args.format) {
+        const cards = parseDeckByFormat(args.deckText, args.format);
+        ledger = createLedger({ cards, concepts: args.concepts, createdAt: at });
+      } else {
+        throw new RangeError('fark_diagnose_learner requires ledgerText or (deckText + format)');
+      }
+      return diagnoseLearner(ledger, at);
+    }
+    case 'fark_log_review_event': {
+      const ledger = importLedger(args.ledgerText);
+      return recordLedgerReview(ledger, args.cardId, args.rating, at, {
+        ...(args.reason !== undefined ? { reason: args.reason } : {})
+      });
+    }
+    case 'fark_record_intervention': {
+      const ledger = importLedger(args.ledgerText);
+      return recordIntervention(ledger, {
+        ...(args.id !== undefined ? { id: args.id } : {}),
+        targetTopic: args.targetTopic,
+        ...(args.targetConcepts !== undefined ? { targetConcepts: args.targetConcepts } : {}),
+        ...(args.signal !== undefined ? { signal: args.signal } : {}),
+        ...(args.action !== undefined ? { recommendedAction: args.action } : {}),
+        ...(args.hypothesis !== undefined ? { hypothesis: args.hypothesis } : {})
+      }, at);
+    }
+    case 'fark_evaluate_interventions': {
+      const ledger = importLedger(args.ledgerText);
+      const opts = args.minFollowUpReviews !== undefined ? { minFollowUpReviews: args.minFollowUpReviews } : {};
+      if (args.interventionId) {
+        return evaluateIntervention(ledger, args.interventionId, at, opts);
+      }
+      return {
+        evaluations: evaluateAllInterventions(ledger, at, opts)
       };
     }
     default:

@@ -26,14 +26,15 @@
     <main>
       <section class="intro compact-intro" aria-labelledby="page-title">
         <div class="intro-copy">
-          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="eyebrow-text">OPEN-SOURCE STUDY STUDIO</span> <span class="version">V0.5</span></div>
+          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="eyebrow-text">OPEN-SOURCE STUDY STUDIO</span> <span class="version">V0.6</span></div>
           <h1 id="page-title">Deterministic scheduling.<br><em>Honest</em> learning signals.</h1>
-          <p id="intro-lead">Compare SM-2 &amp; Leitner presets, practice {{cloze}} or Anki TSV decks, simulate 30-day cohorts, and run an MCP server locally—no cloud, no tracking, no fake mastery.</p>
+          <p id="intro-lead">Compare DSR memory, SM-2 &amp; Leitner presets, trace causal prerequisites, evaluate closed-loop interventions, and bridge Claude via local MCP—zero cloud, zero tracking.</p>
         </div>
         <div class="studio-tabs" role="tablist" aria-label="Studio sections">
           <button id="tab-study" type="button" role="tab" class="studio-tab active" aria-selected="true" aria-controls="panel-study">Study Studio</button>
           <button id="tab-simulator" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-simulator">Strategy Simulator</button>
           <button id="tab-decks" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-decks">Deck Studio &amp; Packs</button>
+          <button id="tab-intelligence" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-intelligence">Learning Intelligence</button>
         </div>
       </section>
 
@@ -49,7 +50,7 @@
                 <label for="session-limit"><span id="label-questions">Questions</span> <select id="session-limit"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="12">12</option></select></label>
                 <label for="topic-limit"><span id="label-per-topic">Per topic</span> <select id="topic-limit"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="5">5</option></select></label>
                 <label for="new-limit"><span id="label-new-cards">New cards</span> <select id="new-limit"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="4">4</option></select></label>
-                <label for="strategy-select"><span id="label-strategy">Strategy</span> <select id="strategy-select"><option value="balanced" selected>Balanced</option><option value="gentle">Gentle</option><option value="intensive">Intensive</option><option value="sm2">SM-2 Adaptive</option></select></label>
+                <label for="strategy-select"><span id="label-strategy">Strategy</span> <select id="strategy-select"><option value="balanced" selected>Balanced</option><option value="gentle">Gentle</option><option value="intensive">Intensive</option><option value="sm2">SM-2 Adaptive</option><option value="dsr">DSR Memory</option></select></label>
                 <button id="replan-button" type="submit" class="button button-outline">Rebuild plan <span aria-hidden="true">↻</span></button>
               </form>
               <div class="mode-toggles">
@@ -235,6 +236,36 @@
               <label for="deck-topic-filter"><span id="label-deck-topic">Topic</span><select id="deck-topic-filter"><option value="">All topics</option></select></label>
             </div>
             <div id="deck-list" class="deck-list" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="panel-intelligence" role="tabpanel" aria-labelledby="tab-intelligence" hidden>
+        <div class="sim-layout">
+          <section class="work-card" aria-labelledby="intel-diag-heading">
+            <div class="section-title-row">
+              <div><span id="kicker-intel-diag" class="kicker">DIAGNOSIS &amp; INTERVENTION LOOP</span><h2 id="intel-diag-heading">Evidence &amp; closed-loop tracking</h2></div>
+              <span class="work-icon" aria-hidden="true">◎</span>
+            </div>
+            <p id="intel-diag-blurb" class="add-card-blurb">Each recommendation carries numeric evidence. Seal an intervention into the append-only ledger to measure real post-study recall &amp; stability gains.</p>
+            <div id="intel-diagnosis-list" class="focus-list" aria-live="polite"></div>
+
+            <div class="topic-heading"><strong id="intel-intv-title">Sealed interventions</strong><span id="intel-intv-sub">Pre vs post evaluation</span></div>
+            <div id="intel-intervention-list" class="focus-list" aria-live="polite"></div>
+            <button id="export-ledger-button" type="button" class="button button-outline intel-export-btn">Export Learning Ledger (MCP JSON) ↗</button>
+          </section>
+
+          <section class="work-card" aria-labelledby="intel-dsr-heading">
+            <div class="section-title-row">
+              <div><span id="kicker-intel-dsr" class="kicker">EVENT-SOURCED DSR MEMORY</span><h2 id="intel-dsr-heading">Stability, recall &amp; calibration</h2></div>
+            </div>
+            <div class="stats-grid intel-stats">
+              <div class="stat"><span id="intel-label-events">Logged events</span><strong id="intel-cal-events">0</strong><small id="intel-sub-events">Immutable ledger</small></div>
+              <div class="stat"><span id="intel-label-brier">Brier score</span><strong id="intel-cal-brier">—</strong><small id="intel-sub-brier">Lower = calibrated</small></div>
+              <div class="stat"><span id="intel-label-r">Predicted recall</span><strong id="intel-cal-r">—</strong><small id="intel-sub-r">Across events</small></div>
+            </div>
+            <div class="topic-heading"><strong id="intel-concepts-title">Concept dynamics</strong><span id="intel-concepts-sub">Trend · R(now) · Stability</span></div>
+            <div id="intel-concept-list" class="seq-results" aria-live="polite"></div>
           </section>
         </div>
       </section>

@@ -11,6 +11,9 @@ import * as strategiesMod from '../src/strategies.js';
 import * as interchangeMod from '../src/interchange.js';
 import * as widgetMod from '../src/widget.js';
 import * as mcpMod from '../src/mcp.js';
+import * as memoryMod from '../src/memory.js';
+import * as ledgerMod from '../src/ledger.js';
+import * as diagnosisMod from '../src/diagnosis.js';
 
 const MODULE_CHECKS = [
   ['.', indexMod, 'types/index.d.ts'],
@@ -21,7 +24,10 @@ const MODULE_CHECKS = [
   ['./strategies', strategiesMod, 'types/strategies.d.ts'],
   ['./interchange', interchangeMod, 'types/interchange.d.ts'],
   ['./widget', widgetMod, 'types/widget.d.ts'],
-  ['./mcp', mcpMod, 'types/mcp.d.ts']
+  ['./mcp', mcpMod, 'types/mcp.d.ts'],
+  ['./memory', memoryMod, 'types/memory.d.ts'],
+  ['./ledger', ledgerMod, 'types/ledger.d.ts'],
+  ['./diagnosis', diagnosisMod, 'types/diagnosis.d.ts']
 ];
 
 test('every runtime export has a matching TypeScript declaration', async () => {
@@ -54,6 +60,9 @@ test('all added JavaScript source and CLI files pass node --check', () => {
     'src/interchange.js',
     'src/widget.js',
     'src/mcp.js',
+    'src/memory.js',
+    'src/ledger.js',
+    'src/diagnosis.js',
     'src/cli.js',
     'bin/fark.js'
   ]) {

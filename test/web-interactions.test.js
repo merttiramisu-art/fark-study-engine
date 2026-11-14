@@ -163,8 +163,37 @@ test('skip never grades or reschedules; a rated answer does; finish receives foc
     assert.equal(node('panel-simulator').hidden, false);
     assert.equal(node('panel-study').hidden, true);
     assert.equal(node('tab-simulator').attributes.get('aria-selected'), 'true');
-    assert.equal(node('sim-results').children.length, 4);
-    assert.equal(node('seq-results').children.length, 4);
+    assert.equal(node('sim-results').children.length, 5);
+    assert.equal(node('seq-results').children.length, 5);
+
+    node('tab-intelligence').click();
+    assert.equal(node('panel-intelligence').hidden, false);
+    assert.equal(node('panel-simulator').hidden, true);
+    assert.equal(node('tab-intelligence').attributes.get('aria-selected'), 'true');
+    assert.ok(node('intel-concept-list').children.length >= 4);
+    assert.ok(node('intel-diagnosis-list').children.length >= 1, 'starter pack should flag prerequisite diagnosis');
+
+    const firstDiagBox = node('intel-diagnosis-list').children[0];
+    const sealBtn = firstDiagBox.children.at(-1);
+    assert.equal(sealBtn.id, 'button');
+    sealBtn.click();
+    assert.equal(node('intel-intervention-list').children.length, 1);
+    assert.match(node('notice').textContent, /Intervention sealed/);
+
+    node('tab-study').click();
+    node('reveal-button').click();
+    node('rating-good').click();
+    node('tab-intelligence').click();
+    const intvCard = node('intel-intervention-list').children[0];
+    const intvMeta = intvCard.children.map(c => c.textContent).join(' | ');
+    assert.match(intvMeta, /Follow-up/);
+    assert.notEqual(node('intel-cal-events').textContent, '0');
+
+    node('export-ledger-button').click();
+    const exportedLedger = JSON.parse(await exportedBlob.text());
+    assert.equal(exportedLedger.format, 'fark-study-ledger');
+    assert.ok(exportedLedger.events.some(e => e.type === 'intervention'));
+    assert.ok(exportedLedger.events.some(e => e.type === 'review'));
 
     node('tab-decks').click();
     assert.equal(node('panel-decks').hidden, false);

@@ -22,6 +22,19 @@ import {
   reviewCardWithStrategy,
   simulateCohort
 } from '../../src/strategies.js';
+import {
+  createLedger,
+  exportLedger,
+  importLedger,
+  projectCardsFromLedger,
+  recordLedgerReview,
+  upsertLedgerCard
+} from '../../src/ledger.js';
+import {
+  diagnoseLearner,
+  evaluateAllInterventions,
+  recordIntervention
+} from '../../src/diagnosis.js';
 
 const $ = id => document.getElementById(id);
 
@@ -30,10 +43,11 @@ const I18N = {
     privacyText: 'Local-only studio',
     eyebrowText: 'OPEN-SOURCE STUDY STUDIO',
     pageTitleHtml: 'Deterministic scheduling.<br><em>Honest</em> learning signals.',
-    introLead: 'Compare SM-2 & Leitner presets, practice {{cloze}} or Anki TSV decks, simulate 30-day cohorts, and run an MCP server locally—no cloud, no tracking, no fake mastery.',
+    introLead: 'Compare DSR, SM-2 & Leitner scheduling, log an append-only Learning Ledger, seal closed-loop interventions, practice {{cloze}} or Anki TSV decks, and run a local MCP server—zero cloud, zero tracking.',
     tabStudy: 'Study Studio',
     tabSimulator: 'Strategy Simulator',
     tabDecks: 'Deck Studio & Packs',
+    tabIntelligence: 'Learning Intelligence',
     kickerActive: 'ACTIVE LEARNING',
     sessionHeading: "Today's session",
     labelQuestions: 'Questions',
@@ -59,7 +73,7 @@ const I18N = {
     nextPlanBtn: 'Plan another session ↗',
     kickerSim: 'COHORT BENCHMARK LAB',
     simHeading: 'Compare spacing strategies empirically.',
-    simBlurb: 'Run a seeded deterministic forgetting-curve simulation across Balanced, Gentle, Intensive, and SM-2 Adaptive to inspect daily load vs backlog vs simulated recall.',
+    simBlurb: 'Run a seeded deterministic forgetting-curve simulation across Balanced, Gentle, Intensive, SM-2 Adaptive, and DSR Memory to inspect daily load vs backlog vs simulated recall.',
     labelSimCards: 'Cards',
     labelSimDays: 'Days',
     labelSimLimit: 'Daily cap',
@@ -130,17 +144,23 @@ const I18N = {
       balanced: 'Balanced',
       gentle: 'Gentle',
       intensive: 'Intensive',
-      sm2: 'SM-2 Adaptive'
+      sm2: 'SM-2 Adaptive',
+      dsr: 'DSR Memory'
     },
     simProfiles: {
       steady: 'Steady learner',
       cramming: 'Fast decay (cram)',
       'missed-days': 'Skips 25% of days'
     },
-    strategyNote: def =>
-      def.adaptive
-        ? `${def.label}: adaptive ease factor (1.3–2.8 EF) shaped by review streak and lapse reasons.`
-        : `${def.label}: again ${def.againMinutes}m · hard ${def.hardHours}h · boxes ${def.intervalsDays.slice(1).map(d => d + 'd').join(' / ')}.`,
+    strategyNote: def => {
+      if (def.id === 'dsr') {
+        return `${def.label}: FSRS-style power-law R(t) = (1 + t/(9S))^-1 with stability damping and slip-resistant difficulty.`;
+      }
+      if (def.adaptive) {
+        return `${def.label}: adaptive ease factor (1.3–2.8 EF) shaped by review streak and lapse reasons.`;
+      }
+      return `${def.label}: again ${def.againMinutes}m · hard ${def.hardHours}h · boxes ${def.intervalsDays.slice(1).map(d => d + 'd').join(' / ')}.`;
+    },
     reasons: {
       'new-card': 'New card',
       'scheduled-review': 'Scheduled review',
@@ -218,16 +238,58 @@ const I18N = {
     noticeExportFail: msg => `Export failed: ${msg}`,
     noticeFileTooLarge: 'File too large. Choose a smaller deck.',
     noticeImported: (count, fmt) => `Imported ${count} card(s) from ${fmt} locally. Nothing was uploaded.`,
-    noticeImportFail: msg => `Import failed: ${msg}`
+    noticeImportFail: msg => `Import failed: ${msg}`,
+    kickerIntelDiag: 'DIAGNOSIS & INTERVENTION LOOP',
+    intelDiagHeading: 'Evidence & closed-loop tracking',
+    intelDiagBlurb: 'Each recommendation carries numeric evidence. Seal an intervention into the append-only ledger to measure real post-study recall & stability gains.',
+    intelIntvTitle: 'Sealed interventions',
+    intelIntvSub: 'Pre vs post evaluation',
+    exportLedgerBtn: 'Export Learning Ledger (MCP JSON) ↗',
+    kickerIntelDsr: 'EVENT-SOURCED DSR MEMORY',
+    intelDsrHeading: 'Stability, recall & calibration',
+    intelLabelEvents: 'Logged events',
+    intelSubEvents: 'Immutable ledger',
+    intelLabelBrier: 'Brier score',
+    intelSubBrier: 'Lower = calibrated',
+    intelLabelR: 'Predicted recall',
+    intelSubR: 'Across events',
+    intelConceptsTitle: 'Concept dynamics',
+    intelConceptsSub: 'Trend · R(now) · Stability',
+    intelNoDiagnoses: 'No bottleneck diagnoses right now. Rate cards across sessions to build empirical DSR predictions and detect prerequisite gaps.',
+    intelSealBtn: 'Seal & Track Intervention +',
+    intelSealedTag: 'TRACKING',
+    intelNoInterventions: 'No interventions sealed yet. Click "Seal & Track Intervention +" on any diagnosis above, then rate a few cards in Study Studio.',
+    intelSignalNames: {
+      'fix-prerequisite': 'Prerequisite gap',
+      'resolve-misconception': 'Misconception',
+      'rescue-fading-memory': 'Fading recall',
+      'slow-down-reading': 'Attention slips',
+      'consolidate-backlog': 'Queue overload'
+    },
+    intelVerdictNames: {
+      'insufficient-data': 'Need >=3 follow-up reviews',
+      'positive-signal': 'Positive uplift signal',
+      'no-improvement-reassess': 'No gain — reassess',
+      'mixed-or-neutral': 'Mixed or neutral'
+    },
+    intelTrendNames: {
+      improving: 'Improving',
+      worsening: 'Worsening',
+      steady: 'Steady',
+      'insufficient-data': 'Gathering history'
+    },
+    noticeInterventionSealed: topic => `Intervention sealed for "${topic}". Rate follow-up cards in Study Studio to evaluate uplift.`,
+    noticeExportLedger: 'Append-only Learning Ledger exported (v0.6 MCP JSON). Keep it private.'
   },
   tr: {
     privacyText: 'Yalnızca yerel stüdyo',
     eyebrowText: 'AÇIK KAYNAK ÇALIŞMA STÜDYOSU',
     pageTitleHtml: 'Deterministik tekrar.<br><em>Dürüst</em> öğrenme sinyalleri.',
-    introLead: 'SM-2 ve Leitner stratejilerini kıyasla, {{boşluklu}} ya da Anki TSV destelerle çalış, 30 günlük simülasyon çalıştır ve yerel MCP sunucusu bağla—bulut veya takip yok.',
+    introLead: 'DSR, SM-2 ve Leitner planlayıcılarını karşılaştır; eklemeli Öğrenme Defteri (Ledger) ve kapalı döngü müdahale takibi kullan; {{boşluklu}} ya da Anki TSV destelerle çalış—sıfır bulut, sıfır takip.',
     tabStudy: 'Çalışma Stüdyosu',
     tabSimulator: 'Strateji Simülatörü',
     tabDecks: 'Deste & Paketler',
+    tabIntelligence: 'Öğrenme Analitiği',
     kickerActive: 'AKTİF ÇALIŞMA',
     sessionHeading: 'Bugünkü oturum',
     labelQuestions: 'Soru sayısı',
@@ -253,7 +315,7 @@ const I18N = {
     nextPlanBtn: 'Yeni oturum planla ↗',
     kickerSim: 'KOHORT KARŞILAŞTIRMA LABI',
     simHeading: 'Stratejileri deneysel olarak karşılaştır.',
-    simBlurb: 'Balanced, Gentle, Intensive ve SM-2 Adaptive stratejilerini aynı unutma eğrisi ve tohumlu simülasyonda kıyaslayarak günlük yük ve birikme farklarını gör.',
+    simBlurb: 'Balanced, Gentle, Intensive, SM-2 Adaptive ve DSR Bellek stratejilerini aynı unutma eğrisi ve tohumlu simülasyonda kıyaslayarak günlük yük ve birikme farklarını gör.',
     labelSimCards: 'Kart',
     labelSimDays: 'Gün',
     labelSimLimit: 'Günlük sınır',
@@ -324,17 +386,23 @@ const I18N = {
       balanced: 'Dengeli',
       gentle: 'Yumuşak',
       intensive: 'Yoğun',
-      sm2: 'SM-2 Uyarlanabilir'
+      sm2: 'SM-2 Uyarlanabilir',
+      dsr: 'DSR Bellek (FSRS)'
     },
     simProfiles: {
       steady: 'Düzenli öğrenci',
       cramming: 'Hızlı unutma (sınav)',
       'missed-days': 'Günlerin %25\'i atlanır'
     },
-    strategyNote: def =>
-      def.adaptive
-        ? `${def.label}: başarı serisi ve hata nedenine göre kolaylık çarpanı (1.3–2.8 EF) uygular.`
-        : `${def.label}: tekrar ${def.againMinutes}dk · zor ${def.hardHours}sa · kutular ${def.intervalsDays.slice(1).map(d => d + 'g').join(' / ')}.`,
+    strategyNote: def => {
+      if (def.id === 'dsr') {
+        return `${def.label}: FSRS tarzı güç yasası R(t) = (1 + t/(9S))^-1, kararlılık sönümlemesi ve dikkatsizlik korumalı zorluk.`;
+      }
+      if (def.adaptive) {
+        return `${def.label}: başarı serisi ve hata nedenine göre kolaylık çarpanı (1.3–2.8 EF) uygular.`;
+      }
+      return `${def.label}: tekrar ${def.againMinutes}dk · zor ${def.hardHours}sa · kutular ${def.intervalsDays.slice(1).map(d => d + 'g').join(' / ')}.`;
+    },
     reasons: {
       'new-card': 'Yeni kart',
       'scheduled-review': 'Planlı tekrar',
@@ -412,13 +480,82 @@ const I18N = {
     noticeExportFail: msg => `Dışa aktarma başarısız: ${msg}`,
     noticeFileTooLarge: 'Dosya çok büyük. Daha küçük bir deste seçin.',
     noticeImported: (count, fmt) => `${fmt} dosyasından ${count} kart yerel olarak içe aktarıldı. Sunucuya yükleme yapılmadı.`,
-    noticeImportFail: msg => `İçe aktarma başarısız: ${msg}`
+    noticeImportFail: msg => `İçe aktarma başarısız: ${msg}`,
+    kickerIntelDiag: 'TANI VE MÜDAHALE DÖNGÜSÜ',
+    intelDiagHeading: 'Kanıtlı tanı ve sonuç takibi',
+    intelDiagBlurb: 'Her öneri sayısal kanıt taşır. Bir müdahaleyi eklemeli deftere mühürleyerek çalışma sonrası gerçek hatırlama ve kararlılık artışını ölç.',
+    intelIntvTitle: 'Mühürlenmiş müdahaleler',
+    intelIntvSub: 'Öncesi vs sonrası değerlendirme',
+    exportLedgerBtn: 'Öğrenme Defterini İndir (MCP JSON) ↗',
+    kickerIntelDsr: 'OLAY TABANLI DSR BELLEĞİ',
+    intelDsrHeading: 'Kararlılık, hatırlama & kalibrasyon',
+    intelLabelEvents: 'Kayıtlı olay',
+    intelSubEvents: 'Değişmez defter',
+    intelLabelBrier: 'Brier skoru',
+    intelSubBrier: 'Düşük = kalibre',
+    intelLabelR: 'Tahmini hatırlama',
+    intelSubR: 'Olay ortalaması',
+    intelConceptsTitle: 'Kavram dinamikleri',
+    intelConceptsSub: 'Eğilim · R(şimdi) · Kararlılık',
+    intelNoDiagnoses: 'Şu an tıkanıklık tanısı yok. Deneysel DSR tahminleri ve önkoşul açıkları için kartları çalışıp puanla.',
+    intelSealBtn: 'Müdahaleyi Mühürle ve Takip Et +',
+    intelSealedTag: 'TAKİPTE',
+    intelNoInterventions: 'Henüz müdahale mühürlenmedi. Yukarıdaki bir tanıda "Müdahaleyi Mühürle" düğmesine bas ve Çalışma Stüdyosunda birkaç tekrar yap.',
+    intelSignalNames: {
+      'fix-prerequisite': 'Önkoşul açığı',
+      'resolve-misconception': 'Kavram karışıklığı',
+      'rescue-fading-memory': 'Zayıflayan iz',
+      'slow-down-reading': 'Dikkatsizlik',
+      'consolidate-backlog': 'Biriken yük'
+    },
+    intelVerdictNames: {
+      'insufficient-data': 'En az 3 takip tekrarı gerekir',
+      'positive-signal': 'Olumlu etki sinyali',
+      'no-improvement-reassess': 'Gelişim yok — yeniden değerlendir',
+      'mixed-or-neutral': 'Karışık veya nötr'
+    },
+    intelTrendNames: {
+      improving: 'İyileşiyor',
+      worsening: 'Kötüleşiyor',
+      steady: 'Durağan',
+      'insufficient-data': 'Geçmiş birikiyor'
+    },
+    noticeInterventionSealed: topic => `${topic} için müdahale mühürlendi. Etkiyi ölçmek için Çalışma Stüdyosunda takip tekrarları yap.`,
+    noticeExportLedger: 'Eklemeli Öğrenme Defteri (v0.6 MCP JSON) indirildi. Gizli tutun.'
   }
 };
+
+const SAMPLE_CONCEPT_LINKS = {
+  Science: ['Mathematics'],
+  Algorithms: ['Data Structures'],
+  Concurrency: ['Systems'],
+  Genetics: ['Cell Biology'],
+  Physiology: ['Cell Biology']
+};
+
+function buildConceptsForCards(deck) {
+  const topics = [...new Set(deck.map(c => c.topic))];
+  const topicSet = new Set(topics);
+  return topics.map(topic => ({
+    id: topic,
+    label: topic,
+    prerequisites: (SAMPLE_CONCEPT_LINKS[topic] ?? []).filter(req => topicSet.has(req))
+  }));
+}
+
+function buildLedgerForDeck(deck, at = new Date()) {
+  return createLedger({
+    cards: deck,
+    concepts: buildConceptsForCards(deck),
+    createdAt: at
+  });
+}
 
 let lang = 'en';
 let activeTab = 'study';
 let cards = buildSamplePack('starter');
+let ledger = buildLedgerForDeck(cards);
+let lastEventMs = Date.now();
 let plan = null;
 let position = 0;
 let ratedCount = 0;
@@ -426,6 +563,12 @@ let skippedCount = 0;
 let answerVisible = false;
 let customCounter = 1;
 let messageTimer;
+
+function nextEventDate() {
+  const now = Date.now();
+  lastEventMs = now > lastEventMs ? now : lastEventMs + 1;
+  return new Date(lastEventMs);
+}
 
 const t = () => I18N[lang];
 const activeStrategyId = () => $('strategy-select').value || 'balanced';
@@ -458,7 +601,8 @@ function switchTab(nextTab) {
   const mapping = [
     ['study', 'tab-study', 'panel-study'],
     ['simulator', 'tab-simulator', 'panel-simulator'],
-    ['decks', 'tab-decks', 'panel-decks']
+    ['decks', 'tab-decks', 'panel-decks'],
+    ['intelligence', 'tab-intelligence', 'panel-intelligence']
   ];
   for (const [key, tabId, panelId] of mapping) {
     const isActive = key === activeTab;
@@ -467,6 +611,7 @@ function switchTab(nextTab) {
   }
   if (activeTab === 'simulator') renderSimulator();
   if (activeTab === 'decks') renderDeckManager();
+  if (activeTab === 'intelligence') renderIntelligence();
 }
 
 function applyLanguage() {
@@ -480,6 +625,7 @@ function applyLanguage() {
   $('tab-study').textContent = copy.tabStudy;
   $('tab-simulator').textContent = copy.tabSimulator;
   $('tab-decks').textContent = copy.tabDecks;
+  $('tab-intelligence').textContent = copy.tabIntelligence;
   $('kicker-active').textContent = copy.kickerActive;
   $('session-heading').textContent = copy.sessionHeading;
   $('label-questions').textContent = copy.labelQuestions;
@@ -563,6 +709,22 @@ function applyLanguage() {
   $('export-md-button').textContent = copy.exportMdBtn;
   $('import-trigger').textContent = copy.importBtn;
   $('reset-button').textContent = copy.resetBtn;
+  $('kicker-intel-diag').textContent = copy.kickerIntelDiag;
+  $('intel-diag-heading').textContent = copy.intelDiagHeading;
+  $('intel-diag-blurb').textContent = copy.intelDiagBlurb;
+  $('intel-intv-title').textContent = copy.intelIntvTitle;
+  $('intel-intv-sub').textContent = copy.intelIntvSub;
+  $('export-ledger-button').textContent = copy.exportLedgerBtn;
+  $('kicker-intel-dsr').textContent = copy.kickerIntelDsr;
+  $('intel-dsr-heading').textContent = copy.intelDsrHeading;
+  $('intel-label-events').textContent = copy.intelLabelEvents;
+  $('intel-sub-events').textContent = copy.intelSubEvents;
+  $('intel-label-brier').textContent = copy.intelLabelBrier;
+  $('intel-sub-brier').textContent = copy.intelSubBrier;
+  $('intel-label-r').textContent = copy.intelLabelR;
+  $('intel-sub-r').textContent = copy.intelSubR;
+  $('intel-concepts-title').textContent = copy.intelConceptsTitle;
+  $('intel-concepts-sub').textContent = copy.intelConceptsSub;
   $('overline-how').textContent = copy.overlineHow;
   $('p1-title').textContent = copy.p1Title;
   $('p1-body').textContent = copy.p1Body;
@@ -938,10 +1100,153 @@ function renderSimulator() {
   }
 }
 
+function formatEvidenceSummary(evidence) {
+  return Object.entries(evidence ?? {})
+    .filter(([, value]) => value != null)
+    .map(([key, value]) => {
+      const rendered = Array.isArray(value)
+        ? value.join(', ')
+        : typeof value === 'number' && !Number.isInteger(value)
+          ? value.toFixed(2)
+          : String(value);
+      return `${key}: ${rendered}`;
+    })
+    .join(' · ');
+}
+
+function formatDeltaPp(value) {
+  if (value == null) return '—';
+  const pp = Math.round(value * 100);
+  return `${pp >= 0 ? '+' : ''}${pp}pp`;
+}
+
+function sealIntervention(rec) {
+  const sealed = recordIntervention(ledger, rec, nextEventDate());
+  ledger = sealed.ledger;
+  renderIntelligence();
+  notify(t().noticeInterventionSealed(rec.targetTopic));
+}
+
+function renderIntelligence() {
+  const copy = t();
+  const evalAt = new Date(Math.max(Date.now(), lastEventMs));
+  const diag = diagnoseLearner(ledger, evalAt);
+  const evaluations = evaluateAllInterventions(ledger, evalAt);
+
+  $('intel-cal-events').textContent = String(ledger.events.length);
+  $('intel-cal-brier').textContent = diag.calibration.brierScore == null ? '—' : diag.calibration.brierScore.toFixed(3);
+  $('intel-cal-r').textContent = diag.calibration.meanPredictedR == null ? '—' : Math.round(diag.calibration.meanPredictedR * 100) + '%';
+
+  const diagList = $('intel-diagnosis-list');
+  diagList.replaceChildren();
+  if (!diag.recommendations.length) {
+    const empty = document.createElement('p');
+    empty.className = 'insight-subnote';
+    empty.textContent = copy.intelNoDiagnoses;
+    diagList.append(empty);
+  } else {
+    for (const rec of diag.recommendations) {
+      const box = document.createElement('div');
+      box.className = 'focus-item intel-diag-card';
+      const head = document.createElement('div');
+      head.className = 'intel-diag-head';
+      const title = document.createElement('strong');
+      title.textContent = rec.headline;
+      const badge = document.createElement('span');
+      badge.className = 'intel-badge';
+      badge.textContent = `${copy.intelSignalNames[rec.signal] ?? rec.signal} · ${rec.confidence}`;
+      head.append(title, badge);
+
+      const action = document.createElement('div');
+      action.className = 'intel-diag-meta';
+      action.textContent = `${rec.recommendedAction} — ${rec.hypothesis}`;
+
+      const evidence = document.createElement('div');
+      evidence.className = 'intel-diag-meta';
+      evidence.textContent = formatEvidenceSummary(rec.evidence);
+
+      const alreadySealed = ledger.events.some(
+        ev => ev.type === 'intervention' && ev.targetTopic === rec.targetTopic && ev.signal === rec.signal
+      );
+      const sealBtn = document.createElement('button');
+      sealBtn.type = 'button';
+      sealBtn.className = 'button button-outline intel-seal-btn';
+      sealBtn.textContent = alreadySealed ? copy.intelSealedTag : copy.intelSealBtn;
+      if (alreadySealed) {
+        sealBtn.disabled = true;
+      } else {
+        sealBtn.addEventListener('click', () => sealIntervention(rec));
+      }
+
+      box.append(head, action, evidence, sealBtn);
+      diagList.append(box);
+    }
+  }
+
+  const intvList = $('intel-intervention-list');
+  intvList.replaceChildren();
+  if (!evaluations.length) {
+    const empty = document.createElement('p');
+    empty.className = 'insight-subnote';
+    empty.textContent = copy.intelNoInterventions;
+    intvList.append(empty);
+  } else {
+    for (const ev of evaluations) {
+      const box = document.createElement('div');
+      box.className = 'focus-item intel-diag-card';
+      const head = document.createElement('div');
+      head.className = 'intel-diag-head';
+      const title = document.createElement('strong');
+      title.textContent = `${ev.targetTopic} · ${copy.intelSignalNames[ev.signal] ?? ev.signal}`;
+      const badge = document.createElement('span');
+      badge.className = 'intel-badge';
+      badge.textContent = copy.intelVerdictNames[ev.verdict] ?? ev.verdict;
+      head.append(title, badge);
+
+      const action = document.createElement('div');
+      action.className = 'intel-diag-meta';
+      action.textContent = ev.action;
+
+      const deltaRow = document.createElement('div');
+      deltaRow.className = 'intel-diag-meta';
+      const netTxt = ev.deltas.netUpliftVsControl == null ? '' : ` · net vs control ${formatDeltaPp(ev.deltas.netUpliftVsControl)}`;
+      deltaRow.textContent =
+        `Follow-up ${ev.followUpTargetReviews} rev · Δrecall ${formatDeltaPp(ev.deltas.recallDelta)} · ` +
+        `Δmisconception ${formatDeltaPp(ev.deltas.misconceptionDelta)} · Δstability ${ev.deltas.stabilityDeltaDays >= 0 ? '+' : ''}${ev.deltas.stabilityDeltaDays}d${netTxt}`;
+
+      box.append(head, action, deltaRow);
+      intvList.append(box);
+    }
+  }
+
+  const conceptList = $('intel-concept-list');
+  conceptList.replaceChildren();
+  for (const c of Object.values(diag.concepts)) {
+    const row = document.createElement('div');
+    row.className = 'seq-row';
+    const strong = document.createElement('strong');
+    const reqText = c.prerequisites.length ? ` (← ${c.prerequisites.join(', ')})` : '';
+    strong.textContent = `${c.label}${reqText} · ${copy.intelTrendNames[c.trend] ?? c.trend}`;
+    const span = document.createElement('span');
+    const recStr = c.recentRecallRate == null ? '—' : Math.round(c.recentRecallRate * 100) + '%';
+    const rStr = c.meanRetrievability == null ? '—' : Math.round(c.meanRetrievability * 100) + '%';
+    const sStr = c.meanStabilityDays == null ? '—' : c.meanStabilityDays + 'd';
+    span.textContent = `${copy.deckCount(c.cardCount)} · ${c.combinedReviews} rev · recall ${recStr} · R(now) ${rStr} · S ${sStr}`;
+    row.append(strong, span);
+    conceptList.append(row);
+  }
+}
+
 function removeCardById(id) {
   const target = cards.find(c => c.id === id);
   if (!target) return;
   cards = cards.filter(c => c.id !== id);
+  const referencedInLedger = ledger.events.some(ev => ev.type === 'review' && ev.cardId === id);
+  if (!referencedInLedger && Object.hasOwn(ledger.cards, id)) {
+    const nextLedger = structuredClone(ledger);
+    delete nextLedger.cards[id];
+    ledger = nextLedger;
+  }
   rebuildPlan();
   notify(t().noticeCardDeleted(target.topic));
 }
@@ -952,6 +1257,7 @@ function render() {
   renderInsights();
   renderDeckManager();
   renderSimulator();
+  renderIntelligence();
 }
 
 function revealAnswer() {
@@ -973,8 +1279,16 @@ function rate(rating) {
   if (rating === 'again' && $('mistake-reason').value) {
     options.reason = $('mistake-reason').value;
   }
-  const updated = reviewCardWithStrategy(cards[index], rating, new Date(), options);
+  const now = nextEventDate();
+  const updated = reviewCardWithStrategy(cards[index], rating, now, options);
   cards[index] = updated;
+  ledger = recordLedgerReview(
+    ledger,
+    updated.id,
+    rating,
+    now,
+    options.reason ? { reason: options.reason } : {}
+  ).ledger;
   ratedCount++;
   position++;
   answerVisible = false;
@@ -1025,6 +1339,7 @@ function addCustomCard(event) {
       answer: $('card-answer').value
     });
     cards = [...cards, newCard];
+    ledger = upsertLedgerCard(ledger, newCard, { at: nextEventDate() });
     $('card-topic').value = '';
     $('card-question').value = '';
     $('card-answer').value = '';
@@ -1058,6 +1373,10 @@ function appendBulkNotes() {
     });
     customCounter += unique.length;
     cards = [...cards, ...unique];
+    const bulkAt = nextEventDate();
+    for (const added of unique) {
+      ledger = upsertLedgerCard(ledger, added, { at: bulkAt });
+    }
     $('bulk-input').value = '';
     rebuildPlan();
     notify(t().noticeBulkAdded(unique.length));
@@ -1067,7 +1386,9 @@ function appendBulkNotes() {
 }
 
 function loadSamplePack(packId) {
-  cards = buildSamplePack(packId);
+  const at = nextEventDate();
+  cards = buildSamplePack(packId, at);
+  ledger = buildLedgerForDeck(cards, at);
   rebuildPlan();
   notify(t().noticePackLoaded(packId, cards.length));
 }
@@ -1119,6 +1440,15 @@ function exportCardsMarkdown() {
   }
 }
 
+function exportLedgerJson() {
+  try {
+    downloadText('fark-learning-ledger.json', exportLedger(ledger), 'application/json');
+    notify(t().noticeExportLedger);
+  } catch (error) {
+    notify(t().noticeExportFail(error.message));
+  }
+}
+
 async function importCards(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
@@ -1138,16 +1468,32 @@ async function importCards(event) {
     let label;
     if (isCsv) {
       restored = importStudyCsv(text);
+      ledger = buildLedgerForDeck(restored, nextEventDate());
       label = 'CSV';
     } else if (isTsv) {
       restored = importStudyTsv(text);
+      ledger = buildLedgerForDeck(restored, nextEventDate());
       label = 'TSV';
     } else if (isMd) {
       restored = importStudyMarkdown(text);
+      ledger = buildLedgerForDeck(restored, nextEventDate());
       label = 'Markdown';
     } else {
-      restored = importStudyDeck(text);
-      label = 'JSON';
+      let maybeJson;
+      try {
+        maybeJson = JSON.parse(text);
+      } catch {
+        maybeJson = null;
+      }
+      if (maybeJson?.format === 'fark-study-ledger') {
+        ledger = importLedger(text);
+        restored = projectCardsFromLedger(ledger, nextEventDate());
+        label = 'Learning Ledger';
+      } else {
+        restored = importStudyDeck(text);
+        ledger = buildLedgerForDeck(restored, nextEventDate());
+        label = 'JSON';
+      }
     }
     cards = restored;
     rebuildPlan();
@@ -1187,6 +1533,7 @@ function handleKeyboardShortcut(event) {
 $('tab-study').addEventListener('click', () => switchTab('study'));
 $('tab-simulator').addEventListener('click', () => switchTab('simulator'));
 $('tab-decks').addEventListener('click', () => switchTab('decks'));
+$('tab-intelligence').addEventListener('click', () => switchTab('intelligence'));
 $('lang-toggle').addEventListener('click', () => {
   lang = lang === 'en' ? 'tr' : 'en';
   applyLanguage();
@@ -1226,7 +1573,9 @@ document.querySelectorAll('[data-rating]').forEach(button =>
 );
 $('next-plan-button').addEventListener('click', rebuildPlan);
 $('reset-button').addEventListener('click', () => {
-  cards = buildSamplePack('starter');
+  const at = nextEventDate();
+  cards = buildSamplePack('starter', at);
+  ledger = buildLedgerForDeck(cards, at);
   rebuildPlan();
   notify(t().noticeReset);
 });
@@ -1234,6 +1583,7 @@ $('export-button').addEventListener('click', exportCardsJson);
 $('export-csv-button').addEventListener('click', exportCardsCsv);
 $('export-tsv-button').addEventListener('click', exportCardsTsv);
 $('export-md-button').addEventListener('click', exportCardsMarkdown);
+$('export-ledger-button').addEventListener('click', exportLedgerJson);
 $('import-trigger').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', importCards);
 document.addEventListener?.('keydown', handleKeyboardShortcut);

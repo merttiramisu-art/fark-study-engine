@@ -1,10 +1,10 @@
 # Transparent Spacing Strategies & Markdown Notes
 
-**FARK Study Engine v0.5.0** expands `./strategies` with transparent SM-2 adaptive easing and deterministic cohort simulations, adds `./interchange` for Cloze + Anki/Quizlet `.tsv`, and complements `./markdown` study sheets.
+**FARK Study Engine v0.6.0** expands `./strategies` with FSRS-style `dsr` power-law scheduling alongside `sm2`, `./memory` prediction calibration, and complements `./interchange` and `./markdown` study sheets.
 
 ## 1. Transparent Review Strategies (`fark-study-engine/strategies`)
 
-Different courses, exam timelines, and study materials tolerate different spacing cadences. Rather than claiming a single black-box schedule is cognitively optimal for everyone, `./strategies` exposes four documented rules sharing identical `0..6` box bounds and card validation with `reviewCard`:
+Different courses, exam timelines, and study materials tolerate different spacing cadences. Rather than claiming a single black-box schedule is cognitively optimal for everyone, `./strategies` exposes five documented rules sharing identical `0..6` box bounds and card validation with `reviewCard`:
 
 | Strategy ID | `again` | `hard` | `good` intervals / behavior | Best suited for experimenting with |
 | --- | --- | --- | --- | --- |
@@ -12,6 +12,7 @@ Different courses, exam timelines, and study materials tolerate different spacin
 | `gentle` | 10 min | 4 hours | `1d · 2d · 4d · 7d · 14d · 30d` | Denser or unfamiliar concepts |
 | `intensive` | 5 min | 2 hours | `0.5d · 1d · 2d · 4d · 7d · 14d` | Compressed short-horizon prep |
 | `sm2` | 5–15 min | max(12h, prev×1.15) | Adaptive `1.3–2.8 EF` multiplier from observed streak & lapses | Testing streak-sensitive easing transparently |
+| `dsr` | 5–15 min | max(12h, prev×1.15) | Power-law `R(t) = (1 + t/(9S))^-1`, spacing bonus, mean-reverting difficulty | Avoiding "ease hell" on attention slips while calibrating recall (`node scripts/benchmark-learning.mjs`) |
 
 Passing `reasonAware: true` to `reviewCardWithStrategy` slows `again` retries slightly more on conceptual `misconception` (0.5x retry delay) than minor `attention` slips (1.5x) and dampens premature leaps on cards with recorded misconceptions. Use `simulateCohort({ cardsCount, days, dailyLimit, profile, seed })` across `'steady'`, `'cramming'`, or `'missed-days'` profiles to compare synthetic forgetting curves deterministically.
 

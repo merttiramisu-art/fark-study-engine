@@ -1,6 +1,6 @@
 {
   "name": "fark-study-engine",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "A tiny, dependency-free, offline-first spaced review engine for learning tools.",
   "repository": {
     "type": "git",
@@ -51,6 +51,18 @@
     "./mcp": {
       "types": "./types/mcp.d.ts",
       "default": "./src/mcp.js"
+    },
+    "./memory": {
+      "types": "./types/memory.d.ts",
+      "default": "./src/memory.js"
+    },
+    "./ledger": {
+      "types": "./types/ledger.d.ts",
+      "default": "./src/ledger.js"
+    },
+    "./diagnosis": {
+      "types": "./types/diagnosis.d.ts",
+      "default": "./src/diagnosis.js"
     }
   },
   "engines": {

@@ -14,11 +14,12 @@ Open **http://127.0.0.1:4173/examples/web/** in your browser. Stop the local ser
 
 You can also try the static browser-only demo directly on GitHub Pages (all state stays in your browser tab memory; nothing is uploaded): [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/).
 
-## What you can try (v0.5.0 3-Tab Studio)
+## What you can try (v0.6.0 4-Tab Studio)
 
-1. **Study Studio tab:** Adjust session/topic/new-card caps and switch between **Balanced**, **Gentle**, **Intensive**, and **SM-2 Adaptive** (`sm2`), toggle **Reverse Q ↔ A** for bi-directional practice or **Reason-aware focus** (`reasonAware`), and drill inline `{{cloze}}` prompts with the optional **Recall scratchpad**, keyboard shortcuts (`Space`, `1–4`, `S`), honest skipping, and live **Honest focus signals**.
-2. **Strategy Simulator tab:** Run the seeded deterministic 30-day **Cohort Benchmark Lab** across `'steady'`, `'cramming'`, and `'missed-days'` profiles, alongside a step-by-step exact interval trace across all 4 strategies.
-3. **Deck Studio & Packs tab:** Switch between 4 original curated sample packs (**General Mix**, **CS & Algorithms (Cloze)**, **Cell Biology**, **EN ↔ TR Vocab**), add single/Cloze cards, bulk-paste Markdown `Q :: A` or Anki/Quizlet `.tsv` lines, search/filter/delete cards, and export/import **JSON**, **CSV**, **TSV**, or **Markdown**. For standalone embeds on any site, see [`<fark-study-deck>` Web Component demo](../examples/widget-demo.html).
+1. **Study Studio tab:** Adjust session/topic/new-card caps and switch between **Balanced**, **Gentle**, **Intensive**, **SM-2 Adaptive** (`sm2`), and **DSR Memory** (`dsr`), toggle **Reverse Q ↔ A** or **Reason-aware focus** (`reasonAware`), and drill inline `{{cloze}}` prompts with the optional **Recall scratchpad**, keyboard shortcuts (`Space`, `1–4`, `S`), honest skipping, and live **Honest focus signals**.
+2. **Strategy Simulator tab:** Run the seeded deterministic 30-day **Cohort Benchmark Lab** across `'steady'`, `'cramming'`, and `'missed-days'` profiles, alongside a step-by-step exact interval trace across all 5 strategies.
+3. **Deck Studio & Packs tab:** Switch between 4 original curated sample packs (**General Mix**, **CS & Algorithms (Cloze)**, **Cell Biology**, **EN ↔ TR Vocab**), add single/Cloze cards, bulk-paste Markdown `Q :: A` or Anki/Quizlet `.tsv` lines, search/filter/delete cards, and export/import **JSON** (both standard decks and `fark-study-ledger` files), **CSV**, **TSV**, or **Markdown**. For standalone embeds on any site, see [`<fark-study-deck>` Web Component demo](../examples/widget-demo.html).
+4. **Learning Intelligence tab:** Inspect live append-only ledger events, DSR **Brier calibration score**, prerequisite graph **Evidence & closed-loop tracking**, click **Seal & Track Intervention +** to freeze baseline metrics, complete follow-up reviews, audit post-intervention deltas, and download the full **Learning Ledger (MCP JSON)**.
 
 ## Why it is not an AI tutor
 

@@ -16,6 +16,9 @@ test('browser app and demo server parse as valid modern JavaScript', () => {
   nodeCheck('src/index.js');
   nodeCheck('src/planner.js');
   nodeCheck('src/portable.js');
+  nodeCheck('src/memory.js');
+  nodeCheck('src/ledger.js');
+  nodeCheck('src/diagnosis.js');
 });
 
 test('all browser app element references exist in the HTML', async () => {
@@ -53,6 +56,9 @@ test('demo only imports local engine modules and no external dependencies', asyn
   assert.match(js, /parseClozePrompt\(/);
   assert.match(js, /reverseCardPrompt\(/);
   assert.match(js, /simulateCohort\(/);
+  assert.match(js, /diagnoseLearner\(/);
+  assert.match(js, /recordIntervention\(/);
+  assert.match(js, /recordLedgerReview\(/);
 });
 
 test('local demo server routes only allowlisted assets with restrictive headers', async t => {
@@ -77,6 +83,9 @@ test('local demo server routes only allowlisted assets with restrictive headers'
     ['/src/markdown.js', 'text/javascript', 'export function exportStudyMarkdown'],
     ['/src/strategies.js', 'text/javascript', 'export function reviewCardWithStrategy'],
     ['/src/interchange.js', 'text/javascript', 'export function exportStudyTsv'],
+    ['/src/memory.js', 'text/javascript', 'export function updateDsrMemory'],
+    ['/src/ledger.js', 'text/javascript', 'export function createLedger'],
+    ['/src/diagnosis.js', 'text/javascript', 'export function diagnoseLearner'],
     ['/src/widget.js', 'text/javascript', 'export class FarkStudyDeckElement']
   ];
   for (const [path, type, expected] of assets) {

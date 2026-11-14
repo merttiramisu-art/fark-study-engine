@@ -1,4 +1,5 @@
 import { createCard, reviewCard, selectReviewQueue, MISTAKE_REASONS } from './index.js';
+import { createMemoryState, updateDsrMemory } from './memory.js';
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -39,6 +40,15 @@ const STRATEGIES = Object.freeze({
     againMinutes: 10,
     hardHours: 12,
     intervalsDays: Object.freeze([0, 1, 4, 10, 24, 58, 130]),
+    adaptive: true
+  }),
+  dsr: Object.freeze({
+    id: 'dsr',
+    label: 'DSR Memory (FSRS-style)',
+    summary: 'Difficulty-Stability-Retrievability power-law model with spacing bonuses and slip resistance (no ease hell).',
+    againMinutes: 10,
+    hardHours: 12,
+    intervalsDays: Object.freeze([0, 2.5, 6, 15, 34, 72, 150]),
     adaptive: true
   })
 });
@@ -154,7 +164,30 @@ function resolveSm2DelayMs(card, updated, rating, reason) {
   }
 }
 
+function resolveDsrDelayMs(card, rating, at, reason) {
+  let mem = createMemoryState();
+  if (card.reviews > 0 && card.lastReviewedAt && card.dueAt) {
+    const prevSpanDays = Math.max(0.2, (Date.parse(card.dueAt) - Date.parse(card.lastReviewedAt)) / DAY_MS);
+    const counts = card.reasonCounts ?? {};
+    const attention = counts.attention ?? 0;
+    const conceptual = Math.max(0, card.lapses - attention);
+    mem = {
+      stabilityDays: prevSpanDays,
+      difficulty: Math.min(9.5, Math.max(2.2, 4.8 + conceptual * 0.45 + attention * 0.08 - Math.max(0, card.box - 1) * 0.25)),
+      lastReviewedAt: card.lastReviewedAt,
+      dueAt: card.dueAt,
+      reps: card.reviews,
+      lapses: card.lapses
+    };
+  }
+  const res = updateDsrMemory(mem, rating, at, reason ? { reason } : {});
+  return Math.max(5 * MINUTE_MS, Math.round(res.intervalDays * DAY_MS));
+}
+
 function resolveDelayMs(def, card, updated, rating, options) {
+  if (def.id === 'dsr') {
+    return resolveDsrDelayMs(card, rating, updated.lastReviewedAt, options.reason);
+  }
   if (def.id === 'sm2') {
     return resolveSm2DelayMs(card, updated, rating, options.reason);
   }
