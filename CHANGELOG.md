@@ -2,6 +2,15 @@
 
 All notable changes to **FARK Study Engine** are documented in this file.
 
+## [0.7.0] - 2026-11-14
+
+### Added
+- **External Event Replay & 0 TL Personal Calibration (`./calibrate`, `types/calibrate.d.ts`):** `normalizeReviewEvents`, `parseReviewLogCsv`, `parseReviewLogJsonl`, `exportReviewLogCsv`, `replayReviewStream`, and L2-regularized `fitLearnerParameters` (with chronological 70/30 prefix-fit / suffix-holdout evaluation and small-sample overfitting guards) fit learner-specific `initialStabilityScale` and `stabilityGainScale` locally on CPU at zero cost.
+- **Custom DSR Scaling in Core Memory & Ledger (`./memory`, `./ledger`):** `updateDsrMemory` and `recordLedgerReview` accept optional `params = { initialStabilityScale, stabilityGainScale }` (`[0.25..3.0]`) alongside default `(1.0, 1.0)` constants (`DSR_DEFAULTS`).
+- **English Mastery (A2→B2) Flagship Pack & Closed-Loop Case Study (`./interchange`, `examples/english-closed-loop.js`, `npm run demo:english`):** added 5th curated sample pack `'english'` (10 original cards across 4 prerequisite-linked topics `English: Core Verbs` → `English: Tenses` → `English: Conditionals & Passive`, plus `English: Phrasal Verbs & Reading`), shared `DEFAULT_CONCEPT_LINKS` / `buildConceptNodesForCards` DAG helper, and a runnable 14-day closed-loop English learning benchmark script.
+- **CLI Replay/Calibration & 13-Tool MCP Server (`./cli`, `./mcp`):** added `fark replay <file>` and `fark calibrate <file>` CLI commands, `--pack english` support in `fark init`, optional `params` in `fark_log_review_event`, and two new MCP tools: `fark_replay_benchmark` and `fark_calibrate_learner`.
+- **Interactive Browser Studio Upgrades (`examples/web/`):** V0.7 adds **English Mastery (A2→B2)** pack switcher, opt-in local persistence (**Remember progress on this device**, off by default, cleared immediately on uncheck), in-browser **Calibrate forgetting speed (0 TL)** runner, and cycle-checked **Prerequisite graph links** editor in **Learning Intelligence**.
+
 ## [0.6.0] - 2026-11-14
 
 ### Added

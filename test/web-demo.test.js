@@ -19,6 +19,8 @@ test('browser app and demo server parse as valid modern JavaScript', () => {
   nodeCheck('src/memory.js');
   nodeCheck('src/ledger.js');
   nodeCheck('src/diagnosis.js');
+  nodeCheck('src/calibrate.js');
+  nodeCheck('src/interchange.js');
 });
 
 test('all browser app element references exist in the HTML', async () => {
@@ -59,6 +61,8 @@ test('demo only imports local engine modules and no external dependencies', asyn
   assert.match(js, /diagnoseLearner\(/);
   assert.match(js, /recordIntervention\(/);
   assert.match(js, /recordLedgerReview\(/);
+  assert.match(js, /fitLearnerParameters\(/);
+  assert.match(js, /linkConceptPrerequisites\(/);
 });
 
 test('local demo server routes only allowlisted assets with restrictive headers', async t => {
@@ -86,6 +90,7 @@ test('local demo server routes only allowlisted assets with restrictive headers'
     ['/src/memory.js', 'text/javascript', 'export function updateDsrMemory'],
     ['/src/ledger.js', 'text/javascript', 'export function createLedger'],
     ['/src/diagnosis.js', 'text/javascript', 'export function diagnoseLearner'],
+    ['/src/calibrate.js', 'text/javascript', 'export function fitLearnerParameters'],
     ['/src/widget.js', 'text/javascript', 'export class FarkStudyDeckElement']
   ];
   for (const [path, type, expected] of assets) {

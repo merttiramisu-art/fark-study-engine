@@ -10,6 +10,7 @@ import { exportStudyDeck, importStudyDeck } from '../../src/portable.js';
 import { exportStudyCsv, importStudyCsv } from '../../src/csv.js';
 import { exportStudyMarkdown, importStudyMarkdown } from '../../src/markdown.js';
 import {
+  buildConceptNodesForCards,
   buildSamplePack,
   exportStudyTsv,
   importStudyTsv,
@@ -26,6 +27,7 @@ import {
   createLedger,
   exportLedger,
   importLedger,
+  linkConceptPrerequisites,
   projectCardsFromLedger,
   recordLedgerReview,
   upsertLedgerCard
@@ -35,6 +37,7 @@ import {
   evaluateAllInterventions,
   recordIntervention
 } from '../../src/diagnosis.js';
+import { fitLearnerParameters } from '../../src/calibrate.js';
 
 const $ = id => document.getElementById(id);
 
@@ -86,6 +89,7 @@ const I18N = {
     packsHeading: 'Switch topic packs',
     packsBlurb: 'Try realistic CS {{cloze}} prompts, Biology misconception tracking, or reversible EN↔TR vocabulary—100% original content.',
     packStarter: 'General Mix (9)',
+    packEnglish: 'English Mastery (A2→B2)',
     packCs: 'CS & Algorithms (Cloze)',
     packBiology: 'Cell Biology',
     packLanguage: 'EN ↔ TR Vocab',
@@ -132,6 +136,7 @@ const I18N = {
     exportTsvBtn: 'Export TSV ↗',
     exportMdBtn: 'Export MD ↗',
     importBtn: 'Import File ↑',
+    labelPersistLocal: 'Remember progress on this device',
     resetBtn: '↻ Reset sample data',
     overlineHow: 'HOW IT WORKS',
     p1Title: 'Review what matters.',
@@ -255,6 +260,16 @@ const I18N = {
     intelSubR: 'Across events',
     intelConceptsTitle: 'Concept dynamics',
     intelConceptsSub: 'Trend · R(now) · Stability',
+    calibrateBtn: 'Calibrate forgetting speed (0 TL)',
+    intelPrereqTitle: 'Prerequisite graph links',
+    intelPrereqSub: 'Cycle-checked DAG',
+    labelPrereqChild: 'Target topic',
+    labelPrereqParent: 'Depends on',
+    prereqAddBtn: 'Link prerequisite +',
+    calIdleNote: 'Analyzes repeat review intervals locally in this tab to fit personal DSR parameters (initialStabilityScale, stabilityGainScale).',
+    calInsufficientNote: (have, need) => `Need at least ${need} repeat predictions in this ledger to fit without overfitting (currently ${have}). Study more reviews or import a ledger.`,
+    calFittedNote: fit =>
+      `Active personal DSR fit (${fit.sampleCount} scored reviews): s0=${fit.params.initialStabilityScale}, g=${fit.params.stabilityGainScale} · Brier ${fit.baseline.brierScore.toFixed(3)} → ${fit.fittedResult.brierScore.toFixed(3)} (${fit.brierDelta >= 0 ? '+' : ''}${fit.brierDelta.toFixed(4)}). ${fit.caveat}`,
     intelNoDiagnoses: 'No bottleneck diagnoses right now. Rate cards across sessions to build empirical DSR predictions and detect prerequisite gaps.',
     intelSealBtn: 'Seal & Track Intervention +',
     intelSealedTag: 'TRACKING',
@@ -279,7 +294,13 @@ const I18N = {
       'insufficient-data': 'Gathering history'
     },
     noticeInterventionSealed: topic => `Intervention sealed for "${topic}". Rate follow-up cards in Study Studio to evaluate uplift.`,
-    noticeExportLedger: 'Append-only Learning Ledger exported (v0.6 MCP JSON). Keep it private.'
+    noticeExportLedger: 'Append-only Learning Ledger exported (v0.7 MCP JSON). Keep it private.',
+    noticePersistOn: 'Local device persistence enabled for this tab (0 bytes uploaded).',
+    noticePersistOff: 'Local device storage cleared. Progress now stays in memory only.',
+    noticePrereqLinked: (child, parent) => `Linked prerequisite: ${child} now depends on ${parent}.`,
+    noticePrereqError: msg => `Could not link prerequisite: ${msg}`,
+    noticeCalibrated: (s0, g) => `Calibrated personal DSR parameters locally (s0=${s0}, g=${g}).`,
+    noticeCalInsufficient: (have, need) => `Logged ${have}/${need} repeat reviews so far — keep studying or import a ledger to calibrate.`
   },
   tr: {
     privacyText: 'Yalnızca yerel stüdyo',
@@ -328,6 +349,7 @@ const I18N = {
     packsHeading: 'Konu paketi seç',
     packsBlurb: 'CS {{boşluk doldurma}}, Biyoloji hata analizi veya çift yönlü İngilizce-Türkçe kelime paketlerini tek tıkla dene.',
     packStarter: 'Genel Karışım (9)',
+    packEnglish: 'İngilizce Ustalık (A2→B2)',
     packCs: 'Algoritmalar (Cloze)',
     packBiology: 'Hücre Biyolojisi',
     packLanguage: 'EN ↔ TR Kelime',
@@ -374,6 +396,7 @@ const I18N = {
     exportTsvBtn: 'TSV İndir ↗',
     exportMdBtn: 'MD İndir ↗',
     importBtn: 'Dosya Yükle ↑',
+    labelPersistLocal: 'İlerlemeyi bu cihazda hatırla',
     resetBtn: '↻ Örnek veriyi sıfırla',
     overlineHow: 'NASIL ÇALIŞIR?',
     p1Title: 'Önemli olanı tekrar et.',
@@ -497,6 +520,16 @@ const I18N = {
     intelSubR: 'Olay ortalaması',
     intelConceptsTitle: 'Kavram dinamikleri',
     intelConceptsSub: 'Eğilim · R(şimdi) · Kararlılık',
+    calibrateBtn: 'Unutma hızımı kalibre et (0 TL)',
+    intelPrereqTitle: 'Önkoşul kavram bağlantıları',
+    intelPrereqSub: 'Döngü korumalı grafik',
+    labelPrereqChild: 'Hedef konu',
+    labelPrereqParent: 'Önkoşul konusu',
+    prereqAddBtn: 'Önkoşul bağla +',
+    calIdleNote: 'Bu sekmedeki tekrar aralıklarını yerelde inceleyerek kişisel DSR bellek eğrini (initialStabilityScale, stabilityGainScale) kalibre eder.',
+    calInsufficientNote: (have, need) => `Aşırı uyumu önlemek için bu defterde en az ${need} tekrar tahmini gerekir (şu an ${have}). Çalışmaya devam et veya defter içe aktar.`,
+    calFittedNote: fit =>
+      `Aktif kişisel DSR uyumu (${fit.sampleCount} puanlı tahmin): s0=${fit.params.initialStabilityScale}, g=${fit.params.stabilityGainScale} · Brier ${fit.baseline.brierScore.toFixed(3)} → ${fit.fittedResult.brierScore.toFixed(3)} (${fit.brierDelta >= 0 ? '+' : ''}${fit.brierDelta.toFixed(4)}).`,
     intelNoDiagnoses: 'Şu an tıkanıklık tanısı yok. Deneysel DSR tahminleri ve önkoşul açıkları için kartları çalışıp puanla.',
     intelSealBtn: 'Müdahaleyi Mühürle ve Takip Et +',
     intelSealedTag: 'TAKİPTE',
@@ -521,32 +554,23 @@ const I18N = {
       'insufficient-data': 'Geçmiş birikiyor'
     },
     noticeInterventionSealed: topic => `${topic} için müdahale mühürlendi. Etkiyi ölçmek için Çalışma Stüdyosunda takip tekrarları yap.`,
-    noticeExportLedger: 'Eklemeli Öğrenme Defteri (v0.6 MCP JSON) indirildi. Gizli tutun.'
+    noticeExportLedger: 'Eklemeli Öğrenme Defteri (v0.7 MCP JSON) indirildi. Gizli tutun.',
+    noticePersistOn: 'Yerel tarayıcı kaydı (localStorage) açıldı. Sunucuya 0 bayt gider.',
+    noticePersistOff: 'Yerel cihaz kaydı silindi. İlerleme yalnızca bu sekmede tutuluyor.',
+    noticePrereqLinked: (child, parent) => `Önkoşul bağlandı: ${child} artık ${parent} konusuna bağlı.`,
+    noticePrereqError: msg => `Önkoşul bağlanamadı: ${msg}`,
+    noticeCalibrated: (s0, g) => `Kişisel DSR belleğin yerelde kalibre edildi (s0=${s0}, g=${g}).`,
+    noticeCalInsufficient: (have, need) => `Şu ana kadar ${have}/${need} tekrar tahmini birikti; kalibrasyon için çalışmaya devam et veya defter yükle.`
   }
 };
 
-const SAMPLE_CONCEPT_LINKS = {
-  Science: ['Mathematics'],
-  Algorithms: ['Data Structures'],
-  Concurrency: ['Systems'],
-  Genetics: ['Cell Biology'],
-  Physiology: ['Cell Biology']
-};
-
-function buildConceptsForCards(deck) {
-  const topics = [...new Set(deck.map(c => c.topic))];
-  const topicSet = new Set(topics);
-  return topics.map(topic => ({
-    id: topic,
-    label: topic,
-    prerequisites: (SAMPLE_CONCEPT_LINKS[topic] ?? []).filter(req => topicSet.has(req))
-  }));
-}
+const STORAGE_ENABLE_KEY = 'fark-study-studio-persist-v07';
+const STORAGE_STATE_KEY = 'fark-study-studio-state-v07';
 
 function buildLedgerForDeck(deck, at = new Date()) {
   return createLedger({
     cards: deck,
-    concepts: buildConceptsForCards(deck),
+    concepts: buildConceptNodesForCards(deck),
     createdAt: at
   });
 }
@@ -562,7 +586,80 @@ let ratedCount = 0;
 let skippedCount = 0;
 let answerVisible = false;
 let customCounter = 1;
+let persistEnabled = false;
+let fittedParams = null;
+let lastCalibration = null;
 let messageTimer;
+
+function getLocalStorageSafe() {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
+  } catch {}
+  return null;
+}
+
+function clearLocalState() {
+  const store = getLocalStorageSafe();
+  if (!store) return;
+  try {
+    store.removeItem(STORAGE_ENABLE_KEY);
+    store.removeItem(STORAGE_STATE_KEY);
+  } catch {}
+}
+
+function saveLocalState() {
+  const store = getLocalStorageSafe();
+  if (!persistEnabled || !store) return;
+  try {
+    store.setItem(STORAGE_ENABLE_KEY, '1');
+    store.setItem(
+      STORAGE_STATE_KEY,
+      JSON.stringify({
+        version: 1,
+        lang,
+        strategy: activeStrategyId(),
+        deckJson: exportStudyDeck(cards),
+        ledgerJson: exportLedger(ledger),
+        fittedParams
+      })
+    );
+  } catch {}
+}
+
+function restoreLocalStateIfEnabled() {
+  const store = getLocalStorageSafe();
+  if (!store) return false;
+  try {
+    if (store.getItem(STORAGE_ENABLE_KEY) !== '1') return false;
+    const raw = store.getItem(STORAGE_STATE_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    const restoredCards = importStudyDeck(saved.deckJson);
+    const restoredLedger = importLedger(saved.ledgerJson);
+    cards = restoredCards;
+    ledger = restoredLedger;
+    persistEnabled = true;
+    $('persist-local-toggle').checked = true;
+    if (saved.lang === 'en' || saved.lang === 'tr') lang = saved.lang;
+    if (typeof saved.strategy === 'string') {
+      try {
+        getReviewStrategy(saved.strategy);
+        $('strategy-select').value = saved.strategy;
+      } catch {}
+    }
+    if (
+      saved.fittedParams &&
+      Number.isFinite(saved.fittedParams.initialStabilityScale) &&
+      Number.isFinite(saved.fittedParams.stabilityGainScale)
+    ) {
+      fittedParams = saved.fittedParams;
+    }
+    return true;
+  } catch {
+    clearLocalState();
+    return false;
+  }
+}
 
 function nextEventDate() {
   const now = Date.now();
@@ -608,6 +705,8 @@ function switchTab(nextTab) {
     const isActive = key === activeTab;
     $(panelId).hidden = !isActive;
     $(tabId).setAttribute('aria-selected', String(isActive));
+    if (isActive) $(tabId).classList.add('active');
+    else $(tabId).classList.remove('active');
   }
   if (activeTab === 'simulator') renderSimulator();
   if (activeTab === 'decks') renderDeckManager();
@@ -664,6 +763,7 @@ function applyLanguage() {
   $('packs-heading').textContent = copy.packsHeading;
   $('packs-blurb').textContent = copy.packsBlurb;
   $('pack-starter').textContent = copy.packStarter;
+  $('pack-english').textContent = copy.packEnglish;
   $('pack-cs').textContent = copy.packCs;
   $('pack-biology').textContent = copy.packBiology;
   $('pack-language').textContent = copy.packLanguage;
@@ -708,6 +808,7 @@ function applyLanguage() {
   $('export-tsv-button').textContent = copy.exportTsvBtn;
   $('export-md-button').textContent = copy.exportMdBtn;
   $('import-trigger').textContent = copy.importBtn;
+  $('label-persist-local').textContent = copy.labelPersistLocal;
   $('reset-button').textContent = copy.resetBtn;
   $('kicker-intel-diag').textContent = copy.kickerIntelDiag;
   $('intel-diag-heading').textContent = copy.intelDiagHeading;
@@ -723,8 +824,14 @@ function applyLanguage() {
   $('intel-sub-brier').textContent = copy.intelSubBrier;
   $('intel-label-r').textContent = copy.intelLabelR;
   $('intel-sub-r').textContent = copy.intelSubR;
+  $('calibrate-button').textContent = copy.calibrateBtn;
   $('intel-concepts-title').textContent = copy.intelConceptsTitle;
   $('intel-concepts-sub').textContent = copy.intelConceptsSub;
+  $('intel-prereq-title').textContent = copy.intelPrereqTitle;
+  $('intel-prereq-sub').textContent = copy.intelPrereqSub;
+  $('label-prereq-child').textContent = copy.labelPrereqChild;
+  $('label-prereq-parent').textContent = copy.labelPrereqParent;
+  $('prereq-add-btn').textContent = copy.prereqAddBtn;
   $('overline-how').textContent = copy.overlineHow;
   $('p1-title').textContent = copy.p1Title;
   $('p1-body').textContent = copy.p1Body;
@@ -1123,8 +1230,63 @@ function formatDeltaPp(value) {
 function sealIntervention(rec) {
   const sealed = recordIntervention(ledger, rec, nextEventDate());
   ledger = sealed.ledger;
+  saveLocalState();
   renderIntelligence();
   notify(t().noticeInterventionSealed(rec.targetTopic));
+}
+
+function populateTopicSelect(selectEl, topics, fallbackIdx = 0) {
+  const prev = selectEl.value;
+  const opts = topics.map(topic => {
+    const opt = document.createElement('option');
+    opt.value = topic;
+    opt.textContent = topic;
+    return opt;
+  });
+  selectEl.replaceChildren(...opts);
+  if (topics.includes(prev)) {
+    selectEl.value = prev;
+  } else if (topics.length > fallbackIdx) {
+    selectEl.value = topics[fallbackIdx];
+  } else {
+    selectEl.value = topics[0] ?? '';
+  }
+}
+
+function runPersonalCalibration() {
+  const fit = fitLearnerParameters(ledger, { minSamples: 8 });
+  lastCalibration = fit;
+  if (fit.fitted) {
+    fittedParams = fit.params;
+    saveLocalState();
+    renderIntelligence();
+    notify(t().noticeCalibrated(fit.params.initialStabilityScale, fit.params.stabilityGainScale));
+  } else {
+    renderIntelligence();
+    notify(t().noticeCalInsufficient(fit.sampleCount, fit.minRequired));
+  }
+}
+
+function addPrerequisiteLink(event) {
+  event.preventDefault();
+  const child = $('prereq-child-topic').value;
+  const parent = $('prereq-parent-topic').value;
+  if (!child || !parent) return;
+  try {
+    const existing = ledger.concepts[child]?.prerequisites ?? [];
+    const nextReqs = existing.includes(parent) ? existing : [...existing, parent];
+    ledger = linkConceptPrerequisites(
+      ledger,
+      child,
+      nextReqs,
+      ledger.concepts[child]?.label ?? child
+    );
+    saveLocalState();
+    renderIntelligence();
+    notify(t().noticePrereqLinked(child, parent));
+  } catch (error) {
+    notify(t().noticePrereqError(error.message));
+  }
 }
 
 function renderIntelligence() {
@@ -1136,6 +1298,11 @@ function renderIntelligence() {
   $('intel-cal-events').textContent = String(ledger.events.length);
   $('intel-cal-brier').textContent = diag.calibration.brierScore == null ? '—' : diag.calibration.brierScore.toFixed(3);
   $('intel-cal-r').textContent = diag.calibration.meanPredictedR == null ? '—' : Math.round(diag.calibration.meanPredictedR * 100) + '%';
+  $('intel-cal-note').textContent = !lastCalibration
+    ? copy.calIdleNote
+    : lastCalibration.fitted
+      ? copy.calFittedNote(lastCalibration)
+      : copy.calInsufficientNote(lastCalibration.sampleCount, lastCalibration.minRequired);
 
   const diagList = $('intel-diagnosis-list');
   diagList.replaceChildren();
@@ -1235,6 +1402,10 @@ function renderIntelligence() {
     row.append(strong, span);
     conceptList.append(row);
   }
+
+  const conceptTopics = Object.keys(diag.concepts).sort((a, b) => a.localeCompare(b));
+  populateTopicSelect($('prereq-child-topic'), conceptTopics, 1);
+  populateTopicSelect($('prereq-parent-topic'), conceptTopics, 0);
 }
 
 function removeCardById(id) {
@@ -1247,6 +1418,7 @@ function removeCardById(id) {
     delete nextLedger.cards[id];
     ledger = nextLedger;
   }
+  saveLocalState();
   rebuildPlan();
   notify(t().noticeCardDeleted(target.topic));
 }
@@ -1282,18 +1454,16 @@ function rate(rating) {
   const now = nextEventDate();
   const updated = reviewCardWithStrategy(cards[index], rating, now, options);
   cards[index] = updated;
-  ledger = recordLedgerReview(
-    ledger,
-    updated.id,
-    rating,
-    now,
-    options.reason ? { reason: options.reason } : {}
-  ).ledger;
+  const ledgerOpts = {};
+  if (options.reason) ledgerOpts.reason = options.reason;
+  if (fittedParams) ledgerOpts.params = fittedParams;
+  ledger = recordLedgerReview(ledger, updated.id, rating, now, ledgerOpts).ledger;
   ratedCount++;
   position++;
   answerVisible = false;
   $('mistake-reason').value = '';
   $('self-answer-input').value = '';
+  saveLocalState();
   render();
   notify(t().noticeSaved(rating, new Date(updated.dueAt).toLocaleString()));
   focusAfterAdvance();
@@ -1343,6 +1513,7 @@ function addCustomCard(event) {
     $('card-topic').value = '';
     $('card-question').value = '';
     $('card-answer').value = '';
+    saveLocalState();
     rebuildPlan();
     notify(t().noticeCardAdded(newCard.topic));
   } catch (error) {
@@ -1378,6 +1549,7 @@ function appendBulkNotes() {
       ledger = upsertLedgerCard(ledger, added, { at: bulkAt });
     }
     $('bulk-input').value = '';
+    saveLocalState();
     rebuildPlan();
     notify(t().noticeBulkAdded(unique.length));
   } catch (error) {
@@ -1389,6 +1561,9 @@ function loadSamplePack(packId) {
   const at = nextEventDate();
   cards = buildSamplePack(packId, at);
   ledger = buildLedgerForDeck(cards, at);
+  fittedParams = null;
+  lastCalibration = null;
+  saveLocalState();
   rebuildPlan();
   notify(t().noticePackLoaded(packId, cards.length));
 }
@@ -1495,7 +1670,10 @@ async function importCards(event) {
         label = 'JSON';
       }
     }
+    fittedParams = null;
+    lastCalibration = null;
     cards = restored;
+    saveLocalState();
     rebuildPlan();
     notify(t().noticeImported(cards.length, label));
   } catch (error) {
@@ -1536,11 +1714,13 @@ $('tab-decks').addEventListener('click', () => switchTab('decks'));
 $('tab-intelligence').addEventListener('click', () => switchTab('intelligence'));
 $('lang-toggle').addEventListener('click', () => {
   lang = lang === 'en' ? 'tr' : 'en';
+  saveLocalState();
   applyLanguage();
   render();
 });
 $('strategy-select').addEventListener('change', () => {
   updateStrategyNote();
+  saveLocalState();
   notify(t().noticeStrategyChanged(t().strategyNames[activeStrategyId()] ?? activeStrategyId()));
 });
 $('reverse-toggle').addEventListener('change', () => renderCard());
@@ -1572,10 +1752,25 @@ document.querySelectorAll('[data-rating]').forEach(button =>
   button.addEventListener('click', () => rate(button.dataset.rating))
 );
 $('next-plan-button').addEventListener('click', rebuildPlan);
+$('calibrate-button').addEventListener('click', runPersonalCalibration);
+$('prereq-form').addEventListener('submit', addPrerequisiteLink);
+$('persist-local-toggle').addEventListener('change', () => {
+  persistEnabled = Boolean($('persist-local-toggle').checked);
+  if (persistEnabled) {
+    saveLocalState();
+    notify(t().noticePersistOn);
+  } else {
+    clearLocalState();
+    notify(t().noticePersistOff);
+  }
+});
 $('reset-button').addEventListener('click', () => {
   const at = nextEventDate();
   cards = buildSamplePack('starter', at);
   ledger = buildLedgerForDeck(cards, at);
+  fittedParams = null;
+  lastCalibration = null;
+  saveLocalState();
   rebuildPlan();
   notify(t().noticeReset);
 });
@@ -1588,5 +1783,6 @@ $('import-trigger').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', importCards);
 document.addEventListener?.('keydown', handleKeyboardShortcut);
 
+restoreLocalStateIfEnabled();
 applyLanguage();
 rebuildPlan();

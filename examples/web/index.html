@@ -26,7 +26,7 @@
     <main>
       <section class="intro compact-intro" aria-labelledby="page-title">
         <div class="intro-copy">
-          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="eyebrow-text">OPEN-SOURCE STUDY STUDIO</span> <span class="version">V0.6</span></div>
+          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="eyebrow-text">OPEN-SOURCE STUDY STUDIO</span> <span class="version">V0.7</span></div>
           <h1 id="page-title">Deterministic scheduling.<br><em>Honest</em> learning signals.</h1>
           <p id="intro-lead">Compare DSR memory, SM-2 &amp; Leitner presets, trace causal prerequisites, evaluate closed-loop interventions, and bridge Claude via local MCP—zero cloud, zero tracking.</p>
         </div>
@@ -152,7 +152,10 @@
                 <button type="button" id="import-trigger" class="button button-light">Import File ↑</button>
                 <input type="file" id="import-file" accept=".json,.csv,.tsv,.txt,.md,.markdown,application/json,text/csv,text/tab-separated-values,text/markdown,text/plain" hidden>
               </div>
-              <button type="button" id="reset-button" class="reset-link">↻ Reset sample data</button>
+              <div class="data-footer">
+                <label class="toggle-chip persist-chip"><input id="persist-local-toggle" type="checkbox"> <span id="label-persist-local">Remember progress on this device</span></label>
+                <button type="button" id="reset-button" class="reset-link">↻ Reset sample data</button>
+              </div>
             </div>
           </aside>
         </div>
@@ -198,6 +201,7 @@
               <p id="packs-blurb" class="add-card-blurb">Try realistic CS {{cloze}} prompts, Biology misconception tracking, or reversible EN↔TR vocabulary—100% original content.</p>
               <div class="pack-grid">
                 <button id="pack-starter" type="button" data-pack="starter" class="button button-outline pack-btn">General Mix (9)</button>
+                <button id="pack-english" type="button" data-pack="english" class="button button-outline pack-btn">English Mastery (A2→B2)</button>
                 <button id="pack-cs" type="button" data-pack="computer-science" class="button button-outline pack-btn">CS &amp; Algorithms (Cloze)</button>
                 <button id="pack-biology" type="button" data-pack="biology" class="button button-outline pack-btn">Cell Biology</button>
                 <button id="pack-language" type="button" data-pack="language" class="button button-outline pack-btn">EN ↔ TR Vocab</button>
@@ -264,8 +268,18 @@
               <div class="stat"><span id="intel-label-brier">Brier score</span><strong id="intel-cal-brier">—</strong><small id="intel-sub-brier">Lower = calibrated</small></div>
               <div class="stat"><span id="intel-label-r">Predicted recall</span><strong id="intel-cal-r">—</strong><small id="intel-sub-r">Across events</small></div>
             </div>
+            <div class="intel-cal-row">
+              <button id="calibrate-button" type="button" class="button button-outline intel-cal-btn">Calibrate forgetting speed (0 TL)</button>
+              <p id="intel-cal-note" class="insight-subnote"></p>
+            </div>
             <div class="topic-heading"><strong id="intel-concepts-title">Concept dynamics</strong><span id="intel-concepts-sub">Trend · R(now) · Stability</span></div>
             <div id="intel-concept-list" class="seq-results" aria-live="polite"></div>
+            <div class="topic-heading"><strong id="intel-prereq-title">Prerequisite graph links</strong><span id="intel-prereq-sub">Cycle-checked DAG</span></div>
+            <form id="prereq-form" class="intel-prereq-form">
+              <label for="prereq-child-topic"><span id="label-prereq-child">Target topic</span><select id="prereq-child-topic"></select></label>
+              <label for="prereq-parent-topic"><span id="label-prereq-parent">Depends on</span><select id="prereq-parent-topic"></select></label>
+              <button id="prereq-add-btn" type="submit" class="button button-outline">Link prerequisite +</button>
+            </form>
           </section>
         </div>
       </section>

@@ -1,11 +1,17 @@
 import type { StudyCard, TimestampInput } from './index.js';
 
-export type SamplePackId = 'starter' | 'computer-science' | 'biology' | 'language';
+export type SamplePackId = 'starter' | 'computer-science' | 'biology' | 'language' | 'english';
 
 export interface SamplePackMetadata {
   id: SamplePackId;
   label: string;
   description: string;
+}
+
+export interface ConceptNodeInput {
+  id: string;
+  label: string;
+  prerequisites: string[];
 }
 
 export interface ClozePromptInfo {
@@ -30,6 +36,13 @@ export interface TsvImportOptions {
 }
 
 export declare const SAMPLE_PACKS: readonly SamplePackMetadata[];
+
+export declare const DEFAULT_CONCEPT_LINKS: Readonly<Record<string, readonly string[]>>;
+
+export function buildConceptNodesForCards(
+  cards: readonly StudyCard[],
+  extraLinks?: Readonly<Record<string, readonly string[]>>
+): ConceptNodeInput[];
 
 export function parseClozePrompt(question: string, fallbackAnswer?: string): ClozePromptInfo;
 

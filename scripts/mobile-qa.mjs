@@ -204,27 +204,24 @@ async function run() {
 
         document.getElementById('tab-decks').click();
         const deckOverflow = document.documentElement.scrollWidth > window.innerWidth + 1;
-        const deckIds = ['pack-starter','pack-cs','pack-biology','pack-language','add-card-submit','deck-search','deck-topic-filter'];
+        const deckIds = ['pack-starter','pack-english','pack-cs','pack-biology','pack-language','add-card-submit','deck-search','deck-topic-filter'];
         const deckControls = deckIds.map(id => {
           const r = document.getElementById(id).getBoundingClientRect();
           return { id, width: r.width, left: r.left, right: r.right };
         });
-        document.getElementById('pack-cs').click();
+        document.getElementById('pack-english').click();
         document.getElementById('tab-intelligence').click();
         const intelOverflow = document.documentElement.scrollWidth > window.innerWidth + 1;
         const intelDiagCount = document.querySelectorAll('#intel-diagnosis-list .focus-item').length;
         const sealBtn = document.querySelector('#intel-diagnosis-list .intel-seal-btn');
         if (sealBtn) sealBtn.click();
+        document.getElementById('calibrate-button').click();
+        const calNote = document.getElementById('intel-cal-note').textContent;
         const intelIntvCount = document.querySelectorAll('#intel-intervention-list .focus-item').length;
-        const exportLedgerRect = document.getElementById('export-ledger-button').getBoundingClientRect();
-        const intelExportBtn = {
-          id: 'export-ledger-button',
-          width: exportLedgerRect.width,
-          left: exportLedgerRect.left,
-          right: exportLedgerRect.right
-        };
-        document.getElementById('tab-study').click();
-        const csQuestion = document.getElementById('question-text').textContent;
+        const intelControls = ['calibrate-button', 'prereq-add-btn', 'export-ledger-button'].map(id => {
+          const r = document.getElementById(id).getBoundingClientRect();
+          return { id, width: r.width, left: r.left, right: r.right };
+        });
         return {
           simOverflow,
           simRows,
@@ -235,25 +232,36 @@ async function run() {
           intelOverflow,
           intelDiagCount,
           intelIntvCount,
-          intelExportBtn,
-          csQuestion
+          calNote,
+          intelControls
         };
       })()`);
+      if (viewport.label === 'desktop-1280') {
+        await devtools.eval(`(() => { window.scrollTo(0, 0); document.getElementById('notice')?.classList.remove('visible'); })()`);
+        await delay(160);
+        const intelShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+        await writeFile('artifacts/screenshots/fark-intelligence-1280.png', Buffer.from(intelShot.data, 'base64'));
+      }
+      const clozeCheck = await devtools.eval(`(() => {
+        document.getElementById('tab-decks').click();
+        document.getElementById('pack-cs').click();
+        document.getElementById('tab-study').click();
+        return document.getElementById('question-text').textContent;
+      })()`);
+      studioChecks.csQuestion = clozeCheck;
       if (studioChecks.simOverflow || studioChecks.simRows !== 5 || studioChecks.seqRows !== 5 || studioChecks.simRunWidth < 42) {
         throw new Error(viewport.label + ' simulator tab failed: ' + JSON.stringify(studioChecks));
       }
       if (studioChecks.deckOverflow) {
         throw new Error(viewport.label + ' decks tab has horizontal overflow: ' + JSON.stringify(studioChecks));
       }
-      if (studioChecks.intelOverflow || studioChecks.intelDiagCount < 1 || studioChecks.intelIntvCount < 1) {
+      if (studioChecks.intelOverflow || studioChecks.intelDiagCount < 1 || studioChecks.intelIntvCount < 1 || !studioChecks.calNote) {
         throw new Error(viewport.label + ' intelligence tab failed: ' + JSON.stringify(studioChecks));
       }
-      if (
-        studioChecks.intelExportBtn.width < 42 ||
-        studioChecks.intelExportBtn.left < -1 ||
-        studioChecks.intelExportBtn.right > viewport.width + 1
-      ) {
-        throw new Error(viewport.label + ' intelligence tab export control clipped: ' + JSON.stringify(studioChecks.intelExportBtn));
+      for (const control of studioChecks.intelControls) {
+        if (control.width < 42 || control.left < -1 || control.right > viewport.width + 1) {
+          throw new Error(viewport.label + ' intelligence tab control clipped: ' + JSON.stringify(control));
+        }
       }
       for (const control of studioChecks.deckControls) {
         if (control.width < 42 || control.left < -1 || control.right > viewport.width + 1) {

@@ -13,7 +13,8 @@ import { MISTAKE_REASONS } from './index.js';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const RATINGS = new Set(['again', 'hard', 'good', 'easy']);
 const REASONS = new Set(MISTAKE_REASONS);
-const OPTION_KEYS = new Set(['reason', 'targetRetention']);
+const OPTION_KEYS = new Set(['reason', 'targetRetention', 'params']);
+const PARAM_KEYS = new Set(['initialStabilityScale', 'stabilityGainScale']);
 
 export const DSR_DEFAULTS = Object.freeze({
   minDifficulty: 1.0,
@@ -22,8 +23,36 @@ export const DSR_DEFAULTS = Object.freeze({
   minStabilityDays: 0.15,
   maxStabilityDays: 365.0,
   defaultTargetRetention: 0.9,
-  powerDecayFactor: 9.0
+  powerDecayFactor: 9.0,
+  defaultInitialStabilityScale: 1.0,
+  defaultStabilityGainScale: 1.0
 });
+
+function validateParams(params) {
+  if (params == null) {
+    return {
+      initialStabilityScale: DSR_DEFAULTS.defaultInitialStabilityScale,
+      stabilityGainScale: DSR_DEFAULTS.defaultStabilityGainScale
+    };
+  }
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    throw new TypeError('params must be an object');
+  }
+  for (const key of Object.keys(params)) {
+    if (!PARAM_KEYS.has(key)) {
+      throw new RangeError('unknown memory parameter: ' + key);
+    }
+  }
+  const initialStabilityScale = params.initialStabilityScale ?? DSR_DEFAULTS.defaultInitialStabilityScale;
+  const stabilityGainScale = params.stabilityGainScale ?? DSR_DEFAULTS.defaultStabilityGainScale;
+  if (!Number.isFinite(initialStabilityScale) || initialStabilityScale < 0.25 || initialStabilityScale > 3.0) {
+    throw new RangeError('initialStabilityScale must be between 0.25 and 3.0');
+  }
+  if (!Number.isFinite(stabilityGainScale) || stabilityGainScale < 0.25 || stabilityGainScale > 3.0) {
+    throw new RangeError('stabilityGainScale must be between 0.25 and 3.0');
+  }
+  return { initialStabilityScale, stabilityGainScale };
+}
 
 function parseTimestampMs(at, field = 'at') {
   const d = at instanceof Date ? new Date(at.getTime()) : new Date(at);
@@ -132,6 +161,7 @@ export function updateDsrMemory(state, rating, at = new Date(), options = {}) {
   if (!Number.isFinite(targetRetention) || targetRetention <= 0.5 || targetRetention >= 0.99) {
     throw new RangeError('targetRetention must be between 0.5 and 0.99 (exclusive)');
   }
+  const params = validateParams(options.params);
 
   const nowMs = parseTimestampMs(at, 'at');
   let elapsedDays = 0;
@@ -159,7 +189,7 @@ export function updateDsrMemory(state, rating, at = new Date(), options = {}) {
       : 0;
     const sReasonFactor = rating === 'again' && reason === 'misconception' ? 0.6 : 1;
     nextD = clamp(baseInitD + dReasonAdjust, DSR_DEFAULTS.minDifficulty, DSR_DEFAULTS.maxDifficulty);
-    nextS = clamp(baseInitS * sReasonFactor, DSR_DEFAULTS.minStabilityDays, DSR_DEFAULTS.maxStabilityDays);
+    nextS = clamp(baseInitS * sReasonFactor * params.initialStabilityScale, DSR_DEFAULTS.minStabilityDays, DSR_DEFAULTS.maxStabilityDays);
   } else {
     const r = predictedR ?? 0.9;
     const dStep = { again: 0.55, hard: 0.22, good: -0.14, easy: -0.5 }[rating];
@@ -194,7 +224,7 @@ export function updateDsrMemory(state, rating, at = new Date(), options = {}) {
       // Low-stability cards consolidate rapidly; mature cards taper via S^-0.18 damping.
       const stabilityDamping = (state.stabilityDays + 1) ** -0.18;
       const delayFactor = 1.15 + 3.2 * (1 - r);
-      const gain = 1.65 * difficultyFactor * stabilityDamping * delayFactor * gradeScale;
+      const gain = 1.65 * params.stabilityGainScale * difficultyFactor * stabilityDamping * delayFactor * gradeScale;
       nextS = clamp(
         state.stabilityDays * (1 + gain),
         DSR_DEFAULTS.minStabilityDays,

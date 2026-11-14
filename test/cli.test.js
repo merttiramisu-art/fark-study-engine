@@ -153,6 +153,27 @@ test('CLI initializes starter decks, converts Markdown, and compares strategies'
   const sim = JSON.parse(out.at(-1));
   assert.equal(sim.profile, 'missed-days');
   assert.equal(sim.results.length, 5);
+
+  assert.equal(await runCli(['init', 'english.json', '--pack', 'english'], io), 0);
+  assert.equal(await runCli(['diagnose', 'english.json', '--at', NOW, '--json'], io), 0);
+  const engDiag = JSON.parse(out.at(-1));
+  assert.equal(engDiag.diagnosis.recommendations[0].signal, 'fix-prerequisite');
+
+  store.set(
+    'log.csv',
+    [
+      'cardId,topic,at,rating,reason',
+      'e1,English: Tenses,2026-10-01T09:00:00Z,again,misconception',
+      'e1,English: Tenses,2026-10-02T09:00:00Z,good,',
+      'e1,English: Tenses,2026-10-05T09:00:00Z,good,',
+      'e1,English: Tenses,2026-10-10T09:00:00Z,good,',
+      'e1,English: Tenses,2026-10-18T09:00:00Z,easy,'
+    ].join('\n')
+  );
+  assert.equal(await runCli(['replay', 'log.csv', '--json'], io), 0);
+  assert.equal(JSON.parse(out.at(-1)).strategies.length, 3);
+  assert.equal(await runCli(['calibrate', 'log.csv', '--min-samples', '4', '--json'], io), 0);
+  assert.equal(JSON.parse(out.at(-1)).fitted, true);
   assert.equal(err.length, 1);
 });
 

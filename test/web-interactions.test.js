@@ -49,6 +49,7 @@ function createFakeDocument() {
   });
   const packs = [
     ['pack-starter', 'starter'],
+    ['pack-english', 'english'],
     ['pack-cs', 'computer-science'],
     ['pack-biology', 'biology'],
     ['pack-language', 'language']
@@ -67,14 +68,25 @@ function createFakeDocument() {
 }
 
 test('skip never grades or reschedules; a rated answer does; finish receives focus', async () => {
+  const { createCard } = await import('../src/index.js');
+  const { createLedger, exportLedger, recordLedgerReview } = await import('../src/ledger.js');
   const previousDocument = globalThis.document;
+  const previousWindow = globalThis.window;
   const originalCreateObjectURL = URL.createObjectURL;
   const originalRevokeObjectURL = URL.revokeObjectURL;
   const originalSetTimeout = globalThis.setTimeout;
   const originalClearTimeout = globalThis.clearTimeout;
   const { doc, node } = createFakeDocument();
+  const storageMap = new Map();
   let exportedBlob;
   globalThis.document = doc;
+  globalThis.window = {
+    localStorage: {
+      getItem: key => (storageMap.has(key) ? storageMap.get(key) : null),
+      setItem: (key, val) => storageMap.set(key, String(val)),
+      removeItem: key => storageMap.delete(key)
+    }
+  };
   URL.createObjectURL = blob => { exportedBlob = blob; return 'blob:fake'; };
   URL.revokeObjectURL = () => {};
   globalThis.setTimeout = () => 1;
@@ -214,8 +226,62 @@ test('skip never grades or reschedules; a rated answer does; finish receives foc
     node('strategy-select').value = 'sm2';
     node('strategy-select').change();
     assert.match(node('strategy-note').textContent, /1\.3–2\.8 EF/);
+
+    node('tab-decks').click();
+    node('pack-english').click();
+    const englishDeck = await exportDeck();
+    assert.equal(englishDeck.length, 10);
+    assert.ok(englishDeck.some(c => c.topic === 'English: Core Verbs'));
+
+    node('tab-intelligence').click();
+    assert.ok(node('intel-diagnosis-list').children.length >= 1, 'English pack should diagnose prerequisite bottleneck');
+
+    node('prereq-child-topic').value = 'English: Phrasal Verbs & Reading';
+    node('prereq-parent-topic').value = 'English: Core Verbs';
+    node('prereq-form').submit();
+    assert.match(node('notice').textContent, /Linked prerequisite/);
+
+    node('prereq-child-topic').value = 'English: Core Verbs';
+    node('prereq-parent-topic').value = 'English: Tenses';
+    node('prereq-form').submit();
+    assert.match(node('notice').textContent, /Could not link prerequisite/);
+
+    node('persist-local-toggle').checked = true;
+    node('persist-local-toggle').change();
+    assert.equal(storageMap.get('fark-study-studio-persist-v07'), '1');
+    assert.match(node('notice').textContent, /Local device persistence enabled/);
+
+    node('calibrate-button').click();
+    assert.match(node('intel-cal-note').textContent, /Need at least 8 repeat predictions/);
+
+    const baseCards = [
+      createCard({ id: 'cal-1', topic: 'English: Core Verbs', question: 'V1?', answer: 'A1' }),
+      createCard({ id: 'cal-2', topic: 'English: Tenses', question: 'T1?', answer: 'A2' })
+    ];
+    let richLedger = createLedger({ cards: baseCards, createdAt: '2026-01-01T09:00:00Z' });
+    for (let day = 1; day <= 6; day++) {
+      const ts1 = new Date(Date.UTC(2026, 0, day * 2, 9, 0, 0));
+      const ts2 = new Date(Date.UTC(2026, 0, day * 2, 10, 0, 0));
+      richLedger = recordLedgerReview(richLedger, 'cal-1', day % 2 === 0 ? 'again' : 'good', ts1, day % 2 === 0 ? { reason: 'misconception' } : {}).ledger;
+      richLedger = recordLedgerReview(richLedger, 'cal-2', day % 2 === 0 ? 'good' : 'again', ts2, day % 2 === 0 ? {} : { reason: 'attention' }).ledger;
+    }
+    const richJson = exportLedger(richLedger);
+    await node('import-file').listeners.get('change')({
+      target: {
+        files: [{ name: 'rich-ledger.json', size: richJson.length, type: 'application/json', async text() { return richJson; } }],
+        value: 'rich-ledger.json'
+      }
+    });
+    node('calibrate-button').click();
+    assert.match(node('notice').textContent, /Calibrated personal DSR/);
+    assert.match(node('intel-cal-note').textContent, /Active personal DSR fit/);
+
+    node('persist-local-toggle').checked = false;
+    node('persist-local-toggle').change();
+    assert.equal(storageMap.size, 0);
   } finally {
     globalThis.document = previousDocument;
+    globalThis.window = previousWindow;
     URL.createObjectURL = originalCreateObjectURL;
     URL.revokeObjectURL = originalRevokeObjectURL;
     globalThis.setTimeout = originalSetTimeout;
