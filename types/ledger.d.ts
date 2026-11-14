@@ -1,5 +1,5 @@
 import type { MistakeReason, NewCardInput, Rating, StudyCard, TimestampInput } from './index.js';
-import type { DsrMemoryState } from './memory.js';
+import type { DsrLearnerParams, DsrMemoryState } from './memory.js';
 
 export interface ConceptNode {
   id: string;
@@ -73,6 +73,7 @@ export interface CreateLedgerOptions {
 export interface RecordLedgerReviewOptions {
   reason?: MistakeReason;
   targetRetention?: number;
+  params?: DsrLearnerParams;
   eventId?: string;
 }
 

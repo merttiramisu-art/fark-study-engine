@@ -9,9 +9,9 @@
 
 **FARK Study Engine**, açık kaynaklı, çevrimdışı ve sıfır maliyetli bir **Öğrenme Defteri (Ledger), Bilişsel Tanı ve Kapalı Döngü Müdahale Altyapısıdır**. Yalnızca başka bir SM-2 tekrar uygulaması üretmek yerine; öğrencinin **ne zaman neyi çalıştığını, hatanın dikkatsizlik mi kavram yanılgısı mı olduğunu, hangi önkoşulun tıkandığını ve verilen önerinin sonrasında işe yarayıp yaramadığını** ölçülebilir biçimde ortaya koyar.
 
-> **Mimari Manifesto & Kıyaslama Raporu:** [Neden FARK Var? Açık Öğrenme Altyapısı (v0.6.0)](docs/open-learning-architecture.md) · `node scripts/benchmark-learning.mjs`
+> **Mimari Manifesto & Kıyaslama Raporu:** [Neden FARK Var? Açık Öğrenme Altyapısı (v0.7.0)](docs/open-learning-architecture.md) · `npm run demo:english` · `node scripts/benchmark-learning.mjs`
 
-**v0.6.0 yenilikleri:** eklemeli olay defteri (`./ledger`), FSRS tarzı DSR bellek modeli & Brier kalibrasyonu (`./memory`, `dsr` stratejisi), önkoşul grafiği & kapalı döngü müdahale değerlendirmesi (`./diagnosis`), 11 araçlı sıfır bağımlılıklı MCP sunucusu (`./mcp`), `fark diagnose` CLI komutu ve 4 sekmeli İnteraktif Stüdyo (`examples/web/`) — yine de sentetik simülasyonların klinik çalışma olmadığını açıkça belirterek.
+**v0.7.0 yenilikleri:** eklemeli olay defteri (`./ledger`), FSRS tarzı DSR bellek modeli & Brier kalibrasyonu (`./memory`), dış CSV/JSONL akışı tekrar oynatma ve **0 TL kişisel bellek kalibrasyonu** (`./calibrate`), **İngilizce Ustalık (A2→B2)** önkoşul müfredat paketi (`--pack english`, `npm run demo:english`), 13 araçlı sıfır bağımlılıklı MCP sunucusu (`./mcp`), `fark replay` / `fark calibrate` CLI komutları ve İnteraktif Stüdyo'da isteğe bağlı yerel kayıt + etkileşimli önkoşul grafiği düzenleyici — yine de sentetik ve gözlemsel verilerin klinik çalışma olmadığını açıkça belirterek.
 
 > **Canlı İnteraktif Stüdyo (yalnızca tarayıcıda, sunucusuz):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
@@ -66,6 +66,13 @@ console.log(getStudySummary([reviewed], now));
 
 Tekrar aralıklarının nasıl belirlendiği [algoritma belgesinde](docs/algorithm.md) açıkça anlatılır. Kullanılan kurallar **deneme amaçlı sezgisel kurallardır**; kanıtlanmış kişisel öğrenme tahminleri değildir.
 
+
+### v0.7.0 — Kişisel Bellek Kalibrasyonu (`./calibrate`), İngilizce (A2→B2) & Stüdyo İyileştirmeleri
+
+- **Dış Olay Akışı Tekrar Oynatma ve 0 TL Kişisel Bellek Kalibrasyonu (`./calibrate`):** `parseReviewLogCsv`, `parseReviewLogJsonl`, `replayReviewStream` ve L2-düzenlemeli `fitLearnerParameters` fonksiyonları mevcut CSV/JSONL çalışma loglarını `balanced`, `sm2` ve `dsr` üzerinden kıyaslar; kronolojik %70/%30 önek-uyum / sonek-test kontrolüyle kişisel unutma parametrelerini (`initialStabilityScale`, `stabilityGainScale`) yerelde uyarlar.
+- **İngilizce Ustalık (A2→B2) Paketi & 14 Günlük Kapalı Döngü Örneği (`npm run demo:english`):** `English: Core Verbs` → `English: Tenses` → `English: Conditionals & Passive` ve `English: Phrasal Verbs & Reading` konularını önkoşul grafiğiyle bağlar ve `examples/english-closed-loop.js` ile Day-7 tanı → müdahale mühürleme → Day-14 net iyileşme (`netUpliftVsControl: +0.75`) döngüsünü çalıştırır.
+- **13 Araçlı MCP & `fark replay` / `fark calibrate` CLI:** `fark_replay_benchmark` ve `fark_calibrate_learner` MCP araçları eklendi; CLI `init` komutu `--pack english` paketini destekler.
+- **Tarayıcı Stüdyosu (`examples/web/`, V0.7):** varsayılan kapalı ve kapatınca veriyi anında temizleyen **"İlerlemeyi bu cihazda hatırla"** (`localStorage`) seçeneği, etkileşimli döngü-korumalı **Önkoşul kavram bağlantıları** formu ve tek tıkla **"Unutma hızımı kalibre et (0 TL)"** düğmesi eklendi.
 
 ### v0.6.0 — Öğrenme Defteri, DSR Bellek, Kapalı Döngü Müdahale ve 4 Sekmeli Stüdyo
 

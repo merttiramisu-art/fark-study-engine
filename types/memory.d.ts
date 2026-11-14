@@ -9,9 +9,15 @@ export interface DsrMemoryState {
   lapses: number;
 }
 
+export interface DsrLearnerParams {
+  initialStabilityScale?: number;
+  stabilityGainScale?: number;
+}
+
 export interface DsrUpdateOptions {
   reason?: MistakeReason;
   targetRetention?: number;
+  params?: DsrLearnerParams;
 }
 
 export interface DsrUpdateResult {
@@ -52,6 +58,8 @@ export declare const DSR_DEFAULTS: Readonly<{
   maxStabilityDays: number;
   defaultTargetRetention: number;
   powerDecayFactor: number;
+  defaultInitialStabilityScale: number;
+  defaultStabilityGainScale: number;
 }>;
 
 export function createMemoryState(): DsrMemoryState;

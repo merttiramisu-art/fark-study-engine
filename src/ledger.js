@@ -300,6 +300,7 @@ export function recordLedgerReview(ledger, cardId, rating, at = new Date(), opti
   const dsrOpts = {};
   if (options.reason !== undefined) dsrOpts.reason = options.reason;
   if (options.targetRetention !== undefined) dsrOpts.targetRetention = options.targetRetention;
+  if (options.params !== undefined) dsrOpts.params = options.params;
 
   const updated = updateDsrMemory(prevMemory, rating, atIso, dsrOpts);
   const card = ledger.cards[cardId];

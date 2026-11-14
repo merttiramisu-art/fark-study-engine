@@ -7,9 +7,9 @@
 
 **FARK Study Engine** is an open-source, offline-first **Learning Ledger, Cognitive Diagnosis & Closed-Loop Intervention Infrastructure**. Rather than building yet another isolated SM-2 flashcard app, FARK helps students, educators, and AI agents inspect **what a learner studied, why errors occur, which prerequisite broke first, and whether a recommended intervention actually improved recall**.
 
-> **Architectural Manifesto & Benchmark:** Read [Why FARK Exists: Open Learning Infrastructure (v0.6.0)](docs/open-learning-architecture.md) or run `node scripts/benchmark-learning.mjs`.
+> **Architectural Manifesto & Benchmark:** Read [Why FARK Exists: Open Learning Infrastructure (v0.7.0)](docs/open-learning-architecture.md) or run `npm run demo:english` and `node scripts/benchmark-learning.mjs`.
 
-**What ships in v0.6.0:** an append-only event ledger (`./ledger`), FSRS-style DSR memory modeling & Brier calibration (`./memory`), prerequisite-graph cognitive diagnosis with closed-loop control evaluation (`./diagnosis`), 11 zero-dependency MCP tools (`./mcp`), CLI `diagnose` (`./cli`), and a 4-Tab Interactive Studio (`examples/web/`)—always honest that synthetic simulations and within-learner observational comparisons are not clinical RCTs.
+**What ships in v0.7.0:** an append-only event ledger (`./ledger`), FSRS-style DSR memory modeling, Brier calibration & 0 TL personal parameter fitting (`./memory`, `./calibrate`), prerequisite-graph cognitive diagnosis with closed-loop control evaluation (`./diagnosis`), 13 zero-dependency MCP tools (`./mcp`), CLI `replay` / `calibrate` / `diagnose` (`./cli`), a flagship **English Mastery (A2→B2)** curriculum case study (`npm run demo:english`), and a 4-Tab Interactive Studio (`examples/web/`)—always honest that synthetic simulations and within-learner observational comparisons are not clinical RCTs.
 
 > **Live Interactive Studio (browser-only, zero tracking):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
@@ -19,22 +19,22 @@
 
 A **dependency-free, offline-capable JavaScript module**:
 
-- **Append-only Learning Ledger (`./ledger`):** event-sourced `fark-study-ledger` v1 log tracking `elapsedDays`, pre-review `predictedR`, optional lapse reasons, prerequisite concept DAGs (`linkConceptPrerequisites`), honest legacy `StudyCard[]` snapshots without fabricating timestamps, and lossless compatibility projections (`projectCardsFromLedger`).
-- **Transparent DSR Memory & Empirical Calibration (`./memory`, `dsr` strategy):** FSRS-style power-law forgetting $R(t) = (1 + t/(9S))^{-1}$, mean-reverting difficulty resistant to SM-2 "ease hell" on attention slips, plus `evaluatePredictionCalibration` (Brier score, log loss, 5 calibration bins).
+- **Append-only Learning Ledger (`./ledger`):** event-sourced `fark-study-ledger` v1 log tracking `elapsedDays`, pre-review `predictedR`, optional lapse reasons, prerequisite concept DAGs (`linkConceptPrerequisites`), optional personal `params` (`initialStabilityScale`, `stabilityGainScale`), honest legacy `StudyCard[]` snapshots without fabricating timestamps, and lossless compatibility projections (`projectCardsFromLedger`).
+- **Transparent DSR Memory, Replay & 0 TL Personal Calibration (`./memory`, `./calibrate`, `dsr` strategy):** FSRS-style power-law forgetting $R(t) = (1 + t/(9S))^{-1}$, mean-reverting difficulty resistant to SM-2 "ease hell" on attention slips, external CSV/JSONL/Ledger event replay across `balanced`, `sm2`, and `dsr` (`replayReviewStream`), and L2-regularized CPU parameter fitting with chronological holdout checks (`fitLearnerParameters`).
 - **Prerequisite Graph Diagnosis & Closed-Loop Interventions (`./diagnosis`):** `computeConceptDynamics` separates recent recovery from old lapses, `diagnoseLearner` ranks evidence-backed signals (`fix-prerequisite`, `resolve-misconception`, `rescue-fading-memory`, `slow-down-reading`, `consolidate-backlog`), `recordIntervention` freezes target + non-target-topic baselines, and `evaluateIntervention` audits post-intervention recall, misconception, stability, and `netUpliftVsControl` deltas.
 - **Study cards & Cloze prompts:** create cards with ID, topic, question, and answer—or inline `{{cloze}}` / `{{c1::answer::hint}}` / `[[blank]]` deletions (`parseClozePrompt`) and ephemeral bi-directional `reverseCardPrompt` views (`./interchange`).
 - **Transparent spacing strategies (`./strategies`):** compare documented presets (`balanced`, `gentle`, `intensive`) alongside `sm2` (`1.3–2.8 EF`) and `dsr`, plus seeded 30-day (`simulateCohort`) and 360-day (`scripts/benchmark-learning.mjs`) benchmarks.
 - **Reason-aware explainable sessions (`./planner`):** plan bounded round-robin study queues with explicit reason codes, optional `reasonAware: true` prioritization, and honest topic recommendations (`getStudyRecommendations`).
 - **Self-reported mistake reasons & honest summaries:** optional `knowledge-gap`, `misconception`, `attention`, or `other` tags; unclassified lapses remain explicitly unknown, duplicate IDs and impossible states are rejected, and unknown accuracy stays `null`.
-- **Portable formats (`./portable`, `./csv`, `./markdown`, `./interchange`):** versioned JSON decks & ledgers, RFC 4180 CSV (with opt-in formula-injection escaping), printable Markdown study sheets, Anki/Quizlet `.tsv` round-trips, and 4 curated sample packs (`buildSamplePack`).
-- **Zero-dependency CLI (`fark`):** `init`, `study --strategy dsr --save`, `diagnose`, `validate`, `summary`, `plan`, `forecast`, `compare`, `simulate`, `convert`, and `mcp` (`node bin/fark.js --help`).
-- **Closed-loop stdio MCP server (`./mcp`, `fark mcp`):** exposes **11 deterministic tools** (`fark_validate_deck`, `fark_get_study_summary`, `fark_plan_session`, `fark_forecast_workload`, `fark_compare_strategies`, `fark_simulate_cohort`, `fark_convert_deck`, `fark_diagnose_learner`, `fark_log_review_event`, `fark_record_intervention`, `fark_evaluate_interventions`) over JSON-RPC 2.0 stdio so AI agents like Claude diagnose from evidence and verify whether their recommendations worked.
+- **Portable formats (`./portable`, `./csv`, `./markdown`, `./interchange`):** versioned JSON decks & ledgers, RFC 4180 CSV (with opt-in formula-injection escaping), printable Markdown study sheets, Anki/Quizlet `.tsv` round-trips, `buildConceptNodesForCards`, and **5 curated original sample packs** (`starter`, `english`, `computer-science`, `biology`, `language`).
+- **Zero-dependency CLI (`fark`):** `init` (including `--pack english`), `study --strategy dsr --save`, `diagnose`, `replay`, `calibrate`, `validate`, `summary`, `plan`, `forecast`, `compare`, `simulate`, `convert`, and `mcp` (`node bin/fark.js --help`).
+- **Closed-loop stdio MCP server (`./mcp`, `fark mcp`):** exposes **13 deterministic tools** (`fark_validate_deck`, `fark_get_study_summary`, `fark_plan_session`, `fark_forecast_workload`, `fark_compare_strategies`, `fark_simulate_cohort`, `fark_convert_deck`, `fark_diagnose_learner`, `fark_log_review_event`, `fark_record_intervention`, `fark_evaluate_interventions`, `fark_replay_benchmark`, `fark_calibrate_learner`) over JSON-RPC 2.0 stdio so AI agents like Claude diagnose from evidence and verify whether their recommendations worked.
 - **Embeddable Web Component (`./widget`):** standalone `<fark-study-deck>` Shadow DOM element + Node-safe `renderWidgetSnapshot` helper ([embed demo](examples/widget-demo.html)).
-- **TypeScript declarations (`types/*.d.ts`):** typed entrypoints for `.`, `./memory`, `./ledger`, `./diagnosis`, `./planner`, `./portable`, `./csv`, `./markdown`, `./strategies`, `./interchange`, `./widget`, and `./mcp`.
-- **4-Tab Interactive Studio (`examples/web/`):** `Study Studio` | `Strategy Simulator` | `Deck Studio & Packs` | `Learning Intelligence` with DSR & SM-2 selectors, Cloze & `Reverse Q↔A` toggles, live Brier calibration, prerequisite diagnosis, one-click intervention sealing & delta auditing, MCP Ledger JSON export/import, and EN/TR switching with zero cloud, login, tracking, or cookies.
+- **TypeScript declarations (`types/*.d.ts`):** typed entrypoints for `.`, `./memory`, `./ledger`, `./diagnosis`, `./calibrate`, `./planner`, `./portable`, `./csv`, `./markdown`, `./strategies`, `./interchange`, `./widget`, and `./mcp`.
+- **4-Tab Interactive Studio (`examples/web/`):** `Study Studio` | `Strategy Simulator` | `Deck Studio & Packs` | `Learning Intelligence` with **English Mastery (A2→B2)** pack, DSR & SM-2 selectors, Cloze & `Reverse Q↔A` toggles, opt-in local persistence (**Remember progress on this device**), live Brier calibration & 0 TL personal DSR fitting, cycle-checked **Prerequisite graph links**, one-click intervention sealing & delta auditing, and MCP Ledger JSON export/import with zero cloud, login, tracking, or cookies.
 - **Honest skipping & mobile QA:** skip without recording a review, keep skipped cards due, and verify all 4 studio tabs at `360px`, `393px`, and `1280px` in headless Chromium.
 
-**Important limitations:** Even with the proposed v0.2 insights, the library does **not** save data to disk, synchronize accounts, track students, provide a user interface, or scientifically infer mastery. Review ratings are supplied by the integrating application or learner; they are not independently graded. The current intervals are simple, documented heuristics, not proven optimal learning schedules.
+**Important limitations:** The library does **not** run background sync, create user accounts, track learners remotely, or scientifically guarantee mastery. Browser local persistence is strictly opt-in (`Remember progress on this device`, off by default). Review ratings are supplied by the integrating application or learner, and pre/post intervention evaluations are within-learner observational comparisons rather than clinical RCTs.
 
 ## Quick start
 
@@ -43,10 +43,12 @@ Requires **Node.js 20+**. No API key, subscription, cloud service, or dependency
 ```bash
 npm test
 npm run demo
+npm run demo:english
 npm run demo:planner
 npm run demo:web  # visit http://127.0.0.1:4173/examples/web/
 node bin/fark.js --help
-node bin/fark.js simulate --profile missed-days
+node bin/fark.js replay ledger.json
+node bin/fark.js calibrate ledger.json
 ```
 
 ### MCP Server integration (Claude Desktop / Claude Code / stdio hosts)

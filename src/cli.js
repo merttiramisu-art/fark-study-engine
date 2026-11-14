@@ -19,6 +19,7 @@ import { exportStudyDeck, importStudyDeck, PORTABLE_LIMITS } from './portable.js
 import { exportStudyCsv, importStudyCsv } from './csv.js';
 import { exportStudyMarkdown, importStudyMarkdown } from './markdown.js';
 import {
+  buildConceptNodesForCards,
   buildSamplePack,
   exportStudyTsv,
   importStudyTsv,
@@ -27,6 +28,12 @@ import {
 import { startMcpServer } from './mcp.js';
 import { createLedger, importLedger } from './ledger.js';
 import { diagnoseLearner, evaluateAllInterventions } from './diagnosis.js';
+import {
+  fitLearnerParameters,
+  parseReviewLogCsv,
+  parseReviewLogJsonl,
+  replayReviewStream
+} from './calibrate.js';
 import {
   compareStrategies,
   getReviewStrategy,
@@ -43,22 +50,24 @@ export const CLI_VERSION = PACKAGE_JSON.version;
 const HELP_TEXT = `FARK Study Engine CLI v${CLI_VERSION}
 
 Usage:
-  fark init     <file> [--format json|csv|tsv|md] [--pack starter|computer-science|biology|language] [--force]
-  fark study    <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--strategy balanced|gentle|intensive|sm2|dsr] [--reason-aware] [--save] [--out <file>]
-  fark validate <file> [--format json|csv|tsv|md] [--json]
-  fark summary  <file> [--format json|csv|tsv|md] [--at <iso>] [--json]
-  fark diagnose <file> [--format json|csv|tsv|md] [--at <iso>] [--json]
-  fark plan     <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--reason-aware] [--json]
-  fark forecast <file> [--format json|csv|tsv|md] [--at <iso>] [--days N] [--json]
-  fark compare  <ratings...> [--strategies balanced,gentle,intensive,sm2,dsr] [--at <iso>] [--json]
-  fark simulate [--cards N] [--days N] [--limit N] [--profile steady|cramming|missed-days] [--seed N] [--json]
-  fark convert  <file> --to <json|csv|tsv|md> [--format json|csv|tsv|md] [--out <file>] [--escape-formulas] [--include-stats] [--collapsible]
-  fark mcp      Start stdio JSON-RPC 2.0 MCP server (zero dependencies)
+  fark init      <file> [--format json|csv|tsv|md] [--pack starter|english|computer-science|biology|language] [--force]
+  fark study     <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--strategy balanced|gentle|intensive|sm2|dsr] [--reason-aware] [--save] [--out <file>]
+  fark validate  <file> [--format json|csv|tsv|md] [--json]
+  fark summary   <file> [--format json|csv|tsv|md] [--at <iso>] [--json]
+  fark diagnose  <file> [--format json|csv|tsv|md] [--at <iso>] [--json]
+  fark replay    <file> [--format json|csv|jsonl] [--json]
+  fark calibrate <file> [--format json|csv|jsonl] [--min-samples N] [--json]
+  fark plan      <file> [--format json|csv|tsv|md] [--at <iso>] [--limit N] [--topic-limit N] [--new-limit N] [--reason-aware] [--json]
+  fark forecast  <file> [--format json|csv|tsv|md] [--at <iso>] [--days N] [--json]
+  fark compare   <ratings...> [--strategies balanced,gentle,intensive,sm2,dsr] [--at <iso>] [--json]
+  fark simulate  [--cards N] [--days N] [--limit N] [--profile steady|cramming|missed-days] [--seed N] [--json]
+  fark convert   <file> --to <json|csv|tsv|md> [--format json|csv|tsv|md] [--out <file>] [--escape-formulas] [--include-stats] [--collapsible]
+  fark mcp       Start stdio JSON-RPC 2.0 MCP server (zero dependencies)
   fark --help | --version`;
 
 const VALUE_FLAGS = new Set([
   'format', 'at', 'limit', 'topic-limit', 'new-limit', 'days', 'to', 'out',
-  'strategy', 'strategies', 'pack', 'cards', 'profile', 'seed'
+  'strategy', 'strategies', 'pack', 'cards', 'profile', 'seed', 'min-samples'
 ]);
 const BOOL_FLAGS = new Set([
   'json', 'escape-formulas', 'include-stats', 'collapsible', 'save', 'force', 'reason-aware', 'help', 'version'
@@ -69,6 +78,8 @@ const COMMAND_FLAGS = {
   validate: new Set(['format', 'json']),
   summary: new Set(['format', 'at', 'json']),
   diagnose: new Set(['format', 'at', 'json']),
+  replay: new Set(['format', 'json']),
+  calibrate: new Set(['format', 'min-samples', 'json']),
   plan: new Set(['format', 'at', 'limit', 'topic-limit', 'new-limit', 'reason-aware', 'json']),
   forecast: new Set(['format', 'at', 'days', 'json']),
   compare: new Set(['strategies', 'at', 'json']),
@@ -301,6 +312,38 @@ function formatComparisonText(comparison) {
     lines.push(`      ${seq}`);
   }
   lines.push(`Note: ${comparison.disclaimer}`);
+  return lines.join('\n');
+}
+
+function loadEventStream(filePath, rawText, explicitFormat) {
+  const fmt = explicitFormat ?? extname(filePath).toLowerCase().replace(/^\./, '');
+  if (fmt === 'csv') return parseReviewLogCsv(rawText);
+  if (fmt === 'jsonl') return parseReviewLogJsonl(rawText);
+  if (fmt === 'json') return importLedger(rawText);
+  throw new RangeError('event log format must be json (fark-study-ledger), csv, or jsonl');
+}
+
+function formatReplayText(report) {
+  const lines = [`Replay benchmark (${report.totalEvents} events across ${report.distinctCards} cards):`];
+  for (const row of report.strategies) {
+    lines.push(
+      `  - ${row.strategy.padEnd(8)} | scored=${row.sampleCount} | Brier=${row.brierScore ?? 'n/a'} | LogLoss=${row.logLoss ?? 'n/a'} | onWindow=${row.timing.onWindowReviews}`
+    );
+  }
+  lines.push(`Note: ${report.caveat}`);
+  return lines.join('\n');
+}
+
+function formatCalibrateText(fit) {
+  const lines = [
+    `Personal DSR Calibration (fitted=${fit.fitted}, reason=${fit.reason}, scored=${fit.sampleCount}):`,
+    `  Params: initialStabilityScale=${fit.params.initialStabilityScale}, stabilityGainScale=${fit.params.stabilityGainScale}`,
+    `  Baseline Brier=${fit.baseline.brierScore ?? 'n/a'} -> Calibrated Brier=${fit.fittedResult.brierScore ?? 'n/a'} (delta=${fit.brierDelta})`
+  ];
+  if (fit.holdout) {
+    lines.push(`  Chronological holdout (${fit.holdout.sampleCount}): ${fit.holdout.baselineBrier} -> ${fit.holdout.fittedBrier}`);
+  }
+  lines.push(`Note: ${fit.caveat}`);
   return lines.join('\n');
 }
 
@@ -580,9 +623,27 @@ export async function runCli(argv, ioOverrides = {}) {
     }
 
     const filePath = positionals[1];
-    const format = inferFormat(filePath, flags.format);
     const rawText = await io.readText(filePath);
     const at = flags.at ?? new Date();
+
+    if (command === 'replay') {
+      const source = loadEventStream(filePath, rawText, flags.format);
+      const report = replayReviewStream(source);
+      io.stdout(flags.json ? JSON.stringify(report, null, 2) : formatReplayText(report));
+      return 0;
+    }
+
+    if (command === 'calibrate') {
+      const source = loadEventStream(filePath, rawText, flags.format);
+      const opts = flags['min-samples'] != null
+        ? { minSamples: parseNonNegativeInt(flags['min-samples'], 'min-samples') }
+        : {};
+      const fit = fitLearnerParameters(source, opts);
+      io.stdout(flags.json ? JSON.stringify(fit, null, 2) : formatCalibrateText(fit));
+      return 0;
+    }
+
+    const format = inferFormat(filePath, flags.format);
 
     if (command === 'diagnose') {
       let ledger;
@@ -590,7 +651,11 @@ export async function runCli(argv, ioOverrides = {}) {
         ledger = importLedger(rawText);
       } catch {
         const deckCards = loadDeck(rawText, format);
-        ledger = createLedger({ cards: deckCards, createdAt: at });
+        ledger = createLedger({
+          cards: deckCards,
+          concepts: buildConceptNodesForCards(deckCards),
+          createdAt: at
+        });
       }
       const diagnosis = diagnoseLearner(ledger, at);
       const interventions = evaluateAllInterventions(ledger, at);

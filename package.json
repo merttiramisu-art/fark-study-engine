@@ -1,7 +1,7 @@
 {
   "name": "fark-study-engine",
-  "version": "0.6.0",
-  "description": "A tiny, dependency-free, offline-first spaced review engine for learning tools.",
+  "version": "0.7.0",
+  "description": "Zero-dependency, offline-first Learning Ledger, DSR memory calibration, prerequisite cognitive diagnosis, closed-loop MCP server & English/STEM study studio.",
   "repository": {
     "type": "git",
     "url": "https://github.com/merttiramisu-art/fark-study-engine.git"
@@ -63,6 +63,10 @@
     "./diagnosis": {
       "types": "./types/diagnosis.d.ts",
       "default": "./src/diagnosis.js"
+    },
+    "./calibrate": {
+      "types": "./types/calibrate.d.ts",
+      "default": "./src/calibrate.js"
     }
   },
   "engines": {
@@ -72,14 +76,21 @@
     "test": "node --test",
     "demo": "node examples/demo.js",
     "demo:planner": "node examples/session-planning.js",
-    "demo:web": "node examples/serve-web.js"
+    "demo:web": "node examples/serve-web.js",
+    "demo:english": "node examples/english-closed-loop.js"
   },
   "license": "MIT",
   "keywords": [
-    "learning",
-    "spaced-review",
-    "flashcards",
-    "offline",
-    "education"
+    "learning-infrastructure",
+    "spaced-repetition",
+    "fsrs",
+    "dsr",
+    "sm2",
+    "cognitive-diagnosis",
+    "mcp-server",
+    "english-learning",
+    "event-sourcing",
+    "offline-first",
+    "zero-dependencies"
   ]
 }

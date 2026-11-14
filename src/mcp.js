@@ -15,10 +15,16 @@ import { getStudyRecommendations, planStudySession } from './planner.js';
 import { exportStudyDeck, importStudyDeck } from './portable.js';
 import { exportStudyCsv, importStudyCsv } from './csv.js';
 import { exportStudyMarkdown, importStudyMarkdown } from './markdown.js';
-import { exportStudyTsv, importStudyTsv } from './interchange.js';
+import { buildConceptNodesForCards, exportStudyTsv, importStudyTsv } from './interchange.js';
 import { compareStrategies, simulateCohort } from './strategies.js';
 import { createLedger, importLedger, recordLedgerReview } from './ledger.js';
 import { diagnoseLearner, evaluateAllInterventions, evaluateIntervention, recordIntervention } from './diagnosis.js';
+import {
+  fitLearnerParameters,
+  parseReviewLogCsv,
+  parseReviewLogJsonl,
+  replayReviewStream
+} from './calibrate.js';
 
 const PACKAGE_JSON = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8')
@@ -177,6 +183,14 @@ export const MCP_TOOLS = Object.freeze([
         cardId: { type: 'string' },
         rating: { type: 'string', enum: ['again', 'hard', 'good', 'easy'] },
         reason: { type: 'string', enum: ['knowledge-gap', 'misconception', 'attention', 'other'] },
+        params: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            initialStabilityScale: { type: 'number', minimum: 0.25, maximum: 3.0 },
+            stabilityGainScale: { type: 'number', minimum: 0.25, maximum: 3.0 }
+          }
+        },
         at: { type: 'string' }
       }
     }
@@ -214,6 +228,42 @@ export const MCP_TOOLS = Object.freeze([
         at: { type: 'string' }
       }
     }
+  },
+  {
+    name: 'fark_replay_benchmark',
+    description: 'Replay chronological review history (from a Learning Ledger or external CSV/JSONL review log) across Balanced, SM-2, and DSR to compare Brier score and log loss.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        ledgerText: { type: 'string', description: 'Serialized fark-study-ledger JSON' },
+        logText: { type: 'string', description: 'External review log CSV or JSONL text' },
+        logFormat: { type: 'string', enum: ['csv', 'jsonl'] },
+        strategies: { type: 'array', items: { type: 'string', enum: ['balanced', 'sm2', 'dsr'] } },
+        dsrParams: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            initialStabilityScale: { type: 'number' },
+            stabilityGainScale: { type: 'number' }
+          }
+        }
+      }
+    }
+  },
+  {
+    name: 'fark_calibrate_learner',
+    description: 'Fit learner-specific DSR forgetting-speed scales offline at 0 TL from ledger or CSV/JSONL event logs and compare baseline vs calibrated Brier score.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        ledgerText: { type: 'string' },
+        logText: { type: 'string' },
+        logFormat: { type: 'string', enum: ['csv', 'jsonl'] },
+        minSamples: { type: 'integer', minimum: 3 }
+      }
+    }
   }
 ]);
 
@@ -239,6 +289,16 @@ function serializeDeckByFormat(cards, format, args) {
       });
     default: throw new RangeError('unsupported target format: ' + format);
   }
+}
+
+function resolveEventSource(args) {
+  if (args.ledgerText) return importLedger(args.ledgerText);
+  if (args.logText && args.logFormat) {
+    if (args.logFormat === 'csv') return parseReviewLogCsv(args.logText);
+    if (args.logFormat === 'jsonl') return parseReviewLogJsonl(args.logText);
+    throw new RangeError('unsupported logFormat: ' + args.logFormat);
+  }
+  throw new RangeError('requires ledgerText or (logText + logFormat)');
 }
 
 function callTool(name, args = {}) {
@@ -297,7 +357,8 @@ function callTool(name, args = {}) {
         ledger = importLedger(args.ledgerText);
       } else if (args.deckText && args.format) {
         const cards = parseDeckByFormat(args.deckText, args.format);
-        ledger = createLedger({ cards, concepts: args.concepts, createdAt: at });
+        const concepts = args.concepts ?? buildConceptNodesForCards(cards);
+        ledger = createLedger({ cards, concepts, createdAt: at });
       } else {
         throw new RangeError('fark_diagnose_learner requires ledgerText or (deckText + format)');
       }
@@ -306,7 +367,8 @@ function callTool(name, args = {}) {
     case 'fark_log_review_event': {
       const ledger = importLedger(args.ledgerText);
       return recordLedgerReview(ledger, args.cardId, args.rating, at, {
-        ...(args.reason !== undefined ? { reason: args.reason } : {})
+        ...(args.reason !== undefined ? { reason: args.reason } : {}),
+        ...(args.params !== undefined ? { params: args.params } : {})
       });
     }
     case 'fark_record_intervention': {
@@ -329,6 +391,19 @@ function callTool(name, args = {}) {
       return {
         evaluations: evaluateAllInterventions(ledger, at, opts)
       };
+    }
+    case 'fark_replay_benchmark': {
+      const source = resolveEventSource(args);
+      return replayReviewStream(source, {
+        ...(args.strategies !== undefined ? { strategies: args.strategies } : {}),
+        ...(args.dsrParams !== undefined ? { dsrParams: args.dsrParams } : {})
+      });
+    }
+    case 'fark_calibrate_learner': {
+      const source = resolveEventSource(args);
+      return fitLearnerParameters(source, {
+        ...(args.minSamples !== undefined ? { minSamples: args.minSamples } : {})
+      });
     }
     default:
       throw new RangeError('unknown tool: ' + name);

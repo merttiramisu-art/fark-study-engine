@@ -17,7 +17,7 @@ test('MCP handles initialize, notifications, ping, tools/list, and validation er
 
   const listed = handleMcpRequest({ jsonrpc: '2.0', id: 3, method: 'tools/list' });
   assert.equal(listed.result.tools.length, MCP_TOOLS.length);
-  assert.equal(MCP_TOOLS.length, 11);
+  assert.equal(MCP_TOOLS.length, 13);
 
   const missingMethod = handleMcpRequest({ jsonrpc: '2.0', id: 4, method: 'bogus/method' });
   assert.equal(missingMethod.error.code, -32601);
@@ -183,6 +183,35 @@ test('MCP executes closed-loop review logging and intervention evaluation on a s
   const ev = JSON.parse(evalRes.result.content[0].text);
   assert.equal(ev.verdict, 'positive-signal');
   assert.ok(ev.deltas.recallDelta > 0.5);
+
+  const csvLog = [
+    'cardId,topic,at,rating,reason',
+    'e1,English: Tenses,2026-11-01T09:00:00Z,again,misconception',
+    'e2,English: Tenses,2026-11-01T09:05:00Z,good,',
+    'e1,English: Tenses,2026-11-02T09:00:00Z,good,',
+    'e2,English: Tenses,2026-11-04T09:00:00Z,good,',
+    'e1,English: Tenses,2026-11-06T09:00:00Z,good,',
+    'e2,English: Tenses,2026-11-09T09:00:00Z,easy,'
+  ].join('\n');
+  const replayRes = handleMcpRequest({
+    jsonrpc: '2.0',
+    id: 41,
+    method: 'tools/call',
+    params: { name: 'fark_replay_benchmark', arguments: { logText: csvLog, logFormat: 'csv' } }
+  });
+  const replayData = JSON.parse(replayRes.result.content[0].text);
+  assert.equal(replayData.totalEvents, 6);
+  assert.equal(replayData.strategies.length, 3);
+
+  const calRes = handleMcpRequest({
+    jsonrpc: '2.0',
+    id: 42,
+    method: 'tools/call',
+    params: { name: 'fark_calibrate_learner', arguments: { logText: csvLog, logFormat: 'csv', minSamples: 4 } }
+  });
+  const calData = JSON.parse(calRes.result.content[0].text);
+  assert.equal(calData.fitted, true);
+  assert.equal(calData.sampleCount, 4);
 });
 
 test('startMcpServer streams newline-delimited JSON-RPC replies over stdio streams', async () => {

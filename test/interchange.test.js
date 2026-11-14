@@ -7,7 +7,8 @@ import {
   reverseCardPrompt,
   exportStudyTsv,
   importStudyTsv,
-  buildSamplePack
+  buildSamplePack,
+  buildConceptNodesForCards
 } from '../src/interchange.js';
 
 const NOW = '2026-11-13T12:00:00.000Z';
@@ -66,11 +67,15 @@ test('TSV export and import round-trip cleanly including Anki #deck: directives'
 });
 
 test('curated sample packs build valid non-empty decks with metadata', () => {
-  assert.equal(SAMPLE_PACKS.length, 4);
+  assert.equal(SAMPLE_PACKS.length, 5);
   for (const meta of SAMPLE_PACKS) {
     const cards = buildSamplePack(meta.id, NOW);
     assert.ok(cards.length >= 7, `${meta.id} should have at least 7 cards`);
     assert.equal(validateDeck(cards), true);
   }
+  const english = buildSamplePack('english', NOW);
+  const concepts = buildConceptNodesForCards(english);
+  const condNode = concepts.find(c => c.id === 'English: Conditionals & Passive');
+  assert.deepEqual(condNode?.prerequisites, ['English: Tenses']);
   assert.throws(() => buildSamplePack('nonexistent', NOW), RangeError);
 });

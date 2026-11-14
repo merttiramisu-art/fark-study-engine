@@ -217,8 +217,42 @@ export const SAMPLE_PACKS = Object.freeze([
     id: 'language',
     label: 'EN ↔ TR Study Vocabulary',
     description: '8 bilingual pairs ideal for trying Reverse Q↔A mode.'
+  }),
+  Object.freeze({
+    id: 'english',
+    label: 'English Mastery (A2→B2)',
+    description: '10 English grammar & reading cards with prerequisite chain (Core Verbs → Tenses → Conditionals) and misconception diagnostics.'
   })
 ]);
+
+export const DEFAULT_CONCEPT_LINKS = Object.freeze({
+  Science: Object.freeze(['Mathematics']),
+  Algorithms: Object.freeze(['Data Structures']),
+  Concurrency: Object.freeze(['Systems']),
+  Genetics: Object.freeze(['Cell Biology']),
+  Physiology: Object.freeze(['Cell Biology']),
+  'Academic Verbs': Object.freeze(['Vocabulary']),
+  'English: Tenses': Object.freeze(['English: Core Verbs']),
+  'English: Conditionals & Passive': Object.freeze(['English: Tenses'])
+});
+
+/** Build concept prerequisite node descriptors filtered to topics present in `cards`. */
+export function buildConceptNodesForCards(cards, extraLinks = {}) {
+  if (!Array.isArray(cards)) throw new TypeError('cards must be an array');
+  const topics = [...new Set(cards.map(c => c.topic))];
+  const topicSet = new Set(topics);
+  return topics.map(topic => {
+    const rawReqs = [
+      ...(DEFAULT_CONCEPT_LINKS[topic] ?? []),
+      ...(extraLinks[topic] ?? [])
+    ];
+    return {
+      id: topic,
+      label: topic,
+      prerequisites: [...new Set(rawReqs)].filter(req => req !== topic && topicSet.has(req))
+    };
+  });
+}
 
 function hoursBefore(hours, ref) {
   return new Date(ref.getTime() - hours * 60 * 60 * 1000).toISOString();
@@ -292,6 +326,29 @@ export function buildSamplePack(packId = 'starter', referenceDate = new Date()) 
     cards[0] = reviewCard(cards[0], 'good', hoursBefore(48, ref));
     cards[3] = reviewCard(cards[3], 'again', hoursBefore(25, ref), { reason: 'knowledge-gap' });
     return cards;
+  }
+
+  if (packId === 'english') {
+    const raw = [
+      createCard({ id: 'eng-01', topic: 'English: Core Verbs', question: 'Write past & past participle of "choose": choose → {{chose}} → {{chosen}}.', answer: 'chose; chosen' }),
+      createCard({ id: 'eng-02', topic: 'English: Core Verbs', question: 'Use {{since}} for a starting point in time and {{for}} for a duration (e.g. ___ 2022 / ___ three years).', answer: 'since; for' }),
+      createCard({ id: 'eng-03', topic: 'English: Tenses', question: 'She {{has lived}} in Ankara since 2021 — use {{Present Perfect}} because the state continues now.', answer: 'has lived; Present Perfect' }),
+      createCard({ id: 'eng-04', topic: 'English: Tenses', question: 'When do we pick Past Simple ("visited") over Present Perfect ("have visited")?', answer: 'When the action happened in a finished time period (e.g. yesterday, in 2019).' }),
+      createCard({ id: 'eng-05', topic: 'English: Tenses', question: 'While I {{was reading}}, the lights went out — background interruption uses {{Past Continuous}}.', answer: 'was reading; Past Continuous' }),
+      createCard({ id: 'eng-06', topic: 'English: Conditionals & Passive', question: '2nd Conditional (unreal present): If I {{had}} more time today, I {{would practice}} speaking.', answer: 'had; would practice' }),
+      createCard({ id: 'eng-07', topic: 'English: Conditionals & Passive', question: '3rd Conditional (unreal past regret): If we {{had left}} earlier, we {{would have caught}} the train.', answer: 'had left; would have caught' }),
+      createCard({ id: 'eng-08', topic: 'English: Conditionals & Passive', question: 'Passive Present Perfect: The report {{has been reviewed}} by the committee.', answer: 'has been reviewed' }),
+      createCard({ id: 'eng-09', topic: 'English: Phrasal Verbs & Reading', question: 'Distinguish "call off" vs "put off": {{call off}} means cancel; {{put off}} means postpone.', answer: 'call off; put off' }),
+      createCard({ id: 'eng-10', topic: 'English: Phrasal Verbs & Reading', question: 'What does "carry out" mean in academic prose (e.g. carry out an experiment)?', answer: 'To conduct, execute, or complete a structured task or study.' })
+    ];
+    raw[0] = reviewCard(raw[0], 'good', hoursBefore(96, ref));
+    raw[2] = reviewCard(raw[2], 'again', hoursBefore(36, ref), { reason: 'misconception' });
+    raw[3] = reviewCard(raw[3], 'again', hoursBefore(28, ref), { reason: 'misconception' });
+    raw[5] = reviewCard(raw[5], 'again', hoursBefore(30, ref), { reason: 'misconception' });
+    raw[6] = reviewCard(raw[6], 'again', hoursBefore(26, ref), { reason: 'misconception' });
+    raw[8] = reviewCard(raw[8], 'again', hoursBefore(40, ref), { reason: 'attention' });
+    raw[9] = reviewCard(raw[9], 'easy', hoursBefore(120, ref));
+    return raw;
   }
 
   throw new RangeError('unknown sample pack: ' + packId);

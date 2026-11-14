@@ -39,12 +39,14 @@ const importedCards = importStudyCsv(csv, { idPrefix: 'bio' });
 Run locally with `node bin/fark.js` (or `fark` when installed):
 
 ```bash
-node bin/fark.js init cs.tsv --pack computer-science
+node bin/fark.js init english.json --pack english
 node bin/fark.js study starter.json --limit 5 --strategy dsr --reason-aware --save
 node bin/fark.js validate cards.csv
 node bin/fark.js convert cards.csv --to tsv --out anki.tsv
 node bin/fark.js summary deck.json --at 2026-11-13T12:00:00Z
 node bin/fark.js diagnose ledger.json --at 2026-11-13T12:00:00Z --json
+node bin/fark.js replay ledger.json --json
+node bin/fark.js calibrate ledger.json --json
 node bin/fark.js plan deck.json --limit 6 --topic-limit 2 --new-limit 2 --reason-aware
 node bin/fark.js forecast deck.json --days 7 --json
 node bin/fark.js compare good,good,again,easy --strategies balanced,sm2,dsr
@@ -52,7 +54,7 @@ node bin/fark.js simulate --cards 40 --days 30 --profile missed-days
 node bin/fark.js mcp
 ```
 
-All commands exit with `0` on valid input and `1` with an explicit error on invalid input or malformed decks (`fark diagnose` accepts both `fark-study-ledger` JSON ledgers and standard decks).
+All commands exit with `0` on valid input and `1` with an explicit error on invalid input or malformed decks (`fark diagnose` accepts both `fark-study-ledger` JSON ledgers and standard decks; `fark replay` and `fark calibrate` accept `fark-study-ledger` JSON, `.csv`, and `.jsonl` review event logs).
 
 ## 4. Zero-dependency MCP Server (`fark mcp` / `fark-study-engine/mcp`)
 
@@ -69,11 +71,11 @@ Connect any stdio JSON-RPC 2.0 MCP client (Claude Desktop, Claude Code, etc.) di
 }
 ```
 
-Available tools (11 total): `fark_validate_deck`, `fark_get_study_summary`, `fark_plan_session`, `fark_forecast_workload`, `fark_compare_strategies`, `fark_simulate_cohort`, `fark_convert_deck`, plus closed-loop learning tools `fark_diagnose_learner`, `fark_log_review_event`, `fark_record_intervention`, and `fark_evaluate_interventions`.
+Available tools (13 total): `fark_validate_deck`, `fark_get_study_summary`, `fark_plan_session`, `fark_forecast_workload`, `fark_compare_strategies`, `fark_simulate_cohort`, `fark_convert_deck`, plus closed-loop learning & calibration tools `fark_diagnose_learner`, `fark_log_review_event`, `fark_record_intervention`, `fark_evaluate_interventions`, `fark_replay_benchmark`, and `fark_calibrate_learner`.
 
 ## 5. TypeScript support
 
-Bundled `.d.ts` declarations (`types/*.d.ts`) cover `.`, `./planner`, `./portable`, `./csv`, `./markdown`, `./strategies`, `./interchange`, `./widget`, `./mcp`, `./memory`, `./ledger`, and `./diagnosis` with zero runtime overhead.
+Bundled `.d.ts` declarations (`types/*.d.ts`) cover `.`, `./planner`, `./portable`, `./csv`, `./markdown`, `./strategies`, `./interchange`, `./widget`, `./mcp`, `./memory`, `./ledger`, `./diagnosis`, and `./calibrate` with zero runtime overhead.
 
 ## Türkçe özet
 
