@@ -1442,3 +1442,51 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .skip-link { transition: none; }
 }
+
+
+/* Progressive disclosure: study first, configuration on demand. */
+.studio-view-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 12px 15px;
+  border: 1px solid #e0dff0;
+  border-radius: 13px;
+  background: rgba(255,255,255,.8);
+}
+.studio-view-controls span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  flex: 1 1 220px;
+}
+.view-mode-toggle {
+  border: 1px solid #c9c3ea;
+  background: #f1effc;
+  color: #44369d;
+  border-radius: 9px;
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.view-mode-toggle:hover { background: #e9e5fa; }
+body.focus-mode #panel-study #settings-form,
+body.focus-mode #panel-study .mode-toggles,
+body.focus-mode #panel-study #strategy-note,
+body.focus-mode #panel-study #forecast-grid,
+body.focus-mode #panel-study #forecast-summary,
+body.focus-mode #panel-study #mistake-list {
+  display: none !important;
+}
+body.focus-mode #panel-study .topic-heading:has(+ #forecast-grid),
+body.focus-mode #panel-study .topic-heading:has(+ #mistake-list) {
+  display: none;
+}
+@media (max-width: 650px) {
+  .studio-view-controls { align-items: stretch; padding: 11px 12px; }
+  .view-mode-toggle { width: 100%; }
+}
