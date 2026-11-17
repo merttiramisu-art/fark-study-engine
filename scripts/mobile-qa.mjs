@@ -147,7 +147,10 @@ async function run() {
       await devtools.send('Page.navigate', { url: address });
       await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
         !!document.getElementById('question-text') &&
-        document.getElementById('question-text').textContent !== 'Ready for your first question?'`));
+        document.getElementById('question-text').textContent !== 'Ready for your first question?'`)).catch(async error => {
+          const snapshot = await devtools.eval(`JSON.stringify({ready:document.readyState,question:document.getElementById('question-text')?.textContent,body:document.body?.textContent?.slice(0,200)})`).catch(e => e.message);
+          throw new Error(error.message + ' | snapshot=' + snapshot + ' | exceptions=' + JSON.stringify(devtools.exceptions));
+        });
 
       const metrics = await devtools.eval(`(() => {
         const ids = ['tab-study','tab-simulator','tab-decks','tab-intelligence','reveal-button','skip-button',
