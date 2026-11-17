@@ -128,7 +128,7 @@ async function run() {
       const res = await fetch('http://127.0.0.1:' + port + '/json/list');
       const targets = await res.json();
       return targets.find(item => item.type === 'page' && item.webSocketDebuggerUrl);
-    });
+    }).catch(error => { throw new Error(error.message + ' | devtoolsPort=' + port + ' | stderr=' + stderrLog.slice(-2500) + ' | exit=' + chrome.exitCode); });
     devtools = new DevTools(target.webSocketDebuggerUrl);
     await devtools.ready();
     await devtools.send('Page.enable');
