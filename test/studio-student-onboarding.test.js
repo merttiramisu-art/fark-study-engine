@@ -18,7 +18,16 @@ test('study entry moves keyboard focus to the question', () => {
 });
 
 test('welcome supports Turkish and English', () => {
-  assert.match(js, /Her seferinde bir soru/);
-  assert.match(js, /One question at a time/);
+  assert.match(js, /Bugün bir adım at/);
+  assert.match(js, /Make today count/);
   assert.match(css, /@media \(max-width: 650px\)/);
+});
+
+test('V2 landing preserves student actions and all four feature tabs', () => {
+  assert.match(html, /class="intro compact-intro v2-home"/);
+  assert.match(html, /id="home-library-button" type="button"/);
+  assert.match(js, /\$\('home-library-button'\)\.addEventListener\('click'/);
+  for (const tab of ['study', 'decks', 'intelligence', 'simulator']) {
+    assert.match(html, new RegExp('id="tab-' + tab + '"'));
+  }
 });
