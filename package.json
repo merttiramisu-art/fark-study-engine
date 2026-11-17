@@ -70,6 +70,9 @@
     },
     "./knowledge-core": {
       "default": "./src/knowledge-core.js"
+    },
+    "./assessment": {
+      "default": "./src/assessment.js"
     }
   },
   "engines": {
