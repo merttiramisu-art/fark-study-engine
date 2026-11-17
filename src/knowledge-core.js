@@ -68,6 +68,7 @@ export function validateKnowledgeCore(core) {
   for (const resource of resources.values()) {
     nonempty(resource.kind, 'resource.kind');
     nonempty(resource.revision, 'resource.revision');
+    if (resource.misconceptionIds != null) uniqueIds(resource.misconceptionIds, 'resource.misconceptionIds');
     checkLinks(uniqueIds(resource.outcomeIds, 'resource.outcomeIds'), outcomes, 'resource outcome');
   }
   for (const question of questions.values()) {
