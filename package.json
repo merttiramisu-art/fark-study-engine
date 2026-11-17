@@ -67,6 +67,14 @@
     "./calibrate": {
       "types": "./types/calibrate.d.ts",
       "default": "./src/calibrate.js"
+    },
+    "./knowledge-core": {
+      "default": "./src/knowledge-core.js",
+      "types": "./types/knowledge-core.d.ts"
+    },
+    "./assessment": {
+      "default": "./src/assessment.js",
+      "types": "./types/assessment.d.ts"
     }
   },
   "engines": {

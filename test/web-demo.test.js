@@ -80,6 +80,7 @@ test('local demo server routes only allowlisted assets with restrictive headers'
     ['/examples/web/', 'text/html', '<title>FARK Study Engine'],
     ['/examples/web/styles.css', 'text/css', '.site-shell'],
     ['/examples/web/app.js', 'text/javascript', 'planStudySession'],
+    ['/examples/web/tab-navigation.js', 'text/javascript', 'export function nextTabIndex'],
     ['/src/index.js', 'text/javascript', 'export function reviewCard'],
     ['/src/planner.js', 'text/javascript', 'export function planStudySession'],
     ['/src/portable.js', 'text/javascript', 'export function importStudyDeck'],

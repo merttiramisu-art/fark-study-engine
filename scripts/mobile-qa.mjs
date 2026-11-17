@@ -123,12 +123,12 @@ async function run() {
       } catch (err) {
         throw new Error(`${err.message}${stderrLog ? ' | stderr: ' + stderrLog.trim() : ''}`);
       }
-    }, 300);
+    }, 600).catch(error => { throw new Error(error.message + ' | chrome=' + chromeExecutable() + ' | stderr=' + stderrLog.slice(-2500) + ' | exit=' + chrome.exitCode); });
     const target = await retry(async () => {
       const res = await fetch('http://127.0.0.1:' + port + '/json/list');
       const targets = await res.json();
       return targets.find(item => item.type === 'page' && item.webSocketDebuggerUrl);
-    });
+    }).catch(error => { throw new Error(error.message + ' | devtoolsPort=' + port + ' | stderr=' + stderrLog.slice(-2500) + ' | exit=' + chrome.exitCode); });
     devtools = new DevTools(target.webSocketDebuggerUrl);
     await devtools.ready();
     await devtools.send('Page.enable');
@@ -147,8 +147,13 @@ async function run() {
       await devtools.send('Page.navigate', { url: address });
       await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
         !!document.getElementById('question-text') &&
-        document.getElementById('question-text').textContent !== 'Ready for your first question?'`));
+        document.getElementById('question-text').textContent !== 'Ready for your first question?'`)).catch(async error => {
+          const snapshot = await devtools.eval(`JSON.stringify({ready:document.readyState,question:document.getElementById('question-text')?.textContent,body:document.body?.textContent?.slice(0,200)})`).catch(e => e.message);
+          throw new Error(error.message + ' | snapshot=' + snapshot + ' | exceptions=' + JSON.stringify(devtools.exceptions));
+        });
 
+      // Advanced controls are intentionally hidden in focus mode; reveal them before measuring reachability.
+      await devtools.eval(`document.getElementById('view-mode-toggle').click()`);
       const metrics = await devtools.eval(`(() => {
         const ids = ['tab-study','tab-simulator','tab-decks','tab-intelligence','reveal-button','skip-button',
                      'session-limit','topic-limit','new-limit','strategy-select','replan-button',
@@ -171,6 +176,8 @@ async function run() {
         throw new Error(viewport.label + ' has horizontal scrolling: ' + JSON.stringify(metrics));
       }
       for (const control of metrics.controls) {
+        // Inactive tab panels are intentionally display:none; measure visible controls only.
+        if (control.width === 0) continue;
         if (control.width < 42 || control.left < -1 || control.right > metrics.viewport + 1) {
           throw new Error(viewport.label + ' inaccessible control: ' + JSON.stringify(control));
         }
