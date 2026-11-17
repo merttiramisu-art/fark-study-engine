@@ -1,3 +1,4 @@
+import { nextTabIndex } from './tab-navigation.js';
 import {
   createCard,
   getStudySummary,
@@ -705,6 +706,7 @@ function switchTab(nextTab) {
     const isActive = key === activeTab;
     $(panelId).hidden = !isActive;
     $(tabId).setAttribute('aria-selected', String(isActive));
+    $(tabId).tabIndex = isActive ? 0 : -1;
     if (isActive) $(tabId).classList.add('active');
     else $(tabId).classList.remove('active');
   }
@@ -1708,6 +1710,21 @@ function handleKeyboardShortcut(event) {
   }
 }
 
+// Standard ARIA tablist behavior: arrow keys, Home and End move focus and activate.
+const studioTabKeys = ['study', 'simulator', 'decks', 'intelligence'];
+const studioTabButtons = studioTabKeys.map(key => $('tab-' + key));
+for (const [index, button] of studioTabButtons.entries()) {
+  button.addEventListener('keydown', event => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    const next = nextTabIndex(event.key, index, studioTabButtons.length);
+    if (next === null) return;
+    event.preventDefault();
+    switchTab(studioTabKeys[next]);
+    studioTabButtons[next].focus();
+    studioTabButtons[next].scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  });
+}
+
 $('tab-study').addEventListener('click', () => switchTab('study'));
 $('tab-simulator').addEventListener('click', () => switchTab('simulator'));
 $('tab-decks').addEventListener('click', () => switchTab('decks'));
@@ -1785,4 +1802,5 @@ document.addEventListener?.('keydown', handleKeyboardShortcut);
 
 restoreLocalStateIfEnabled();
 applyLanguage();
+switchTab(activeTab);
 rebuildPlan();
