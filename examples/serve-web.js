@@ -13,6 +13,7 @@ const ROUTES = new Map([
   ['/examples/web/index.html', ['examples/web/index.html', 'text/html; charset=utf-8']],
   ['/examples/web/styles.css', ['examples/web/styles.css', 'text/css; charset=utf-8']],
   ['/examples/web/app.js', ['examples/web/app.js', 'text/javascript; charset=utf-8']],
+  ['/examples/web/tab-navigation.js', ['examples/web/tab-navigation.js', 'text/javascript; charset=utf-8']],
   ['/src/index.js', ['src/index.js', 'text/javascript; charset=utf-8']],
   ['/src/planner.js', ['src/planner.js', 'text/javascript; charset=utf-8']],
   ['/src/portable.js', ['src/portable.js', 'text/javascript; charset=utf-8']],
