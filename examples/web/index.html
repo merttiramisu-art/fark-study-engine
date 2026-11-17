@@ -92,7 +92,8 @@
               </div>
               <div class="progress-track" role="progressbar" id="progress-bar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" aria-label="Cards processed (rated or skipped)"><span id="progress-fill"></span></div>
 
-              <div id="question-content" class="question-content" aria-live="off">
+              <div id="question-content" class="question-content v2-study-card" aria-live="off">
+                <div class="v2-card-topline"><span id="study-phase-label" class="v2-card-phase">01 · RECALL</span><span class="v2-card-symbol" aria-hidden="true">✳</span></div>
                 <div class="question-header"><span id="question-topic" class="topic-tag">Mathematics</span><span id="question-kind" class="status-tag">DUE REVIEW</span></div>
                 <h3 id="question-text" tabindex="-1">Ready for your first question?</h3>
                 <div id="question-reasons" class="reason-row" aria-label="Why this card was selected"></div>
@@ -103,6 +104,7 @@
                 </div>
 
                 <div id="answer-panel" class="answer-panel" hidden>
+                  <div class="v2-answer-intro" id="answer-intro">Compare with your own recall</div>
                   <span id="sample-answer-label" class="tiny-label">SAMPLE ANSWER</span>
                   <p id="answer-text"></p>
                 </div>
@@ -133,10 +135,11 @@
                 <p id="shortcut-hint" class="shortcut-hint">Keyboard: Space = Reveal · 1–4 = Rate · S = Skip</p>
               </div>
 
-              <div id="finished-content" class="finished-content" hidden>
+              <div id="finished-content" class="finished-content v2-finish" hidden>
                 <span class="finish-symbol" aria-hidden="true">✳</span>
                 <h3 id="finish-heading" tabindex="-1">Session finished.</h3>
                 <p id="finish-description">Your study data has been updated in this browser tab only.</p>
+                <div class="v2-finish-metrics" id="finish-metrics" aria-live="polite"></div>
                 <button id="next-plan-button" type="button" class="button button-primary">Plan another session <span aria-hidden="true">↗</span></button>
               </div>
             </section>
