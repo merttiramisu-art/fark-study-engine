@@ -31,3 +31,13 @@ The private content platform should maintain authoritative source, provenance, v
 ## Validation
 
 Added Node tests for references, duplicate mappings, cycles, evidence attribution, missing mappings, and remediation suggestions. **No claim of passing tests or browser QA until verified.** This bridge is a foundation, not a finished intelligent tutor.
+
+## Version-aware answer evidence (experimental)
+
+Import `createAssessmentHistory`, `recordAssessment`, and `summarizeAssessments` from `fark-study-engine/assessment`.
+
+A question may additionally declare `correctChoiceId` and `choices: [{id, misconceptionId?}]`. The authoritative answer key is supplied by the **private content owner**. A student choice is evaluated against that key; the event snapshots the question revision, outcome IDs, selected choice and correctness. Incorrect distractors can carry an **editorial misconception tag**. This tag means the selected distractor is associated with a possible misconception, **not that the student's mental state was diagnosed**.
+
+`summarizeAssessments` reports observed answer-key correctness separately from self-reported review ratings. If the current question revision, outcome alignment, or answer key differs, prior events are listed as `staleAttempts` and excluded from the current report rather than silently remapped. Deleted questions or outcomes become `orphanAttempts`. The append-only history is owned and persisted by the caller; this library has no database or network connection.
+
+**Important:** Never ship private answer keys to an untrusted client if answer secrecy is required. This offline-first module is intended for local learning workflows or trusted execution. Future work: independent delayed retrieval tests, calibrated inference, revision-aware misconception taxonomy, controlled intervention evaluation, migration policy, and complete TypeScript declarations.
