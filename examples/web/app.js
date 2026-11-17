@@ -1802,4 +1802,5 @@ document.addEventListener?.('keydown', handleKeyboardShortcut);
 
 restoreLocalStateIfEnabled();
 applyLanguage();
+switchTab(activeTab);
 rebuildPlan();
