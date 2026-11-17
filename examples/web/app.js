@@ -747,7 +747,6 @@ function applyLanguage() {
   document.documentElement?.setAttribute('lang', lang);
   $('lang-toggle').textContent = lang === 'en' ? 'TR' : 'EN';
   $('privacy-text').textContent = copy.privacyText;
-  $('eyebrow-text').textContent = copy.eyebrowText;
   $('page-title').innerHTML = lang === 'tr' ? 'Bir soru.<br><em>Bir adım ileri.</em>' : 'One question.<br><em>One step forward.</em>';
   $('intro-lead').textContent = lang === 'tr' ? 'Sıradaki çalışma oturumun hazır. Kendi hızında öğren, tekrar gerektiren konuları gör.' : 'Your next study session is ready. Learn at your own pace, and see what needs practice.';
   $('tab-study').textContent = copy.tabStudy;
