@@ -1386,3 +1386,59 @@ input:focus-visible, textarea:focus-visible, summary:focus-visible {
   .brand-words { font-size: 15px; }
   .header-link { font-size: 11px; }
 }
+
+
+/* Visual system refinement — calm learning workspace with strong hierarchy. */
+:root {
+  --bg: #f5f5fa;
+  --ink: #20233a;
+  --muted: #575e73;
+  --purple: #6151c8;
+  --purple-dark: #4738a9;
+  --line: #dedfeb;
+  --shadow: 0 14px 42px rgba(31, 35, 69, .065);
+}
+body {
+  background:
+    radial-gradient(ellipse 70% 360px at 90% 0%, rgba(203, 196, 250, .28), transparent 75%),
+    radial-gradient(ellipse 55% 280px at 0% 220px, rgba(201, 232, 202, .22), transparent 78%),
+    var(--bg);
+}
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  left: 16px;
+  top: 12px;
+  transform: translateY(-160%);
+  background: #24263f;
+  color: #fff;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 750;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+}
+.skip-link:focus { transform: translateY(0); }
+#studio-main:focus { outline: none; }
+.site-header { border-bottom-color: rgba(96, 92, 142, .16); }
+.work-card, .insight-card, .data-card {
+  border-color: rgba(110, 109, 154, .15);
+  box-shadow: var(--shadow);
+}
+.work-card { background: rgba(255, 255, 255, .98); }
+.studio-tab { transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.studio-tab[aria-selected="true"] { box-shadow: 0 5px 16px rgba(36,38,63,.13); }
+.button-primary { box-shadow: 0 6px 18px rgba(97,81,200,.18); }
+.button-primary:hover { box-shadow: 0 8px 22px rgba(97,81,200,.25); }
+.question-content h3 { max-width: 35ch; }
+.scratchpad-wrap textarea:focus-visible {
+  background: #fff;
+  border-color: var(--purple);
+}
+@media (max-width: 650px) {
+  .site-header { border-bottom-color: rgba(96, 92, 142, .2); }
+  .work-card, .insight-card, .data-card { box-shadow: 0 8px 26px rgba(31,35,69,.05); }
+  .studio-tab[aria-selected="true"] { box-shadow: 0 3px 10px rgba(36,38,63,.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skip-link { transition: none; }
+}
