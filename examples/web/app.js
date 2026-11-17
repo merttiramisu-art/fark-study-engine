@@ -944,10 +944,31 @@ function renderCard() {
   const hasQuestion = !!item;
   $('question-content').hidden = !hasQuestion;
   $('finished-content').hidden = hasQuestion;
+  $('study-phase-label').textContent = lang === 'tr'
+    ? (answerVisible ? '02 · DEĞERLENDİR' : '01 · HATIRLA')
+    : (answerVisible ? '02 · REFLECT' : '01 · RECALL');
+  $('answer-intro').textContent = lang === 'tr' ? 'Kendi yanıtınla karşılaştır' : 'Compare with your own recall';
+  $('question-content').classList.toggle('v2-answer-revealed', answerVisible);
   if (!hasQuestion) {
     $('finish-heading').textContent = plan.dueCount === 0
       ? copy.finishAllCaughtUp
       : position > 0 ? copy.finishDone : copy.finishNone;
+    $('finish-metrics').replaceChildren();
+    const summary = [
+      [lang === 'tr' ? 'Değerlendirilen' : 'Rated', ratedCount],
+      [lang === 'tr' ? 'Atlanan' : 'Skipped', skippedCount],
+      [lang === 'tr' ? 'İşlenen' : 'Processed', position]
+    ];
+    for (const [label, value] of summary) {
+      const metric = document.createElement('div');
+      metric.className = 'v2-finish-metric';
+      const number = document.createElement('strong');
+      number.textContent = String(value);
+      const caption = document.createElement('span');
+      caption.textContent = label;
+      metric.append(number, caption);
+      $('finish-metrics').append(metric);
+    }
     $('finish-description').textContent = plan.dueCount === 0
       ? copy.finishDescCaughtUp
       : position > 0
