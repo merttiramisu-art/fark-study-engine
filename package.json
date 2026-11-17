@@ -91,6 +91,10 @@
     "./learning-orchestrator": {
       "types": "./types/learning-orchestrator.d.ts",
       "default": "./src/learning-orchestrator.js"
+    },
+    "./learning-session": {
+      "types": "./types/learning-session.d.ts",
+      "default": "./src/learning-session.js"
     }
   },
   "engines": {
@@ -101,7 +105,8 @@
     "demo": "node examples/demo.js",
     "demo:planner": "node examples/session-planning.js",
     "demo:web": "node examples/serve-web.js",
-    "demo:english": "node examples/english-closed-loop.js"
+    "demo:english": "node examples/english-closed-loop.js",
+    "demo:session": "node examples/learning-session-demo.js"
   },
   "license": "MIT",
   "keywords": [
