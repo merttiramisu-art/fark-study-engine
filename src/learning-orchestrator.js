@@ -25,10 +25,10 @@ function currentAttempt(core, attempt) {
     Array.isArray(q.choices)&&q.choices.some(c=>c.id===attempt.selectedChoiceId)&&
     (attempt.correct || (q.choices.find(c=>c.id===attempt.selectedChoiceId)?.misconceptionId??null)===(attempt.misconceptionId??null));
 }
-function validCompletion(core,baseline,c,now) {
+function validCompletion(core,baseline,c,now,outcomeId) {
   const resource=core.resources.find(r=>r.id===c.resourceId);
   return !!resource&&resource.revision===c.resourceRevision&&
-    resource.outcomeIds.some(o=>baseline.outcomeIds.includes(o))&&
+    resource.outcomeIds.includes(outcomeId)&&baseline.outcomeIds.includes(outcomeId)&&
     (!Array.isArray(resource.misconceptionIds)||resource.misconceptionIds.includes(baseline.misconceptionId))&&
     timestamp(c.at)>=timestamp(baseline.at)&&timestamp(c.at)<=now;
 }
@@ -49,7 +49,7 @@ export function getLearningNextStep(core, assessments, teaching, {at, baselineAt
   if(!currentAttempt(core,baseline))return {status:'stale-baseline',nextAction:'review-evidence',outcomeId:outcome,mastery:null};
 
   const completions=teaching.completions.filter(c=>c.baselineAttemptId===baseline.id&&
-    validCompletion(core,baseline,c,now)).sort((a,b)=>timestamp(a.at)-timestamp(b.at)||a.id.localeCompare(b.id));
+    validCompletion(core,baseline,c,now,outcome)).sort((a,b)=>timestamp(a.at)-timestamp(b.at)||a.id.localeCompare(b.id));
   if(!completions.length) {
     const remediation=planRemediation(core,assessments,{attemptId:baseline.id});
     const resources=remediation.recommendations.find(r=>r.outcomeId===outcome)?.resources??[];
