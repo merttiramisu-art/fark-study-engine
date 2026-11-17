@@ -35,6 +35,7 @@ test('rejects broken references, duplicates and prerequisite cycles', () => {
   assert.throws(()=>validateKnowledgeCore({...core,mappings:[...core.mappings,...core.mappings]}),/duplicate mapped card/);
   const cyclic={...core,outcomes:[{id:'o1',unitId:'u1',label:'Concept',prerequisiteIds:['o1']}]};
   assert.throws(()=>validateKnowledgeCore(cyclic),/cyclic/);
+  assert.throws(()=>validateKnowledgeCore({...core,units:[{id:'u1',label:'Unit',prerequisiteIds:['u1']}]}),/cyclic unit/);
 });
 test('unmapped cards are reported instead of silently attributed',()=>{
   const card=createCard({id:'other',topic:'General topic',question:'Another?',answer:'Answer'});
