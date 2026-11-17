@@ -4,6 +4,7 @@
  */
 import { validateKnowledgeCore } from './knowledge-core.js';
 import { validateAssessmentHistory } from './assessment.js';
+import { analyzeLearningGaps } from './prerequisite-analysis.js';
 
 function id(x,name) { if(typeof x!=='string'||!x.trim())throw new TypeError(name+' must be nonempty');return x.trim(); }
 function time(x,name) { const d=new Date(x);if(!Number.isFinite(d.getTime()))throw new RangeError('invalid '+name);return d.toISOString(); }
@@ -72,11 +73,14 @@ export function getLearningEvidenceReport(core,assessments,teaching,{at}){
   disclaimer:'Counts are outcome attributions, not independent tests; resource completion is self-reported, correctness is not durable mastery, and no causal learning effect is inferred.'};
 }
 /** V3.4: finite, explainable outcome plan from observed incorrect answers; no artificial mastery or due dates. */
-export function planPersonalStudy(core,assessments,teaching,{at,limit=5,maxPerUnit=3}){
+export function planPersonalStudy(core,assessments,teaching,{at,limit=5,maxPerUnit=3,includePrerequisites=false}){
+ if(typeof includePrerequisites!=='boolean')throw new TypeError('includePrerequisites must be boolean');
  positive(limit,'limit');positive(maxPerUnit,'maxPerUnit');
  const report=evidence(core,assessments,teaching,at);
  const units=new Map(core.outcomes.map(x=>[x.id,x.unitId]));
  const counts=new Map(),planned=[];
+ const analysis=includePrerequisites?analyzeLearningGaps(core,assessments,{at}):null;
+ const findings=new Map(analysis?.outcomes.map(row=>[row.outcomeId,row])??[]);
  const candidates=report.outcomes.filter(x=>x.incorrect>0).sort((a,b)=>
   (b.incorrect-a.incorrect)||(b.attempts-a.attempts)||(a.outcomeId<b.outcomeId?-1:a.outcomeId>b.outcomeId?1:0));
  for(const row of candidates){
@@ -86,9 +90,13 @@ export function planPersonalStudy(core,assessments,teaching,{at,limit=5,maxPerUn
   const resources=core.resources.filter(r=>r.outcomeIds.includes(row.outcomeId)&&!Array.isArray(r.misconceptionIds)).sort((a,b)=>a.id.localeCompare(b.id));
   const questions=core.questions.filter(q=>q.outcomeIds.includes(row.outcomeId)&&Array.isArray(q.choices)&&q.choices.some(c=>c.id===q.correctChoiceId)&&
    !assessments.attempts.some(a=>a.questionId===q.id)).sort((a,b)=>a.id.localeCompare(b.id));
+  const finding=findings.get(row.outcomeId);
+  const suggestedPrerequisites=finding?.prerequisites.filter(p=>p.incorrect>0).map(p=>p.outcomeId)??[];
+  const observedPatterns=finding?.misconceptionPatterns.filter(p=>p.evidenceLevel==='repeated-observation').map(p=>p.misconceptionId)??[];
   planned.push({outcomeId:row.outcomeId,unitId,observedIncorrect:row.incorrect,observedAttempts:row.attempts,
+   ...(includePrerequisites?{suggestedPrerequisites,observedPatterns,explanation: finding?.hypotheses??[]}:{}),
    resourceIds:resources.map(r=>r.id),unseenQuestionId:questions[0]?.id??null,
-   reasonCodes:['observed-incorrect-answers',...(row.teachingCompletions?['reported-teaching-completion']:[]),...(!questions.length?['no-unseen-question']:[])]});
+   reasonCodes:['observed-incorrect-answers',...(suggestedPrerequisites.length?['observed-prerequisite-difficulty']:[]),...(observedPatterns.length?['repeated-editorial-distractor-pattern']:[]),...(row.teachingCompletions?['reported-teaching-completion']:[]),...(!questions.length?['no-unseen-question']:[])]});
   counts.set(unitId,(counts.get(unitId)??0)+1);
  }
  return {planned,plannedCount:planned.length,deferredCount:candidates.length-planned.length,
