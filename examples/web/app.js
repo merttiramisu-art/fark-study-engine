@@ -715,8 +715,21 @@ function switchTab(nextTab) {
   if (activeTab === 'intelligence') renderIntelligence();
 }
 
+let focusMode = true;
+function updateFocusMode() {
+  document.body.classList.toggle('focus-mode', focusMode);
+  const button = $('view-mode-toggle');
+  button.setAttribute('aria-pressed', String(focusMode));
+  button.textContent = lang === 'tr'
+    ? (focusMode ? 'Gelişmiş ayarları göster' : 'Sade görünüme dön')
+    : (focusMode ? 'Show advanced controls' : 'Return to focus view');
+  $('view-mode-description').textContent = lang === 'tr'
+    ? 'Önce çalışmaya odaklan. Tüm gelişmiş araçlara istediğin zaman ulaşabilirsin.'
+    : 'Focus on studying first. All advanced tools remain available.';
+}
 function applyLanguage() {
   const copy = t();
+  updateFocusMode();
   document.documentElement?.setAttribute('lang', lang);
   $('lang-toggle').textContent = lang === 'en' ? 'TR' : 'EN';
   $('privacy-text').textContent = copy.privacyText;
@@ -1725,6 +1738,10 @@ for (const [index, button] of studioTabButtons.entries()) {
   });
 }
 
+$('view-mode-toggle').addEventListener('click', () => {
+  focusMode = !focusMode;
+  updateFocusMode();
+});
 $('tab-study').addEventListener('click', () => switchTab('study'));
 $('tab-simulator').addEventListener('click', () => switchTab('simulator'));
 $('tab-decks').addEventListener('click', () => switchTab('decks'));
