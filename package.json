@@ -83,6 +83,10 @@
     "./learning-progress": {
       "types": "./types/learning-progress.d.ts",
       "default": "./src/learning-progress.js"
+    },
+    "./prerequisite-analysis": {
+      "types": "./types/prerequisite-analysis.d.ts",
+      "default": "./src/prerequisite-analysis.js"
     }
   },
   "engines": {
