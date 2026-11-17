@@ -103,6 +103,10 @@
     "./evidence-integrity": {
       "types": "./types/evidence-integrity.d.ts",
       "default": "./src/evidence-integrity.js"
+    },
+    "./reassessment-ledger": {
+      "types": "./types/reassessment-ledger.d.ts",
+      "default": "./src/reassessment-ledger.js"
     }
   },
   "engines": {
