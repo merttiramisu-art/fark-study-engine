@@ -41,7 +41,8 @@ export function validateKnowledgeCore(core) {
   const outcomes = recordMap(core.outcomes, 'outcomes');
   const resources = recordMap(core.resources, 'resources');
   const questions = recordMap(core.questions, 'questions');
-  const mappings = recordMap(core.mappings, 'mappings');
+  if (!Array.isArray(core.mappings)) throw new TypeError('mappings must be an array');
+  const mappings = core.mappings;
   const checkLinks = (ids, available, name) => {
     for (const id of ids) if (!available.has(id)) throw new RangeError('unknown ' + name + ': ' + id);
   };
@@ -75,7 +76,7 @@ export function validateKnowledgeCore(core) {
     if (question.resourceId != null && !resources.has(question.resourceId)) throw new RangeError('unknown question resource');
   }
   const seenCards = new Set();
-  for (const mapping of mappings.values()) {
+  for (const mapping of mappings) {
     const cardId = nonempty(mapping.cardId, 'mapping.cardId');
     if (seenCards.has(cardId)) throw new RangeError('duplicate mapped card: ' + cardId);
     seenCards.add(cardId);
