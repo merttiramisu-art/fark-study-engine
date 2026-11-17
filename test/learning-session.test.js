@@ -33,7 +33,7 @@ test('resumes completed lesson then a distinct reassessment after restart',()=>{
 test('rejects removed or mutated persisted events and corrupted checkpoints',()=>{
  const session=checkpoint();
  assert.throws(()=>resumeLearningSession(core,session,{at:'2026-01-02',assessments:createAssessmentHistory()}),/conflicting assessment/);
- const changed=structuredClone(initial);changed.attempts[0].correct=true;
+ const changed=structuredClone(initial);changed.attempts[0].at='2026-01-01T10:01:00Z';
  assert.throws(()=>resumeLearningSession(core,session,{at:'2026-01-02',assessments:changed}),/conflicting assessment/);
  assert.throws(()=>parseLearningSession('not-json'),/malformed/);
  assert.throws(()=>parseLearningSession(JSON.stringify({...session,baselineQuestionId:'wrong'})),/inconsistent/);
