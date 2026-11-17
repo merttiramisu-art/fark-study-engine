@@ -55,6 +55,16 @@ export function validateKnowledgeCore(core) {
     if (!units.has(nonempty(outcome.unitId, 'outcome.unitId'))) throw new RangeError('unknown outcome unit');
     checkLinks(uniqueIds(outcome.prerequisiteIds ?? [], 'outcome.prerequisiteIds'), outcomes, 'outcome prerequisite');
   }
+  const unitGraph = new Map([...units].map(([id,x])=>[id,x.prerequisiteIds??[]]));
+  const activeUnits=new Set(),doneUnits=new Set();
+  function walkUnit(id){
+    if(activeUnits.has(id))throw new RangeError('cyclic unit prerequisites: '+id);
+    if(doneUnits.has(id))return;
+    activeUnits.add(id);
+    for(const required of unitGraph.get(id))walkUnit(required);
+    activeUnits.delete(id);doneUnits.add(id);
+  }
+  for(const id of unitGraph.keys())walkUnit(id);
   const graph = new Map([...outcomes].map(([id, x]) => [id, x.prerequisiteIds ?? []]));
   const visiting = new Set(), visited = new Set();
   function walk(id) {
