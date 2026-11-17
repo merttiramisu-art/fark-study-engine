@@ -75,6 +75,10 @@
     "./assessment": {
       "default": "./src/assessment.js",
       "types": "./types/assessment.d.ts"
+    },
+    "./learning-loop": {
+      "types": "./types/learning-loop.d.ts",
+      "default": "./src/learning-loop.js"
     }
   },
   "engines": {
