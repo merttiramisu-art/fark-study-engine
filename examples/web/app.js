@@ -730,7 +730,11 @@ function updateFocusMode() {
 function updateStudentWelcome() {
   const isTurkish = lang === 'tr';
   $('welcome-kicker').textContent = isTurkish ? 'SENİN ÇALIŞMA ALANIN' : 'YOUR LEARNING SPACE';
-  $('welcome-heading').textContent = isTurkish ? 'Her seferinde bir soru.' : 'One question at a time.';
+  $('home-eyebrow').textContent = isTurkish ? 'ÇALIŞMA ALANIN' : 'YOUR STUDY SPACE';
+  $('home-privacy').textContent = isTurkish ? '● Çevrimdışı öncelikli · Takip yok' : '● Offline-first · No tracking';
+  $('home-guidance').textContent = isTurkish ? 'Keşfetmek istediğin alanı seç' : 'Choose a space to explore';
+  $('home-library-button').textContent = isTurkish ? 'Kütüphaneyi keşfet' : 'Explore library';
+  $('welcome-heading').textContent = isTurkish ? 'Bugün bir adım at.' : 'Make today count.';
   $('welcome-description').textContent = isTurkish
     ? 'Bugünkü çalışmanla başla. Hazır olduğunda ilerlemeni keşfet.'
     : "Start with today's practice. Explore your progress when you're ready.";
@@ -744,8 +748,8 @@ function applyLanguage() {
   $('lang-toggle').textContent = lang === 'en' ? 'TR' : 'EN';
   $('privacy-text').textContent = copy.privacyText;
   $('eyebrow-text').textContent = copy.eyebrowText;
-  if ($('page-title').innerHTML !== undefined) $('page-title').innerHTML = copy.pageTitleHtml;
-  $('intro-lead').textContent = copy.introLead;
+  $('page-title').innerHTML = lang === 'tr' ? 'Bir soru.<br><em>Bir adım ileri.</em>' : 'One question.<br><em>One step forward.</em>';
+  $('intro-lead').textContent = lang === 'tr' ? 'Sıradaki çalışma oturumun hazır. Kendi hızında öğren, tekrar gerektiren konuları gör.' : 'Your next study session is ready. Learn at your own pace, and see what needs practice.';
   $('tab-study').textContent = copy.tabStudy;
   $('tab-simulator').textContent = copy.tabSimulator;
   $('tab-decks').textContent = copy.tabDecks;
@@ -1748,6 +1752,10 @@ for (const [index, button] of studioTabButtons.entries()) {
   });
 }
 
+$('home-library-button').addEventListener('click', () => {
+  switchTab('decks');
+  $('panel-decks').scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+});
 $('start-learning-button').addEventListener('click', () => {
   switchTab('study');
   const question = $('question-text');
