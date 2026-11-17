@@ -123,7 +123,7 @@ async function run() {
       } catch (err) {
         throw new Error(`${err.message}${stderrLog ? ' | stderr: ' + stderrLog.trim() : ''}`);
       }
-    }, 300);
+    }, 600);
     const target = await retry(async () => {
       const res = await fetch('http://127.0.0.1:' + port + '/json/list');
       const targets = await res.json();
