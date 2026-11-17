@@ -56,7 +56,10 @@ export function verifyIssuedReassessment(core,assessments,ledger,{issueId,follow
   return {status:'unmatched-issued-question',issueId:issue.id,mastery:null};
  if(Date.parse(answer.at)<=Date.parse(issue.issuedAt)||Date.parse(answer.at)>now)
   return {status:'outside-issuance-window',issueId:issue.id,mastery:null};
- const firstAnswer=assessments.attempts.filter(a=>a.questionId===issue.questionId&&Date.parse(a.at)>Date.parse(issue.issuedAt))\n  .sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id))[0];\n if(firstAnswer?.id!==answer.id)return {status:'not-first-issued-response',issueId:issue.id,mastery:null};\n const other=ledger.issues.some(i=>i.id!==issue.id&&i.questionId===answer.questionId);
+ const firstAnswer=assessments.attempts.filter(a=>a.questionId===issue.questionId&&Date.parse(a.at)>Date.parse(issue.issuedAt))
+  .sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id))[0];
+ if(firstAnswer?.id!==answer.id)return {status:'not-first-issued-response',issueId:issue.id,mastery:null};
+ const other=ledger.issues.some(i=>i.id!==issue.id&&i.questionId===answer.questionId);
  if(other)return {status:'ambiguous-issuance',issueId:issue.id,mastery:null};
  const comparison=compareReassessment(core,assessments,{baselineAttemptId:issue.baselineAttemptId,
   followupAttemptId:answer.id,outcomeId:issue.outcomeId});
