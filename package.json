@@ -79,6 +79,10 @@
     "./learning-loop": {
       "types": "./types/learning-loop.d.ts",
       "default": "./src/learning-loop.js"
+    },
+    "./learning-progress": {
+      "types": "./types/learning-progress.d.ts",
+      "default": "./src/learning-progress.js"
     }
   },
   "engines": {
