@@ -1544,3 +1544,92 @@ body.focus-mode #panel-study .topic-heading:has(+ #mistake-list) {
   .student-welcome { flex-direction: column; align-items: stretch; gap: 18px; border-radius: 17px; }
   .welcome-start { width: 100%; }
 }
+
+
+/* Colorful, purposeful palette: violet for navigation, coral for action,
+   teal for progress, amber for attention. Keep content surfaces calm. */
+:root {
+  --bg: #f8f7fd;
+  --ink: #22243c;
+  --purple: #6245c5;
+  --purple-dark: #4930a5;
+  --mint: #c5f1df;
+  --accent-coral: #ef6b69;
+  --accent-teal: #138c82;
+  --accent-amber: #d18424;
+}
+body {
+  background:
+    radial-gradient(ellipse 55% 420px at 100% 5%, rgba(239, 107, 105, .12), transparent 75%),
+    radial-gradient(ellipse 60% 400px at 0% 25%, rgba(118, 96, 222, .13), transparent 75%),
+    radial-gradient(ellipse 50% 350px at 95% 75%, rgba(24, 167, 153, .09), transparent 80%),
+    var(--bg);
+}
+.brand-mark {
+  background: linear-gradient(145deg, #7654e4, #4c319e);
+  box-shadow: 0 8px 19px rgba(87, 56, 169, .18);
+}
+.brand-period { color: #aaf0d8; }
+.intro h1 em { color: #6845c9; }
+.version {
+  background: #fbe9e7;
+  color: #a23e47;
+}
+.student-welcome {
+  border-color: #d8c9f3;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(255, 199, 112, .32), transparent 38%),
+    linear-gradient(112deg, #f5eefe 0%, #fff4ed 52%, #e5f8f2 100%);
+  box-shadow: 0 18px 42px rgba(100, 68, 150, .10);
+}
+.welcome-kicker { color: #7542a6; }
+.welcome-start {
+  background: linear-gradient(115deg, #6946d5, #8750c9);
+  border-color: #6740b8;
+  box-shadow: 0 9px 24px rgba(108, 68, 190, .23);
+}
+.welcome-start:hover { background: #5633b1; }
+.studio-view-controls {
+  background: rgba(255, 255, 255, .86);
+  border-color: #e1d8f2;
+}
+.studio-tab[aria-selected="true"] {
+  border-color: #8d73df;
+  background: #f1eafd;
+  color: #442b94;
+}
+#panel-study .work-card:first-child {
+  border-top: 4px solid #7753d6;
+}
+#panel-decks .work-card:first-child {
+  border-top: 4px solid #159a8a;
+}
+#panel-simulator .work-card:first-child {
+  border-top: 4px solid #ed8d48;
+}
+#panel-intelligence .work-card:first-child {
+  border-top: 4px solid #dc6d94;
+}
+.progress-track { background: #e8e5f5; }
+#progress-fill {
+  background: linear-gradient(90deg, #7053d9, #18a998);
+}
+.work-icon {
+  background: #e8f7f1;
+  color: #147c70;
+}
+.question-content .topic-tag {
+  background: #e9f6f3;
+  color: #146b65;
+  border-color: #c6e9df;
+}
+.question-content .status-tag {
+  background: #fff1dc;
+  color: #885411;
+  border-color: #f3d7a8;
+}
+@media (prefers-contrast: more) {
+  .student-welcome { border-color: #6b4cad; }
+  .welcome-start { background: #4930a5; }
+  .studio-tab[aria-selected="true"] { border-color: #4930a5; }
+}
