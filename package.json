@@ -99,6 +99,10 @@
     "./content-readiness": {
       "types": "./types/content-readiness.d.ts",
       "default": "./src/content-readiness.js"
+    },
+    "./evidence-integrity": {
+      "types": "./types/evidence-integrity.d.ts",
+      "default": "./src/evidence-integrity.js"
     }
   },
   "engines": {
