@@ -1490,3 +1490,57 @@ body.focus-mode #panel-study .topic-heading:has(+ #mistake-list) {
   .studio-view-controls { align-items: stretch; padding: 11px 12px; }
   .view-mode-toggle { width: 100%; }
 }
+
+
+/* Student-first entry: one obvious action, technical tools remain available. */
+.student-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin: 0 0 18px;
+  padding: clamp(20px, 3vw, 34px);
+  border: 1px solid #dcd8f1;
+  border-radius: 22px;
+  background: linear-gradient(118deg, #ffffff 4%, #f1efff 67%, #e8f2eb 100%);
+  box-shadow: 0 16px 42px rgba(46, 40, 106, .07);
+}
+.student-welcome-copy { min-width: 0; }
+.welcome-kicker {
+  display: block;
+  color: #5447a5;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .13em;
+  margin-bottom: 8px;
+}
+.student-welcome h2 {
+  margin: 0 0 8px;
+  color: #23223f;
+  font-size: clamp(24px, 3vw, 36px);
+  letter-spacing: -.035em;
+  line-height: 1.12;
+}
+.student-welcome p {
+  margin: 0;
+  color: #555c71;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 52ch;
+}
+.welcome-start {
+  flex: 0 0 auto;
+  min-height: 50px;
+  padding: 14px 20px;
+  border: 1px solid #5140b7;
+  border-radius: 13px;
+  background: #5a49c4;
+  color: white;
+  font-weight: 800;
+  box-shadow: 0 9px 22px rgba(90, 73, 196, .2);
+}
+.welcome-start:hover { background: #4738a9; }
+@media (max-width: 650px) {
+  .student-welcome { flex-direction: column; align-items: stretch; gap: 18px; border-radius: 17px; }
+  .welcome-start { width: 100%; }
+}

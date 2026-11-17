@@ -727,8 +727,18 @@ function updateFocusMode() {
     ? 'Önce çalışmaya odaklan. Tüm gelişmiş araçlara istediğin zaman ulaşabilirsin.'
     : 'Focus on studying first. All advanced tools remain available.';
 }
+function updateStudentWelcome() {
+  const isTurkish = lang === 'tr';
+  $('welcome-kicker').textContent = isTurkish ? 'SENİN ÇALIŞMA ALANIN' : 'YOUR LEARNING SPACE';
+  $('welcome-heading').textContent = isTurkish ? 'Her seferinde bir soru.' : 'One question at a time.';
+  $('welcome-description').textContent = isTurkish
+    ? 'Bugünkü çalışmanla başla. Hazır olduğunda ilerlemeni keşfet.'
+    : "Start with today's practice. Explore your progress when you're ready.";
+  $('start-learning-button').firstChild.textContent = isTurkish ? 'Çalışmaya başla ' : 'Start studying ';
+}
 function applyLanguage() {
   const copy = t();
+  updateStudentWelcome();
   updateFocusMode();
   document.documentElement?.setAttribute('lang', lang);
   $('lang-toggle').textContent = lang === 'en' ? 'TR' : 'EN';
@@ -1738,6 +1748,12 @@ for (const [index, button] of studioTabButtons.entries()) {
   });
 }
 
+$('start-learning-button').addEventListener('click', () => {
+  switchTab('study');
+  const question = $('question-text');
+  question.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+  question.focus({ preventScroll: true });
+});
 $('view-mode-toggle').addEventListener('click', () => {
   focusMode = !focusMode;
   updateFocusMode();
