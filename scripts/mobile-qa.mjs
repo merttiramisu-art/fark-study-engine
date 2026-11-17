@@ -176,6 +176,8 @@ async function run() {
         throw new Error(viewport.label + ' has horizontal scrolling: ' + JSON.stringify(metrics));
       }
       for (const control of metrics.controls) {
+        // Inactive tab panels are intentionally display:none; measure visible controls only.
+        if (control.width === 0) continue;
         if (control.width < 42 || control.left < -1 || control.right > metrics.viewport + 1) {
           throw new Error(viewport.label + ' inaccessible control: ' + JSON.stringify(control));
         }
