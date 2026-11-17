@@ -12,7 +12,7 @@ class FakeElement {
     this.children = [];
     this.listeners = new Map();
     this.attributes = new Map();
-    this.classList = { add() {}, remove() {} };
+    this.classList = { add() {}, remove() {}, toggle() {} };
     this.focusCount = 0;
   }
   addEventListener(event, callback) { this.listeners.set(event, callback); }
