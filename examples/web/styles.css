@@ -1724,3 +1724,22 @@ body {
   .v2-home { border:2px solid #5b399f; }
   .v2-home-pill,.v2-home-secondary { border:2px solid #5b399f; }
 }
+
+/* Keep every studio destination reachable without hidden horizontal navigation on phones. */
+@media (max-width: 760px) {
+  .studio-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    scroll-snap-type: none;
+    margin-inline: 0;
+    padding: 4px 0 10px;
+  }
+  .studio-tab {
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    scroll-snap-align: none;
+  }
+}
