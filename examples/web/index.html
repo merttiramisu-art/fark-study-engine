@@ -25,29 +25,43 @@
     </header>
 
     <main id="studio-main" tabindex="-1">
-      <section class="intro compact-intro" aria-labelledby="page-title">
-        <div class="intro-copy">
-          <div class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> <span id="eyebrow-text">OPEN-SOURCE STUDY STUDIO</span> <span class="version">V0.7</span></div>
-          <h1 id="page-title">Deterministic scheduling.<br><em>Honest</em> learning signals.</h1>
-          <p id="intro-lead">Compare DSR memory, SM-2 &amp; Leitner presets, trace causal prerequisites, evaluate closed-loop interventions, and bridge Claude via local MCP—zero cloud, zero tracking.</p>
-        </div>
-        <div class="student-welcome" aria-labelledby="welcome-heading">
-          <div class="student-welcome-copy">
-            <span id="welcome-kicker" class="welcome-kicker">YOUR LEARNING SPACE</span>
-            <h2 id="welcome-heading">One question at a time.</h2>
-            <p id="welcome-description">Start with today's practice. Explore your progress when you're ready.</p>
+      <section class="intro compact-intro v2-home" aria-labelledby="page-title">
+        <div class="v2-home-topline"><span class="v2-home-pill" id="home-eyebrow">YOUR STUDY SPACE</span><span class="v2-home-signal" id="home-privacy">● Offline-first · No tracking</span></div>
+        <div class="v2-home-layout">
+          <div class="v2-home-copy">
+            <p class="v2-home-overline" id="welcome-kicker">YOUR LEARNING SPACE</p>
+            <h1 id="page-title">One question.<br><em>One step forward.</em></h1>
+            <p id="intro-lead">Your next study session is ready. Learn at your own pace, and see what needs practice.</p>
+            <h2 id="welcome-heading" class="v2-home-subheading">Make today count.</h2>
+            <p id="welcome-description" class="v2-home-description">Start with today's practice. Explore your progress when you're ready.</p>
+            <div class="v2-home-actions">
+              <button id="start-learning-button" type="button" class="button welcome-start">Start studying <span aria-hidden="true">→</span></button>
+              <button id="home-library-button" type="button" class="v2-home-secondary">Explore library</button>
+            </div>
           </div>
-          <button id="start-learning-button" type="button" class="button welcome-start">Start studying <span aria-hidden="true">→</span></button>
+          <div class="v2-home-art" aria-hidden="true">
+            <div class="v2-art-orbit v2-art-orbit-outer"></div>
+            <div class="v2-art-orbit v2-art-orbit-inner"></div>
+            <div class="v2-art-sun"></div>
+            <div class="v2-art-book"><span class="v2-art-book-left"></span><span class="v2-art-book-right"></span></div>
+            <span class="v2-art-spark v2-art-spark-one">✦</span>
+            <span class="v2-art-spark v2-art-spark-two">✧</span>
+            <span class="v2-art-dot v2-art-dot-one"></span>
+            <span class="v2-art-dot v2-art-dot-two"></span>
+          </div>
         </div>
-        <div class="studio-view-controls">
-          <span id="view-mode-description">Focus mode keeps the essentials visible. All advanced tools remain available.</span>
-          <button id="view-mode-toggle" class="view-mode-toggle" type="button" aria-pressed="true" aria-controls="settings-form panel-study">Show advanced controls</button>
-        </div>
-        <div class="studio-tabs" role="tablist" aria-label="Studio sections">
-          <button id="tab-study" type="button" role="tab" class="studio-tab active" aria-selected="true" aria-controls="panel-study">Study Studio</button>
-          <button id="tab-simulator" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-simulator">Strategy Simulator</button>
-          <button id="tab-decks" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-decks">Deck Studio &amp; Packs</button>
-          <button id="tab-intelligence" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-intelligence">Learning Intelligence</button>
+        <div class="v2-home-bottom">
+          <span id="home-guidance">Choose a space to explore</span>
+          <div class="studio-tabs" role="tablist" aria-label="Studio sections">
+            <button id="tab-study" type="button" role="tab" class="studio-tab active" aria-selected="true" aria-controls="panel-study">Study Studio</button>
+            <button id="tab-decks" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-decks">Deck Studio &amp; Packs</button>
+            <button id="tab-intelligence" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-intelligence">Learning Intelligence</button>
+            <button id="tab-simulator" type="button" role="tab" class="studio-tab" aria-selected="false" aria-controls="panel-simulator">Strategy Simulator</button>
+          </div>
+          <div class="studio-view-controls">
+            <span id="view-mode-description">Focus mode keeps the essentials visible. All advanced tools remain available.</span>
+            <button id="view-mode-toggle" class="view-mode-toggle" type="button" aria-pressed="true" aria-controls="settings-form panel-study">Show advanced controls</button>
+          </div>
         </div>
       </section>
 
