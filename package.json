@@ -95,6 +95,10 @@
     "./learning-session": {
       "types": "./types/learning-session.d.ts",
       "default": "./src/learning-session.js"
+    },
+    "./content-readiness": {
+      "types": "./types/content-readiness.d.ts",
+      "default": "./src/content-readiness.js"
     }
   },
   "engines": {
