@@ -738,7 +738,7 @@ function updateStudentWelcome() {
   $('welcome-description').textContent = isTurkish
     ? 'Bugünkü çalışmanla başla. Hazır olduğunda ilerlemeni keşfet.'
     : "Start with today's practice. Explore your progress when you're ready.";
-  $('start-learning-button').firstChild.textContent = isTurkish ? 'Çalışmaya başla ' : 'Start studying ';
+  $('start-learning-button').textContent = (isTurkish ? 'Çalışmaya başla ' : 'Start studying ') + '→';
 }
 function applyLanguage() {
   const copy = t();
