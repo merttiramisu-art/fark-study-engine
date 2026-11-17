@@ -67,6 +67,9 @@
     "./calibrate": {
       "types": "./types/calibrate.d.ts",
       "default": "./src/calibrate.js"
+    },
+    "./knowledge-core": {
+      "default": "./src/knowledge-core.js"
     }
   },
   "engines": {
