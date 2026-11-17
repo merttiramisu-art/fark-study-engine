@@ -87,6 +87,10 @@
     "./prerequisite-analysis": {
       "types": "./types/prerequisite-analysis.d.ts",
       "default": "./src/prerequisite-analysis.js"
+    },
+    "./learning-orchestrator": {
+      "types": "./types/learning-orchestrator.d.ts",
+      "default": "./src/learning-orchestrator.js"
     }
   },
   "engines": {
