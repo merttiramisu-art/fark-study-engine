@@ -152,6 +152,8 @@ async function run() {
           throw new Error(error.message + ' | snapshot=' + snapshot + ' | exceptions=' + JSON.stringify(devtools.exceptions));
         });
 
+      // Advanced controls are intentionally hidden in focus mode; reveal them before measuring reachability.
+      await devtools.eval(`document.getElementById('view-mode-toggle').click()`);
       const metrics = await devtools.eval(`(() => {
         const ids = ['tab-study','tab-simulator','tab-decks','tab-intelligence','reveal-button','skip-button',
                      'session-limit','topic-limit','new-limit','strategy-select','replan-button',
