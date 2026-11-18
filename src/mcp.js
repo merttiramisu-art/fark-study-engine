@@ -536,7 +536,7 @@ export async function startMcpServer({ input = process.stdin, output = process.s
     const line = rawLine.trim();
     if (!line) continue;
     if (Buffer.byteLength(rawLine, 'utf8') > MAX_MCP_MESSAGE_BYTES) {
-      output.write(JSON.stringify({jsonrpc:'2.0',id:null,error:{code:-32600,message:'MCP message exceeds 1 MiB limit'}}) + '\\n');
+      output.write(JSON.stringify({jsonrpc:'2.0',id:null,error:{code:-32600,message:'MCP message exceeds 1 MiB limit'}}) + '\n');
       continue;
     }
     let reply;
