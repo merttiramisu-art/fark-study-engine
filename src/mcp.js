@@ -420,10 +420,19 @@ export function handleMcpRequest(message) {
     };
   }
 
-  // JSON-RPC notifications have no id and expect no reply.
-  if (message.id === undefined) {
-    return null;
+  // Malformed request IDs are invalid, not notifications.
+  if (Object.hasOwn(message, 'id') &&
+      message.id !== null && typeof message.id !== 'string' &&
+      !(typeof message.id === 'number' && Number.isFinite(message.id))) {
+    return { jsonrpc: '2.0', id: null,
+      error: { code: -32600, message: 'Invalid JSON-RPC request id' } };
   }
+  if (typeof message.method !== 'string' || !message.method) {
+    return { jsonrpc: '2.0', id: message.id ?? null,
+      error: { code: -32600, message: 'Invalid JSON-RPC method' } };
+  }
+  // Valid JSON-RPC notifications have no id and expect no reply.
+  if (message.id === undefined) return null;
 
   const { id, method, params = {} } = message;
   try {

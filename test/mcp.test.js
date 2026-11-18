@@ -234,3 +234,17 @@ test('startMcpServer streams newline-delimited JSON-RPC replies over stdio strea
   assert.deepEqual(lines[0].result, {});
   assert.equal(lines[1].error.code, -32700);
 });
+
+test('MCP rejects malformed request ids and missing methods without treating them as notifications', () => {
+  for (const id of [{}, [], true, Infinity]) {
+    const result = handleMcpRequest({jsonrpc:'2.0', id, method:'ping'});
+    assert.equal(result.error.code, -32600);
+    assert.equal(result.id, null);
+  }
+  const missing = handleMcpRequest({jsonrpc:'2.0', id:7});
+  assert.equal(missing.error.code, -32600);
+  assert.equal(missing.id, 7);
+  const noMethodNotification = handleMcpRequest({jsonrpc:'2.0'});
+  assert.equal(noMethodNotification.error.code, -32600);
+  assert.equal(handleMcpRequest({jsonrpc:'2.0',method:'notifications/initialized'}), null);
+});
