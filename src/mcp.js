@@ -31,6 +31,8 @@ const PACKAGE_JSON = JSON.parse(
 );
 const SERVER_VERSION = PACKAGE_JSON.version;
 const PROTOCOL_VERSION = '2024-11-05';
+// Limit untrusted stdio messages before parsing to prevent unbounded memory growth.
+export const MAX_MCP_MESSAGE_BYTES = 1024 * 1024;
 
 export const MCP_TOOLS = Object.freeze([
   {
@@ -461,7 +463,35 @@ export function handleMcpRequest(message) {
           };
         }
         try {
-          const data = callTool(toolName, params.arguments ?? {});
+          const args = params.arguments ?? {};
+          const descriptor = MCP_TOOLS.find(tool => tool.name === toolName);
+          if (descriptor) {
+            if (!args || typeof args !== 'object' || Array.isArray(args)) {
+              throw new TypeError('tool arguments must be an object');
+            }
+            const schema = descriptor.inputSchema;
+            for (const required of schema.required ?? []) {
+              if (!Object.hasOwn(args, required)) throw new TypeError('missing required argument: ' + required);
+            }
+            for (const [key, value] of Object.entries(args)) {
+              const property = schema.properties?.[key];
+              if (!property) {
+                if (schema.additionalProperties === false) throw new TypeError('unknown argument: ' + key);
+                continue;
+              }
+              if (property.type === 'string' && typeof value !== 'string') throw new TypeError(key + ' must be a string');
+              if (property.type === 'boolean' && typeof value !== 'boolean') throw new TypeError(key + ' must be a boolean');
+              if (property.type === 'integer' && !Number.isSafeInteger(value)) throw new TypeError(key + ' must be an integer');
+              if (property.type === 'number' && (typeof value !== 'number' || !Number.isFinite(value))) throw new TypeError(key + ' must be finite');
+              if (property.type === 'array' && !Array.isArray(value)) throw new TypeError(key + ' must be an array');
+              if (property.type === 'object' && (!value || typeof value !== 'object' || Array.isArray(value))) throw new TypeError(key + ' must be an object');
+              if (property.enum && !property.enum.includes(value)) throw new RangeError(key + ' is unsupported');
+              if (typeof value === 'number' && property.minimum !== undefined && value < property.minimum) throw new RangeError(key + ' below minimum');
+              if (typeof value === 'number' && property.maximum !== undefined && value > property.maximum) throw new RangeError(key + ' above maximum');
+              if (Array.isArray(value) && property.minItems !== undefined && value.length < property.minItems) throw new RangeError(key + ' has too few items');
+            }
+          }
+          const data = callTool(toolName, args);
           return {
             jsonrpc: '2.0',
             id,
@@ -505,6 +535,10 @@ export async function startMcpServer({ input = process.stdin, output = process.s
   for await (const rawLine of rl) {
     const line = rawLine.trim();
     if (!line) continue;
+    if (Buffer.byteLength(rawLine, 'utf8') > MAX_MCP_MESSAGE_BYTES) {
+      output.write(JSON.stringify({jsonrpc:'2.0',id:null,error:{code:-32600,message:'MCP message exceeds 1 MiB limit'}}) + '\n');
+      continue;
+    }
     let reply;
     try {
       const msg = JSON.parse(line);
