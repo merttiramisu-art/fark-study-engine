@@ -62,3 +62,13 @@ test('V4.5 rejects malformed issuance timestamps and duplicate question reuse',(
  assert.throws(()=>validateReassessmentLedger({...issued.ledger,issues:[{...issue,issuedAt:'not-a-date'}]}),/invalid issuance time/);
  assert.throws(()=>validateReassessmentLedger({...issued.ledger,issues:[issue,{...issue,id:'i2'}]}),/question already issued/);
 });
+
+test('V4.5 rejects whitespace-padded issuance identifiers to avoid ambiguous lookup',()=>{
+ const issued=issueReassessment(core,a,t,createReassessmentLedger(),opts);
+ assert.throws(()=>validateReassessmentLedger({
+  ...issued.ledger,issues:[{...issued.issue,id:' i1 '}]
+ }),/identifiers must be canonical/);
+ assert.throws(()=>validateReassessmentLedger({
+  ...issued.ledger,issues:[{...issued.issue,questionId:' q2 '}]
+ }),/identifiers must be canonical/);
+});
