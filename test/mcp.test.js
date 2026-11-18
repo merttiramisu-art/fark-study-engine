@@ -248,3 +248,30 @@ test('MCP rejects malformed request ids and missing methods without treating the
   assert.equal(noMethodNotification.error.code, -32600);
   assert.equal(handleMcpRequest({jsonrpc:'2.0',method:'notifications/initialized'}), null);
 });
+
+test('MCP validates required, unknown and incorrectly typed tool arguments', () => {
+  const invoke = (args) => handleMcpRequest({
+    jsonrpc:'2.0',id:88,method:'tools/call',
+    params:{name:'fark_validate_deck',arguments:args}
+  });
+  for (const args of [{format:'json'}, {deckText:'[]',format:'xml'}, {deckText:'[]',format:'json',extra:1}, {deckText:42,format:'json'}]) {
+    const result = invoke(args);
+    assert.equal(result.result.isError,true);
+  }
+});
+
+test('MCP stdio rejects oversized lines and keeps subsequent requests working', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const chunks = [];
+  output.on('data', c => chunks.push(c.toString('utf8')));
+  const server = startMcpServer({input,output,errorOutput:new PassThrough()});
+  input.write(' '.repeat(1024*1024 + 1) + '\n');
+  input.write(JSON.stringify({jsonrpc:'2.0',id:99,method:'ping'}) + '\n');
+  input.end();
+  await server;
+  const replies = chunks.join('').trim().split('\n').map(JSON.parse);
+  assert.equal(replies.length,2);
+  assert.equal(replies[0].error.code,-32600);
+  assert.deepEqual(replies[1].result,{});
+});
