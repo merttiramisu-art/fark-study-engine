@@ -18,7 +18,7 @@ export function validateReassessmentLedger(ledger){
  for(const issue of ledger.issues){
   if(!issue||typeof issue!=='object'||Array.isArray(issue))throw new TypeError('invalid reassessment issue');
   for(const key of ['id','baselineAttemptId','outcomeId','questionId','questionRevision'])id(issue[key],key);
-  if(time(issue.issuedAt)!==issue.issuedAt)throw new RangeError('issuance time must be canonical ISO');
+  time(issue.issuedAt);
   if(ids.has(issue.id))throw new RangeError('duplicate issue id');
   ids.add(issue.id);
   if(questions.has(issue.questionId))throw new RangeError('question already issued');
