@@ -9,7 +9,7 @@
 
 > **Architectural Manifesto & Benchmark:** Read [Why FARK Exists: Open Learning Infrastructure (v0.7.0)](docs/open-learning-architecture.md) or run `npm run demo:english` and `node scripts/benchmark-learning.mjs`.
 
-**What ships in v0.7.0:** an append-only event ledger (`./ledger`), FSRS-style DSR memory modeling, Brier calibration & 0 TL personal parameter fitting (`./memory`, `./calibrate`), prerequisite-graph cognitive diagnosis with closed-loop control evaluation (`./diagnosis`), 13 zero-dependency MCP tools (`./mcp`), CLI `replay` / `calibrate` / `diagnose` (`./cli`), a flagship **English Mastery (A2→B2)** curriculum case study (`npm run demo:english`), and a 4-Tab Interactive Studio (`examples/web/`)—always honest that synthetic simulations and within-learner observational comparisons are not clinical RCTs.
+**Documented v0.7.0 release baseline:** an append-only event ledger (`./ledger`), FSRS-style DSR memory modeling, Brier calibration & 0 TL personal parameter fitting (`./memory`, `./calibrate`), prerequisite-graph cognitive diagnosis with closed-loop control evaluation (`./diagnosis`), 13 zero-dependency MCP tools (`./mcp`), CLI `replay` / `calibrate` / `diagnose` (`./cli`), a flagship **English Mastery (A2→B2)** curriculum case study (`npm run demo:english`), and a 4-Tab Interactive Studio (`examples/web/`)—always honest that synthetic simulations and within-learner observational comparisons are not clinical RCTs.
 
 > **Live Interactive Studio (browser-only, zero tracking):** [merttiramisu-art.github.io/fark-study-engine](https://merttiramisu-art.github.io/fark-study-engine/)
 
@@ -124,3 +124,9 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening an issue or pull request,
 ## License
 
 [MIT](LICENSE) — free to use, study, modify, and share.
+
+## Post-v0.7 development status
+
+The `main` branch also contains newer learning-workflow modules (including `./knowledge-core`, `./assessment`, `./learning-loop`, `./learning-progress`, `./prerequisite-analysis`, `./learning-orchestrator`, `./learning-session`, `./content-readiness`, `./evidence-integrity`, and `./reassessment-ledger`). These are **post-v0.7 development APIs**, not part of the documented v0.7.0 release baseline. Check the matching source, TypeScript declarations, and tests before integrating them; the package version is not a claim that these APIs have been independently validated in real classrooms.
+
+In particular, explicit reassessment issuance binds a follow-up response to an issued question and checks timing, revision, and replay conditions. It is a software evidence-integrity mechanism, **not proof that an educational intervention caused learning improvement**.
