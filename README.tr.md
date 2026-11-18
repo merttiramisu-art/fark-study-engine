@@ -29,7 +29,7 @@ Sıfır harici bağımlılıklı, çevrimdışı kullanılabilen küçük bir Ja
 - **Dürüst ilerleme özeti:** yeni, çalışılmış, tekrar zamanı gelmiş kartlar ve gerçekten ölçülebilen yanıt istatistikleri
 - **Öngörülebilir davranış:** aynı girdi ve tarihle aynı sonucu veren, değiştirilebilir yerel veri nesneleri
 
-**Önemli sınırlar:** Verileri diske kaydetmez, buluta göndermez, hesap açtırmaz, öğrenmeyi bilimsel olarak kesin ölçtüğünü iddia etmez. Kalıcılık, kullanıcı arayüzü ve gerçek öğrenme etkililiği değerlendirmesi bu sürümde yoktur.
+**Önemli sınırlar:** Çekirdek kütüphane kendi başına bulut senkronizasyonu, kullanıcı hesabı veya uzaktan öğrenci takibi sunmaz. Tarayıcı stüdyosunda isteğe bağlı cihaz içi kayıt vardır; varsayılan olarak kapalıdır. Kullanıcı arayüzü ve yerel veri aktarımı örnekleri bulunsa da gerçek öğrenme etkililiği bilimsel olarak kanıtlanmış değildir. Müdahale öncesi/sonrası gözlemler nedensellik kanıtı sayılmaz.
 
 ## Hemen dene / Quick start
 
@@ -111,3 +111,9 @@ Projeye katkı yapmak için deneyimli bir geliştirici olman gerekmiyor. Bir hat
 ## Lisans / License
 
 [MIT](LICENSE) — özgürce kullanılabilir ve geliştirilebilir.
+
+## v0.7.0 sonrası geliştirme modülleri
+
+`main` dalında belgelenmiş v0.7.0 temelinin ötesinde `./knowledge-core`, `./assessment`, `./learning-loop`, `./learning-progress`, `./prerequisite-analysis`, `./learning-orchestrator`, `./learning-session`, `./content-readiness`, `./evidence-integrity` ve `./reassessment-ledger` modülleri bulunur. Bunlar **v0.7.0 sürümüne dahil edilmiş gibi değerlendirilmemelidir**. Entegrasyondan önce ilgili kaynak kodu, TypeScript tanımları ve testler kontrol edilmelidir.
+
+Özellikle yeniden değerlendirme oluşturma mekanizması sorunun gerçekten verilmiş olmasını, yanıt zamanını, soru revizyonunu ve tekrar kullanım koşullarını kontrol etmeyi amaçlar. Bu teknik doğrulama, bir öğretim müdahalesinin öğrenme artışına neden olduğunu bilimsel olarak kanıtlamaz.
