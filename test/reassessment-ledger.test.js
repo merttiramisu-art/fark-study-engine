@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createAssessmentHistory,recordAssessment} from '../src/assessment.js';
 import {createTeachingHistory,recordTeachingCompletion} from '../src/learning-progress.js';
-import {createReassessmentLedger,issueReassessment,verifyIssuedReassessment} from '../src/reassessment-ledger.js';
+import {createReassessmentLedger,validateReassessmentLedger,issueReassessment,verifyIssuedReassessment} from '../src/reassessment-ledger.js';
 const core={format:'fark-knowledge-core',version:1,units:[{id:'u',label:'Unit'}],
  outcomes:[{id:'o',unitId:'u',label:'Outcome'}],resources:[{id:'r',kind:'lesson',revision:'1',outcomeIds:['o']}],
  questions:[{id:'q1',revision:'1',outcomeIds:['o'],correctChoiceId:'a',choices:[{id:'a'},{id:'b'}]},
@@ -46,4 +46,19 @@ test('V4.4 detects revised question and duplicate issuance IDs',()=>{
  const changed={...core,questions:core.questions.map(q=>q.id==='q2'?{...q,revision:'2'}:q)};
  const answered=answer(a,'a2','q2','a','2026-01-01T12:01:00Z');
  assert.equal(verifyIssuedReassessment(changed,answered,issued.ledger,{issueId:'i1',followupAttemptId:'a2',at:'2026-01-01T13:00:00Z'}).status,'stale-evidence');
+});
+
+test('V4.5 rejects malformed issuance records without mutating input',()=>{
+ const malformed=[null,undefined,[],42,'invalid'];
+ for(const issue of malformed){
+  const ledger={...createReassessmentLedger(),issues:[issue]};
+  assert.throws(()=>validateReassessmentLedger(ledger),/invalid reassessment issue/);
+  assert.equal(ledger.issues[0],issue);
+ }
+});
+test('V4.5 rejects malformed issuance timestamps and duplicate question reuse',()=>{
+ const issued=issueReassessment(core,a,t,createReassessmentLedger(),opts);
+ const issue=issued.issue;
+ assert.throws(()=>validateReassessmentLedger({...issued.ledger,issues:[{...issue,issuedAt:'not-a-date'}]}),/invalid issuance time/);
+ assert.throws(()=>validateReassessmentLedger({...issued.ledger,issues:[issue,{...issue,id:'i2'}]}),/question already issued/);
 });

@@ -16,6 +16,7 @@ export function validateReassessmentLedger(ledger){
  if(!ledger||ledger.format!=='fark-reassessment-ledger'||ledger.version!==1||!Array.isArray(ledger.issues))throw new TypeError('invalid reassessment ledger');
  const ids=new Set(),questions=new Set();
  for(const issue of ledger.issues){
+  if(!issue||typeof issue!=='object'||Array.isArray(issue))throw new TypeError('invalid reassessment issue');
   for(const key of ['id','baselineAttemptId','outcomeId','questionId','questionRevision'])id(issue[key],key);
   time(issue.issuedAt);
   if(ids.has(issue.id))throw new RangeError('duplicate issue id');
