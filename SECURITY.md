@@ -15,4 +15,4 @@ Instead:
 1. Open a private GitHub Security Advisory via **Security → Advisories → Report a vulnerability** in this repository, or
 2. Include a minimal reproduction, affected version, Node.js version, and expected vs actual behavior.
 
-Supported version line: current minor series (`0.5.x`).
+Supported version policy: security reports are assessed against the current default branch. Published releases, if any, should be checked individually; no long-term support commitment is implied.
