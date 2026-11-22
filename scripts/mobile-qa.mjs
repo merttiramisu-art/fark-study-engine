@@ -420,6 +420,59 @@ async function run() {
       const visualShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       await writeFile('artifacts/screenshots/fark-visual-math-' + viewport.label + '.png', Buffer.from(visualShot.data, 'base64'));
       console.log(viewport.label + ' passed: Visual Math fraction model, equal case, slider, no overflow and accessible fallback');
+      // Visual Learning: a real authored number line -> fictional chronology ->
+      // invalid data nonmutation -> inert hostile label -> JSON bridge.
+      await devtools.send('Page.navigate', { url: address + 'visual-learning.html' });
+      await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
+        document.getElementById('visual-summary')?.textContent.includes('Number line from -5 to 5')`));
+      const learning = await devtools.eval(`(() => {
+        const summary = document.getElementById('visual-summary');
+        const field = document.getElementById('lesson-source');
+        const load = () => document.getElementById('preview-lesson').click();
+        const line = summary.textContent.includes('Number line from -5 to 5') &&
+          document.querySelectorAll('.numberline-tick').length === 11 &&
+          document.querySelectorAll('.numberline-tick.selected').length === 3;
+        document.getElementById('sample-timeline').click();
+        const chron = summary.textContent.includes('Illustrative chronology with 3 events') &&
+          document.querySelectorAll('.timeline-list li').length === 3 &&
+          document.querySelector('.timeline-list .event-year').textContent === '1860';
+        const source = field.value;
+        field.value = source.replace('visualEvents: ', 'visualEvents: 3500|Invalid,');
+        load();
+        const invalidSafe = summary.textContent.includes('Illustrative chronology with 3 events') &&
+          !document.getElementById('preview-error').hidden &&
+          document.querySelectorAll('.timeline-list li').length === 3;
+        field.value = source.replace('Fictional archive founded', '<img src=x onerror=alert(1)>');
+        load();
+        const inert = document.querySelector('.timeline-list .event-label').textContent.includes('<img src=x') &&
+          !document.querySelector('.timeline-list img') && document.getElementById('preview-error').hidden;
+        field.value = JSON.stringify({
+          format:'fark-open-content-pack',version:1,
+          attribution:{title:'JSON Number line',creator:'Demo',license:'MIT'},
+          units:[{id:'u',label:'Signed numbers'}],
+          outcomes:[{id:'o',unitId:'u',label:'Signed positions'}],
+          lessons:[{id:'l',revision:'1',title:'JSON line',outcomeIds:['o'],
+            bodyText:'Signed positions in an original lesson',
+            visual:{kind:'number-line',min:-2,max:3,points:[-1,0,2]}}],
+          questions:[{id:'q',revision:'1',outcomeIds:['o'],prompt:'Which is negative?',
+            correctChoiceId:'a',choices:[{id:'a',text:'-1'},{id:'b',text:'2'}]}]
+        });
+        load();
+        const json = summary.textContent.includes('Number line from -2 to 3') &&
+          document.querySelectorAll('.numberline-tick').length === 6 &&
+          document.getElementById('lesson-heading').textContent === 'JSON line' &&
+          document.getElementById('preview-error').hidden;
+        return {line,chron,invalidSafe,inert,json,
+          scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!learning.line || !learning.chron || !learning.invalidSafe ||
+          !learning.inert || !learning.json || learning.scrollWidth > learning.viewport + 1) {
+        throw new Error(viewport.label + ' Visual Learning integration failed: ' + JSON.stringify(learning));
+      }
+      await devtools.eval(`document.getElementById('sample-number-line').click()`);
+      const learningShot = await devtools.send('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
+      await writeFile('artifacts/screenshots/fark-visual-learning-' + viewport.label + '.png', Buffer.from(learningShot.data,'base64'));
+      console.log(viewport.label + ' passed: real number-line/timeline browser interaction, safe rejection, inert text, JSON bridge');
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="FARK Visual Learning: original offline number-line and fictional timeline teaching models.">
+  <title>Visual Learning Studio — FARK Study Engine</title>
+  <link rel="stylesheet" href="./visual-learning.css">
+  <script src="./visual-learning.js" type="module"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to visual learning</a>
+  <header class="topbar">
+    <a class="brand" href="./"><span class="logo">F.</span><span>FARK <small>STUDY ENGINE</small></span></a>
+    <span class="offline">LOCAL FIRST · NO TRACKING</span>
+    <a class="back" href="./visual-math.html">Visual Math</a>
+  </header>
+  <main id="main">
+    <section class="hero">
+      <p class="eyebrow">THE NEXT DIMENSION OF LEARNING</p>
+      <h1>A lesson that <em>shows</em> its meaning.</h1>
+      <p>Different subjects. One structured learning engine. Explore an original number line and a fictional chronology, then edit their lesson content.</p>
+      <div class="sample-actions" role="group" aria-label="Choose a sample">
+        <button id="sample-number-line" type="button" class="sample active" aria-pressed="true">Number line <span>−5…5</span></button>
+        <button id="sample-timeline" type="button" class="sample" aria-pressed="false">Chronology <span>Fictional town</span></button>
+      </div>
+    </section>
+    <div class="studio">
+      <section class="view-panel" aria-labelledby="view-heading">
+        <p class="kicker">01 / LEARNING VISUAL</p>
+        <h2 id="view-heading">An original visual model</h2>
+        <p id="visual-summary" class="summary" role="status" aria-live="polite">Loading original learning example.</p>
+        <div id="visual-stage" class="visual-stage" aria-label="Learning visualization"></div>
+        <section class="reading" aria-labelledby="lesson-heading">
+          <p class="kicker">EDITORIALLY AUTHORED LESSON</p>
+          <h3 id="lesson-heading">Original lesson</h3>
+          <p id="lesson-text"></p>
+          <p id="content-provenance" class="provenance"></p>
+        </section>
+        <p class="caution">Visual ordering is not proof of historical accuracy, learning mastery or teaching effectiveness. This example never records answers.</p>
+      </section>
+      <aside class="editor-panel" aria-labelledby="editor-heading">
+        <p class="kicker">02 / CONTENT BRIDGE</p>
+        <h2 id="editor-heading">Make it your own.</h2>
+        <p>Use the restricted FARK Markdown format, or paste a compatible JSON content pack with a <code>number-line</code> or <code>timeline</code> visual.</p>
+        <label for="lesson-source">Your teaching pack</label>
+        <textarea id="lesson-source" rows="17" spellcheck="false" maxlength="1048576"></textarea>
+        <button id="preview-lesson" class="preview-button" type="button">Validate and preview lesson</button>
+        <p id="preview-status" class="feedback" role="status" aria-live="polite">Choose a sample to begin.</p>
+        <p id="preview-error" class="error" role="alert" hidden></p>
+        <div class="privacy">
+          <strong>Deliberately local.</strong>
+          <p>Edits exist only in this page's memory. No server uploads, external scripts, accounts or background analytics. Source attribution is author-declared, not independently verified.</p>
+        </div>
+      </aside>
+    </div>
+    <footer>Built with original deterministic models and FARK Content Bridge. The examples are fictional, and real device and screen-reader acceptance remain pending.</footer>
+  </main>
+</body>
+</html>

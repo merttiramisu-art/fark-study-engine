@@ -1,3 +1,15 @@
+export interface NumberLineLessonVisual {
+  kind: 'number-line';
+  min: number;
+  max: number;
+  points: number[];
+}
+export interface TimelineLessonVisual {
+  kind: 'timeline';
+  events: Array<{ id: string; year: number; label: string }>;
+}
+export type LessonVisual = FractionLessonVisual | NumberLineLessonVisual | TimelineLessonVisual;
+
 export interface FractionLessonVisual {
   kind: 'fraction-comparison';
   left: { numerator: number; denominator: number };
@@ -23,7 +35,7 @@ export interface OpenContentPack {
     title: string;
     bodyText: string;
     misconceptionIds?: string[];
-    visual?: FractionLessonVisual;
+    visual?: LessonVisual;
   }>;
   questions: Array<{
     id: string;

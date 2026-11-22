@@ -14,7 +14,7 @@ const ROOT = new Set(['version', 'title', 'creator', 'license', 'sourceUrl']);
 const FIELDS = {
   Unit: new Set(['label', 'prerequisiteIds']),
   Outcome: new Set(['label', 'unitId', 'prerequisiteIds']),
-  Lesson: new Set(['revision', 'title', 'outcomeIds', 'misconceptionIds', 'visualLeft', 'visualRight']),
+  Lesson: new Set(['revision', 'title', 'outcomeIds', 'misconceptionIds', 'visualLeft', 'visualRight', 'visualKind', 'visualRange', 'visualPoints', 'visualEvents']),
   Question: new Set(['revision', 'outcomeIds', 'prompt', 'correctChoiceId']),
   Mapping: new Set(['questionId'])
 };
@@ -79,14 +79,39 @@ function finalize(section, pack) {
     };
     const misconceptionIds = optionalList(fields, 'misconceptionIds');
     if (misconceptionIds) entry.misconceptionIds = misconceptionIds;
-    if (fields.has('visualLeft') !== fields.has('visualRight')) {
-      throw new SyntaxError('visualLeft and visualRight must both be provided');
+    const visualKind = fields.get('visualKind');
+    const fractionKeys = ['visualLeft','visualRight'];
+    const lineKeys = ['visualRange','visualPoints'];
+    const timelineKeys = ['visualEvents'];
+    const any = keys => keys.some(key => fields.has(key));
+    if (!visualKind && any(fractionKeys) && !any(lineKeys) && !any(timelineKeys)) {
+      if (!fractionKeys.every(key => fields.has(key))) {
+        throw new SyntaxError('visualLeft and visualRight must both be provided');
+      }
+      entry.visual = {
+        kind: 'fraction-comparison',
+        left: fractionField(fields.get('visualLeft'), 'visualLeft'),
+        right: fractionField(fields.get('visualRight'), 'visualRight')
+      };
+    } else if (visualKind === 'number-line' && !any(fractionKeys) && !any(timelineKeys)) {
+      const range = /^(0|-?[1-9][0-9]?)\.\.(0|-?[1-9][0-9]?)$/.exec(required(fields, 'visualRange', kind));
+      if (!range) throw new SyntaxError('invalid visualRange; use -5..5');
+      const points = required(fields, 'visualPoints', kind).split(',').map(s => {
+        const val = s.trim();
+        if (!/^(0|-?[1-9][0-9]?)$/.test(val)) throw new SyntaxError('invalid visualPoints integer');
+        return Number(val);
+      });
+      entry.visual = {kind:'number-line',min:Number(range[1]),max:Number(range[2]),points};
+    } else if (visualKind === 'timeline' && !any(fractionKeys) && !any(lineKeys)) {
+      const entries = required(fields, 'visualEvents', kind).split(',');
+      entry.visual = {kind:'timeline',events:entries.map((item,index) => {
+        const match = /^(-?(?:0|[1-9][0-9]{0,3}))\|([^|,]+)$/.exec(item.trim());
+        if (!match) throw new SyntaxError('invalid visualEvents entry; use 1900|Event');
+        return {id:'event-' + (index + 1),year:Number(match[1]),label:match[2].trim()};
+      })};
+    } else if (visualKind || any(fractionKeys) || any(lineKeys) || any(timelineKeys)) {
+      throw new SyntaxError('invalid or mixed visual fields');
     }
-    if (fields.has('visualLeft')) entry.visual = {
-      kind: 'fraction-comparison',
-      left: fractionField(fields.get('visualLeft'), 'visualLeft'),
-      right: fractionField(fields.get('visualRight'), 'visualRight')
-    };
     pack.lessons.push(entry);
   } else if (kind === 'Question') {
     if (section.choices.length < 2) throw new SyntaxError('question needs at least two choices: ' + id);

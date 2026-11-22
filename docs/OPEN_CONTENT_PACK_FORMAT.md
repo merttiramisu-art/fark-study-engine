@@ -30,3 +30,7 @@ See [FARK Markdown Content Bridge](MARKDOWN_CONTENT_BRIDGE.md). It is a strict, 
 ## Optional numeric Visual Math lesson
 
 An author may add `visual` to a lesson: `{"kind":"fraction-comparison","left":{"numerator":1,"denominator":3},"right":{"numerator":1,"denominator":4}}`. This metadata is validated by the bounded Visual Math fraction model and returned in `materials.lessons[].visual`, **not** in the learning evidence ledger. Incorrect types, denominators outside 1–12 and unknown visual kinds/fields are rejected. Omitting it retains previous import behavior. The Markdown counterpart uses `visualLeft: 1/3` and `visualRight: 1/4` before `### Body`.
+
+## Additional original visual kinds
+
+The same optional `lessons[].visual` field now accepts `{"kind":"number-line","min":-5,"max":5,"points":[-3,0,4]}` or `{"kind":"timeline","events":[{"id":"a","year":1860,"label":"Fictional start"},{"id":"b","year":1872,"label":"Fictional change"}]}`. All input is numerically bounded and text-only. Existing fraction-comparison behavior remains unchanged. See [Visual Learning Studio](VISUAL_LEARNING_LAB.md).

@@ -74,6 +74,7 @@
 - Keep visuals faithful to actual API states and errors.
 - V6 Visual Math Lab adds original, bounded fraction comparisons, responsive accessible diagrams and an optional *locally supplied* KaTeX adapter with safe numeric TeX and native text fallback. KaTeX is **not bundled** or a runtime dependency; integrated rendering with a genuine KaTeX distribution, license notices/font assets and physical-device/screen-reader testing remain pending.
 - An optional `fraction-comparison` visual declaration now travels with author-owned JSON/Markdown lesson metadata, is numerically validated through the original Visual Math model and can be previewed from user-pasted text under the no-network CSP. Errors are atomic and text remains inert; educational impact, arbitrary Markdown, user data persistence and full authoring workflows are not claimed.
+- Visual Learning v1 adds bounded `number-line` and `timeline` content models using the same adapter and strict Markdown subset, with a responsive standalone local Studio and deterministic original/fictional content. This demonstrates ordering and representation, **not** verified historical facts, student learning effectiveness, arbitrary diagram support or full CommonMark compatibility.
 
 ### Gate G — Scale
 

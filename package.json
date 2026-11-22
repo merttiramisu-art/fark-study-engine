@@ -119,6 +119,10 @@
     "./visual-math": {
       "types": "./types/visual-math.d.ts",
       "default": "./src/visual-math.js"
+    },
+    "./visual-learning": {
+      "types": "./types/visual-learning.d.ts",
+      "default": "./src/visual-learning.js"
     }
   },
   "engines": {

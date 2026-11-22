@@ -82,3 +82,7 @@ Eğitimci, dersini ve sorularını bu dar Markdown biçiminde yazabilir; FARK ay
 Within a `## Lesson: id` section, *before* its `### Body`, you may declare **both** `visualLeft: 1/3` and `visualRight: 1/4` to bind the lesson to a fraction-comparison visual. These numeric declarations use only whole-number numerators from 0 up to the denominator, with denominators 1–12. Both fields are required together. The Markdown parser converts them to the same validated JSON lesson `visual` metadata as the content adapter. The original lesson text remains inert.
 
 The Visual Math Lab contains an in-memory Markdown/JSON editor where you can paste such a pack and preview its diagram; no file upload, storage or remote request is performed. Arbitrary TeX/HTML and other diagram types are not supported.
+
+## New Visual Learning fields
+
+In a lesson before `### Body`, you may also use `visualKind: number-line` with `visualRange: -5..5` and `visualPoints: -3,0,4`, or `visualKind: timeline` with `visualEvents: 1860|Fictional start,1872|Fictional change`. Both are validated by the `fark-study-engine/visual-learning` models. Timeline entries are illustrative numeric-year positions, not historical truth assertions. Mixed or unknown fields are rejected. Details: [Visual Learning Studio](VISUAL_LEARNING_LAB.md).

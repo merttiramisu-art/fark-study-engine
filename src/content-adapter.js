@@ -5,6 +5,7 @@
  */
 import { validateKnowledgeCore } from './knowledge-core.js';
 import { compareFractionModels } from './visual-math.js';
+import { buildNumberLineModel, buildTimelineModel } from './visual-learning.js';
 
 export const OPEN_CONTENT_PACK_LIMITS = Object.freeze({
   maxBytes: 1_048_576,
@@ -86,9 +87,22 @@ function decode(input) {
 function lessonVisual(input) {
   if (input === undefined) return undefined;
   const visual = object(input, 'lesson.visual');
-  const allowed = ['kind', 'left', 'right'];
-  if (Object.keys(visual).some(key => !allowed.includes(key)) ||
-      visual.kind !== 'fraction-comparison') {
+  if (visual.kind === 'number-line') {
+    if (Object.keys(visual).some(key => !['kind','min','max','points'].includes(key))) {
+      throw new RangeError('unsupported number-line visual field');
+    }
+    const model = buildNumberLineModel({min: visual.min, max: visual.max, points: visual.points});
+    return {kind: 'number-line', min: model.min, max: model.max, points: model.points};
+  }
+  if (visual.kind === 'timeline') {
+    if (Object.keys(visual).some(key => !['kind','events'].includes(key))) {
+      throw new RangeError('unsupported timeline visual field');
+    }
+    const model = buildTimelineModel({events: visual.events});
+    return {kind: 'timeline', events: model.events};
+  }
+  if (visual.kind !== 'fraction-comparison' ||
+      Object.keys(visual).some(key => !['kind', 'left', 'right'].includes(key))) {
     throw new RangeError('unsupported lesson.visual kind or field');
   }
   function fraction(value, name) {
@@ -100,11 +114,9 @@ function lessonVisual(input) {
   }
   const left = fraction(visual.left, 'lesson.visual.left');
   const right = fraction(visual.right, 'lesson.visual.right');
-  // Reuse the Visual Math model as the single authority on numeric bounds.
   compareFractionModels(left, right);
   return { kind: 'fraction-comparison', left, right };
 }
-
 /**
  * Convert a human-authored plain JSON content pack to FARK's existing Knowledge Core
  * and separate read-only presentation data. Never execute or render supplied HTML.
