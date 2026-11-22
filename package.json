@@ -107,6 +107,10 @@
     "./reassessment-ledger": {
       "types": "./types/reassessment-ledger.d.ts",
       "default": "./src/reassessment-ledger.js"
+    },
+    "./content-adapter": {
+      "types": "./types/content-adapter.d.ts",
+      "default": "./src/content-adapter.js"
     }
   },
   "engines": {
@@ -119,7 +123,8 @@
     "demo:web": "node examples/serve-web.js",
     "demo:english": "node examples/english-closed-loop.js",
     "demo:session": "node examples/learning-session-demo.js",
-    "bench:learning": "node scripts/benchmark-learning.mjs"
+    "bench:learning": "node scripts/benchmark-learning.mjs",
+    "demo:content": "node examples/content-pack-demo.js"
   },
   "license": "MIT",
   "keywords": [

@@ -1,0 +1,78 @@
+{
+  "format": "fark-open-content-pack",
+  "version": 1,
+  "attribution": {
+    "title": "Original Fraction Comparison",
+    "creator": "FARK Study Engine contributors",
+    "license": "MIT",
+    "sourceUrl": "https://github.com/merttiramisu-art/fark-study-engine"
+  },
+  "units": [
+    {
+      "id": "fractions",
+      "label": "Original fractions"
+    }
+  ],
+  "outcomes": [
+    {
+      "id": "compare-unit-fractions",
+      "unitId": "fractions",
+      "label": "Compare unit fractions"
+    }
+  ],
+  "lessons": [
+    {
+      "id": "fraction-pieces",
+      "revision": "1",
+      "title": "Same whole, different-sized pieces",
+      "outcomeIds": [
+        "compare-unit-fractions"
+      ],
+      "misconceptionIds": [
+        "denominator-size"
+      ],
+      "bodyText": "If the same whole is split into 3 equal parts, each piece is larger than when it is split into 4 equal parts. Therefore 1/3 is larger than 1/4. The denominator names how many equal pieces the whole has."
+    }
+  ],
+  "questions": [
+    {
+      "id": "baseline",
+      "revision": "1",
+      "outcomeIds": [
+        "compare-unit-fractions"
+      ],
+      "prompt": "Which fraction is larger: 1/3 or 1/4?",
+      "correctChoiceId": "a",
+      "choices": [
+        {
+          "id": "a",
+          "text": "1/3"
+        },
+        {
+          "id": "b",
+          "text": "1/4",
+          "misconceptionId": "denominator-size"
+        }
+      ]
+    },
+    {
+      "id": "followup",
+      "revision": "1",
+      "outcomeIds": [
+        "compare-unit-fractions"
+      ],
+      "prompt": "Which fraction is larger: 2/5 or 2/7?",
+      "correctChoiceId": "a",
+      "choices": [
+        {
+          "id": "a",
+          "text": "2/5"
+        },
+        {
+          "id": "b",
+          "text": "2/7"
+        }
+      ]
+    }
+  ]
+}

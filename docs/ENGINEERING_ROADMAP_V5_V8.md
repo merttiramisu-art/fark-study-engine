@@ -21,7 +21,7 @@
 | E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | In progress |
 | F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | In progress |
 | G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | In progress |
-| H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | Not started |
+| H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | In progress |
 | I | V7.1 Research validation | Predeclared metrics, synthetic/real-data separation, leakage checks | Not started |
 | J | V8.0 Community sustainability | Maintainer policy, public backlog, versioning and release checklist | Not started |
 
@@ -84,6 +84,10 @@
 - Establish budgets only after a baseline exists.
 
 ### Gate H — Modular integrations
+
+- Proposed native JSON content-pack adapter: units, outcomes, lessons and answer-key questions become Knowledge Core records, with separate plain-text materials and required but unverified attribution. No third-party code or assets copied.
+- Original synthetic fixture tests the actual assessment → linked lesson → issued different follow-up → verified response pathway.
+- This is not a Kolibri/H5P/QTI native importer; rights review and format-specific connectors remain separate work.
 
 - Document versioned schemas for external content and learning records.
 - Provide an original synthetic content adapter and runnable example.
