@@ -16,7 +16,7 @@ Run `node --test test/learning-quality-edge.test.js` (also included in `npm test
 
 ## Interpretation safeguards
 
-- `fitLearnerParameters().improved` reflects fitted-parameter selection **on the available input**. It is not evidence of out-of-sample benefit. Inspect `holdout` separately when present.
+- `fitLearnerParameters().improved` reflects fitted-parameter selection **on the available input**. It is not evidence of out-of-sample benefit. Inspect `holdout` separately when present. `holdout.trainingParams` comes from the chronological training prefix only; its `brierDelta` compares predictions on a withheld tail, where negative is better. `holdout.outperformedBaseline` is descriptive, not a statistically validated improvement or teaching-effect claim.
 - A reported holdout is still based on the **same synthetic observation process**; its value measures a software prediction comparison under test assumptions.
 - First observations without a prior memory state are deliberately unscored, rather than assumed perfect recall.
 - Brier score and log loss describe agreement between predicted and observed **self-reported review ratings**, not independent learning assessments.

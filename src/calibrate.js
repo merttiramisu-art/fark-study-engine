@@ -450,8 +450,15 @@ export function fitLearnerParameters(input, options = {}) {
       if (tailBase.brierScore != null && tailFit.brierScore != null) {
         holdout = {
           sampleCount: tailFit.sampleCount,
+          trainingEvents: split,
+          evaluationEvents: events.length - split,
+          trainingParams: prefixFit.params,
+          trainingEndAt: events[split - 1].at,
+          evaluationStartAt: events[split].at,
           baselineBrier: tailBase.brierScore,
-          fittedBrier: tailFit.brierScore
+          fittedBrier: tailFit.brierScore,
+          brierDelta: round(tailFit.brierScore - tailBase.brierScore, 4),
+          outperformedBaseline: tailFit.brierScore < tailBase.brierScore
         };
       }
     }
