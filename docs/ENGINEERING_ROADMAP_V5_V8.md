@@ -28,6 +28,7 @@
 ### Gate A — Integrity
 
 - Validate schema shape and identifier uniqueness on imported ledger entries.
+- PR #38 adds review-event chronology, ratings, memory-state/counter checks, and duplicate-ID rejection on append, with regression tests. This verifies internal consistency, not authenticity of caller-supplied history; historic DSR state re-computation is not yet a requirement.
 - Test issuance-to-answer time ordering and baseline/teaching linkage.
 - Reject duplicate/replayed evidence without changing existing valid history.
 - Run property-style deterministic test generators without external dependencies.
