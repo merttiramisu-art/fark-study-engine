@@ -302,3 +302,26 @@ test('MCP stdio enforces raw UTF-8 byte boundaries and recovers after rejection'
   assert.equal(replies[2].error.code, -32600);
   assert.deepEqual(replies[3].result, {});
 });
+
+test('MCP streaming parser discards multi-chunk oversized payloads without buffering and recovers cleanly', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const chunks = [];
+  output.on('data', chunk => chunks.push(chunk.toString('utf8')));
+  const server = startMcpServer({ input, output, errorOutput: new PassThrough() });
+
+  // Stream 3 MiB in 256 KiB chunks with no newline until the end
+  const block = Buffer.alloc(256 * 1024, 0x61);
+  for (let i = 0; i < 12; i++) input.write(block);
+  input.write('\r\n');
+  input.write(JSON.stringify({ jsonrpc: '2.0', id: 301, method: 'ping' }) + '\r\n');
+  input.end();
+  await server;
+
+  const replies = chunks.join('').trim().split('\n').map(JSON.parse);
+  assert.equal(replies.length, 2);
+  assert.equal(replies[0].error.code, -32600);
+  assert.equal(replies[1].id, 301);
+  assert.deepEqual(replies[1].result, {});
+});
+

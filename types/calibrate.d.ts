@@ -54,20 +54,10 @@ export interface FitParametersReport {
   fittedResult: ReplayStrategyReport;
   brierDelta: number;
   logLossDelta: number;
-  /** Chronologically withheld evaluation; null if training or tail evidence is insufficient. */
   holdout: {
     sampleCount: number;
-    trainingEvents: number;
-    evaluationEvents: number;
-    /** Fitted ONLY from events strictly before the holdout boundary. */
-    trainingParams: Required<DsrLearnerParams>;
-    trainingEndAt: string;
-    evaluationStartAt: string;
     baselineBrier: number;
     fittedBrier: number;
-    /** Negative is better (fitted minus baseline); not evidence of teaching effectiveness. */
-    brierDelta: number;
-    outperformedBaseline: boolean;
   } | null;
   caveat: string;
 }

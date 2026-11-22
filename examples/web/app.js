@@ -39,6 +39,7 @@ import {
   recordIntervention
 } from '../../src/diagnosis.js';
 import { fitLearnerParameters } from '../../src/calibrate.js';
+import { initClosedLoopStudio } from './closed-loop-controller.js';
 
 const $ = id => document.getElementById(id);
 
@@ -713,6 +714,23 @@ function switchTab(nextTab) {
   if (activeTab === 'simulator') renderSimulator();
   if (activeTab === 'decks') renderDeckManager();
   if (activeTab === 'intelligence') renderIntelligence();
+  closedLoopStudio?.onTabChange(activeTab);
+}
+
+let closedLoopStudio = null;
+let darkMode = false;
+function updateThemeButton() {
+  const btn = $('theme-toggle');
+  if (!btn) return;
+  btn.setAttribute('aria-pressed', String(darkMode));
+  btn.textContent = lang === 'tr'
+    ? (darkMode ? 'Açık' : 'Koyu')
+    : (darkMode ? 'Light' : 'Dark');
+}
+function applyTheme() {
+  document.documentElement?.classList?.toggle('dark', darkMode);
+  updateThemeButton();
+  closedLoopStudio?.onThemeChange();
 }
 
 let focusMode = true;
@@ -744,6 +762,7 @@ function applyLanguage() {
   const copy = t();
   updateStudentWelcome();
   updateFocusMode();
+  updateThemeButton();
   document.documentElement?.setAttribute('lang', lang);
   $('lang-toggle').textContent = lang === 'en' ? 'TR' : 'EN';
   $('privacy-text').textContent = copy.privacyText;
@@ -896,6 +915,7 @@ function applyLanguage() {
     }
   }
   updateStrategyNote();
+  closedLoopStudio?.applyLanguage();
 }
 
 function planOptions() {
@@ -1811,13 +1831,19 @@ document.querySelectorAll('[data-rating]').forEach(button =>
 $('next-plan-button').addEventListener('click', rebuildPlan);
 $('calibrate-button').addEventListener('click', runPersonalCalibration);
 $('prereq-form').addEventListener('submit', addPrerequisiteLink);
+$('theme-toggle').addEventListener('click', () => {
+  darkMode = !darkMode;
+  applyTheme();
+});
 $('persist-local-toggle').addEventListener('change', () => {
   persistEnabled = Boolean($('persist-local-toggle').checked);
   if (persistEnabled) {
     saveLocalState();
+    closedLoopStudio?.onPersistToggle(true);
     notify(t().noticePersistOn);
   } else {
     clearLocalState();
+    closedLoopStudio?.onPersistToggle(false);
     notify(t().noticePersistOff);
   }
 });
@@ -1829,6 +1855,7 @@ $('reset-button').addEventListener('click', () => {
   lastCalibration = null;
   saveLocalState();
   rebuildPlan();
+  closedLoopStudio?.onReset();
   notify(t().noticeReset);
 });
 $('export-button').addEventListener('click', exportCardsJson);
@@ -1841,6 +1868,14 @@ $('import-file').addEventListener('change', importCards);
 document.addEventListener?.('keydown', handleKeyboardShortcut);
 
 restoreLocalStateIfEnabled();
+closedLoopStudio = initClosedLoopStudio({
+  getLang: () => lang,
+  isPersistEnabled: () => persistEnabled,
+  notify,
+  downloadText,
+  switchTab
+});
+applyTheme();
 applyLanguage();
 switchTab(activeTab);
 rebuildPlan();

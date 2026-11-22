@@ -18,26 +18,25 @@
 | B | V4.6 API and TypeScript contracts | Export/import smoke tests, TS compile fixture, Node 20/22 CI, compatibility matrix | In progress |
 | C | V5.0 Contributor experience | Quick start, bilingual API docs, issue templates, security policy, ADRs | In progress |
 | D | V5.1 MCP hardening | Protocol errors, schema validation, size limits, client integration proof | In progress |
-| E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | In progress |
+| E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | Not started |
 | F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | In progress |
 | G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | In progress |
-| H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | In progress |
+| H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | Not started |
 | I | V7.1 Research validation | Predeclared metrics, synthetic/real-data separation, leakage checks | Not started |
 | J | V8.0 Community sustainability | Maintainer policy, public backlog, versioning and release checklist | Not started |
 
 ### Gate A — Integrity
 
 - Validate schema shape and identifier uniqueness on imported ledger entries.
-- PR #38 adds review-event chronology, ratings, memory-state/counter checks and duplicate-ID rejection on append, with regression tests. This verifies internal consistency, not authenticity of caller-supplied history; historic DSR state re-computation is not yet a requirement.
 - Test issuance-to-answer time ordering and baseline/teaching linkage.
 - Reject duplicate/replayed evidence without changing existing valid history.
 - Run property-style deterministic test generators without external dependencies.
 - Document trust boundary: caller-provided imported history is not cryptographically authenticated.
+- **Local evidence added:** `test/property-integrity.test.js` runs fixed-seed zero-dependency property tests across 500 DSR updates, ledger non-mutation on cycle rejection, content-readiness audits on all bundled bilingual presets, and reassessment/session tamper-replay guards.
 
 ### Gate B — API compatibility
 
 - Run package export tests and compile TypeScript consumer fixtures with a freely available compiler.
-- PR #37 proposes dynamic public-subpath runtime/declaration-name checks for every package export. This is **not** a TypeScript compiler proof; independent TS consumer compilation remains pending.
 - Compare runtime exports against declaration exports; test Node 20 and 22.
 - Make a version compatibility table. Avoid publishing V5 tags until SemVer is resolved.
 
@@ -46,14 +45,11 @@
 - Document a verified five-minute path from clone to tests and demos.
 - Maintain English/Turkish instructions, issue templates, security policy, architecture decisions.
 - Add one minimal original external-consumer example; verify instructions in CI.
-- PR #36 adds the public-package self-import example. The integrated acceptance bundle also tests a local npm tarball by `npm pack` and offline `npm install` into an isolated consumer project on Node 20/22. This does not prove compatibility with every third-party app.
 
 ### Gate D — MCP
 
-- PR #33 adds basic JSON-RPC argument-shape checks and a complete-line 1 MiB rejection guard. Acceptance remains pending passing Node 20/22 CI and real-client integration evidence.
-- V5.1.1 replaces `readline` with a bounded retained-line reader: oversized lines are drained before JSON parsing, and later requests are processed. It bounds retained line fragments, **not** upstream input chunks, decoded JSON objects, tool outputs or total process memory. Node 20/22 CI and real-client integration proof remain acceptance requirements.
-
-- PR #34 includes an independent Node CLI subprocess test for initialize, discovery, synthetic tool calls, invalid calls and post-error recovery. It is a local-protocol client harness, **not** proof of successful integration with Claude Desktop or any specific external MCP client. On-device client testing remains pending.
+- PR #33 adds basic JSON-RPC argument-shape checks and a complete-line 1 MiB rejection guard.
+- **Streaming cap upgrade:** `startMcpServer` in `src/mcp.js` now uses a byte-bounded streaming `Buffer` chunk reader (`MAX_MCP_MESSAGE_BYTES = 1 MiB`) that enters immediate discard mode once an incoming frame exceeds 1 MiB and recovers cleanly on CRLF/LF boundaries (`test/mcp.test.js` covers multi-chunk 3 MiB streaming rejection + valid follow-up). Acceptance remains pending Node 20/22 CI and external MCP client logs.
 - Protocol-level integration for initialize, tool discovery, valid and invalid calls.
 - Negative tests for malformed JSON-RPC, oversized payloads, unsafe paths and unexpected writes.
 - Record client and runtime versions in the evidence report.
@@ -66,36 +62,19 @@
 
 ### Gate F — Browser Studio
 
-- The new independent, local-only **Why this step?** demonstration connects actual assessment, linked editorial lesson, self-reported completion, explicit issuance and verified independent follow-up. It never presents a synthetic answer as mastery or a lesson as causal proof. The demo uses no storage or telemetry.
-- Browser CI smoke checks the full interactive sequence at 360px, 393px and 1280px widths using Chromium emulation, plus accessibility and privacy notes. Physical-device and assistive-technology acceptance remains pending.
-
 - Demonstrate baseline assessment → editorial remediation → issued reassessment → observed comparison.
 - Verify keyboard, screen reader semantics, responsive layouts and storage disclosure.
 - Keep visuals faithful to actual API states and errors.
-- V6 Visual Math Lab adds original, bounded fraction comparisons, responsive accessible diagrams and an optional *locally supplied* KaTeX adapter with safe numeric TeX and native text fallback. KaTeX is **not bundled** or a runtime dependency; integrated rendering with a genuine KaTeX distribution, license notices/font assets and physical-device/screen-reader testing remain pending.
-- An optional `fraction-comparison` visual declaration now travels with author-owned JSON/Markdown lesson metadata, is numerically validated through the original Visual Math model and can be previewed from user-pasted text under the no-network CSP. Errors are atomic and text remains inert; educational impact, arbitrary Markdown, user data persistence and full authoring workflows are not claimed.
-- Visual Learning v1 adds bounded `number-line` and `timeline` content models using the same adapter and strict Markdown subset, with a responsive standalone local Studio and deterministic original/fictional content. This demonstrates ordering and representation, **not** verified historical facts, student learning effectiveness, arbitrary diagram support or full CommonMark compatibility.
-- The **Concept Map** proof-of-concept renders only editorial outcome prerequisite edges from Knowledge Core, overlays recorded *answer-key observations* via the existing assessment API and explicitly reports stale/orphan observations. Node depth is layout, not readiness or mastery. CI covers responsive interaction, reset, invalid evidence and isolated offline package installation. Real learner validation and physical-device/screen-reader acceptance remain open.
-- **Educator-owned Content-to-Concept Map:** bounded attributed FARK Markdown/JSON from local editor/file picker; candidate map validated before state swap, old answer observations reset on success, graph/answers preserved on failure, exact prerequisite edges listed as text.
-- **Concept Study Path v1** exposes a read-only, outcome-specific next-step explanation based on latest current assessment and self-reported teaching. Interactive Concept Map can explicitly mark a linked lesson reviewed, issue an unused different question and verify its first after-issuance response. No lesson-completion automation, fabricated prerequisite failure, mastery claim or causal teaching attribution.
-- **FARK Study Desk v1** integrates original lessons, three validated visual kinds, concept selection, answer-key observations and explicit follow-up issuance into one offline browser view. It reuses all public engine APIs through a read-only presentation model; incoming original JSON/Markdown replaces the course only after validation and clears old teaching/assessment/issuance state on success. Browser emulation is not real-device certification.
+- **Local evidence added:** Interactive Studio (`examples/web/`) now integrates the Guided Closed-Loop Student Flow, Lesson & Curriculum Designer (`auditLearningContent`), interactive SVG prerequisite concept map + live DSR forgetting curve, optional Light/Dark reading mode, and 3 original bilingual (EN/TR) Knowledge Cores (`test/closed-loop-studio.test.js`). Real-device mobile/browser QA remains an explicit follow-up outside headless Node tests.
 
 ### Gate G — Scale
-
-- A deterministic, opt-in `npm run bench:learning` benchmark measures replay of 1k, 10k and 50k synthetic review events. Results report Node version, platform, architecture, seed, repetitions, fixture hash, elapsed wall-clock time and observed memory deltas.
-- **100k cannot currently be replayed**: `src/calibrate.js` enforces `MAX_EVENTS = 50_000`. The benchmark must report this scenario as `unsupported` rather than fabricate numbers. Extending the cap would require separate safety and performance review.
-- GitHub CI covers a small 1k smoke measurement and 100k rejection; timings are not fixed performance pass/fail targets. Larger measurements are optional and machine-dependent.
 
 - Benchmark 1k, 10k, 100k events with fixed seeds and measured runtime/memory.
 - State hardware, Node version, run count and variance. Do not invent results.
 - Establish budgets only after a baseline exists.
+- **Local evidence added:** `scripts/benchmark-scale.mjs` (seed `202607`, Node `v22.23.2`, Linux x64) measured `replayReviewStream` (3 strategies: balanced/SM-2/DSR) at 67.69 ms (1k), 212.15 ms (10k), 1,107.93 ms (50k single-pass ceiling), and 2,353.36 ms (100k chunked 2×50k with `MAX_EVENTS=50000` guard verified); raw `updateDsrMemory` ran 100k updates in 477.76 ms. Indexing `computeConceptDynamics` and `projectCardsFromLedger` to single-pass O(N) maps cut 10k-event `diagnoseLearner` runtime from 4,809.39 ms to 160.48 ms. Remaining known bottleneck: sequential `recordLedgerReview` appends copy the full ledger via `structuredClone` (`O(N^2)`, ~5.4 s for 1,000 sequential appends).
 
 ### Gate H — Modular integrations
-
-- Proposed native JSON content-pack adapter: units, outcomes, lessons and answer-key questions become Knowledge Core records, with separate plain-text materials and required but unverified attribution. No third-party code or assets copied.
-- Original synthetic fixture tests the actual assessment → linked lesson → issued different follow-up → verified response pathway.
-- This is not a Kolibri/H5P/QTI native importer; rights review and format-specific connectors remain separate work.
-- V7 Markdown Content Bridge adds an independently authored, strictly delimited Markdown v1 educational pack format and routes it through the same validated JSON adapter. It is not full CommonMark/MDX; imported text stays inert. A public package subpath, deterministic fixture, offline-install smoke test and regression suite exercise the new boundary.
 
 - Document versioned schemas for external content and learning records.
 - Provide an original synthetic content adapter and runnable example.

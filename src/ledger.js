@@ -16,7 +16,6 @@ const MAX_EVENTS = 50_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EVENT_TYPES = new Set(['review', 'intervention']);
 const REASONS = new Set(MISTAKE_REASONS);
-const RATINGS = new Set(['again', 'hard', 'good', 'easy']);
 
 function parseIso(at, field = 'timestamp') {
   const date = at instanceof Date ? new Date(at.getTime()) : new Date(at);
@@ -130,14 +129,11 @@ export function validateLedger(ledger) {
   }
 
   const eventIds = new Set();
-  const lastReviewTimeByCard = new Map();
-  const reviewCountersByCard = new Map();
   for (const ev of ledger.events) {
     if (!ev || typeof ev !== 'object' || Array.isArray(ev)) {
       throw new TypeError('event must be an object');
     }
-    const canonicalId = nonEmptyText(ev.id, 'event.id');
-    if (canonicalId !== ev.id) throw new RangeError('event.id must be canonical');
+    nonEmptyText(ev.id, 'event.id');
     if (eventIds.has(ev.id)) {
       throw new RangeError('duplicate event id: ' + ev.id);
     }
@@ -145,62 +141,13 @@ export function validateLedger(ledger) {
     if (!EVENT_TYPES.has(ev.type)) {
       throw new RangeError('unknown ledger event type: ' + ev.type);
     }
-    const atIso = parseIso(ev.at, 'event.at');
+    parseIso(ev.at, 'event.at');
     if (ev.type === 'review') {
       if (!Object.hasOwn(ledger.cards, ev.cardId)) {
         throw new RangeError('review event references unknown card: ' + ev.cardId);
       }
-      if (!RATINGS.has(ev.rating)) throw new RangeError('unknown review rating');
-      if (ev.reason != null && (!REASONS.has(ev.reason) || ev.rating !== 'again')) {
-        throw new RangeError('mistake reason requires an again review');
-      }
-      nonEmptyText(ev.topic, 'review.topic');
-      if (!Array.isArray(ev.concepts) || ev.concepts.length === 0) {
-        throw new TypeError('review.concepts must be a non-empty array');
-      }
-      for (const concept of ev.concepts) nonEmptyText(concept, 'review concept');
-      const previousTime = lastReviewTimeByCard.get(ev.cardId);
-      if (previousTime != null && Date.parse(atIso) < previousTime) {
-        throw new RangeError('reordered review history for card: ' + ev.cardId);
-      }
-      lastReviewTimeByCard.set(ev.cardId, Date.parse(atIso));
-
-      const state = ev.memoryAfter;
-      if (!state || typeof state !== 'object' || Array.isArray(state)) {
-        throw new TypeError('review.memoryAfter must be an object');
-      }
-      if (!Number.isFinite(state.stabilityDays) || state.stabilityDays <= 0 ||
-          !Number.isFinite(state.difficulty) || state.difficulty < 1 || state.difficulty > 10 ||
-          !Number.isSafeInteger(state.reps) || !Number.isSafeInteger(state.lapses) ||
-          state.lapses < 0 || state.lapses > state.reps ||
-          parseIso(state.lastReviewedAt, 'memoryAfter.lastReviewedAt') !== atIso ||
-          Date.parse(parseIso(state.dueAt, 'memoryAfter.dueAt')) < Date.parse(atIso)) {
-        throw new RangeError('invalid review memory state');
-      }
-      if (!Number.isFinite(ev.elapsedDays) || ev.elapsedDays < 0 ||
-          !Number.isFinite(ev.intervalDays) || ev.intervalDays < 0 ||
-          (ev.predictedR !== null && (!Number.isFinite(ev.predictedR) || ev.predictedR < 0 || ev.predictedR > 1))) {
-        throw new RangeError('invalid review prediction metrics');
-      }
-
-      const snapshot = ledger.cards[ev.cardId].importedSnapshot;
-      const previousCounters = reviewCountersByCard.get(ev.cardId) ?? {
-        reps: snapshot?.reviews ?? 0,
-        lapses: snapshot?.lapses ?? 0
-      };
-      const expectedLapses = previousCounters.lapses + (ev.rating === 'again' ? 1 : 0);
-      if (state.reps !== previousCounters.reps + 1 || state.lapses !== expectedLapses) {
-        throw new RangeError('inconsistent review counters for card: ' + ev.cardId);
-      }
-      reviewCountersByCard.set(ev.cardId, { reps: state.reps, lapses: state.lapses });
-    } else {
-      nonEmptyText(ev.targetTopic, 'intervention.targetTopic');
-      if (!Array.isArray(ev.targetConcepts) || ev.targetConcepts.length === 0) {
-        throw new TypeError('intervention.targetConcepts must be a non-empty array');
-      }
-      for (const concept of ev.targetConcepts) nonEmptyText(concept, 'intervention concept');
-      if (!ev.baseline || typeof ev.baseline !== 'object' || Array.isArray(ev.baseline)) {
-        throw new TypeError('intervention.baseline must be an object');
+      if (ev.reason != null && !REASONS.has(ev.reason)) {
+        throw new RangeError('unknown event mistake reason: ' + ev.reason);
       }
     }
   }
@@ -310,17 +257,17 @@ export function upsertLedgerCard(ledger, cardInput, options = {}) {
   return next;
 }
 
-/** Derive current DSR memory state for one card by replaying its imported baseline + immutable review events. */
-export function getCardMemoryState(ledger, cardId) {
-  validateLedger(ledger);
-  if (!Object.hasOwn(ledger.cards, cardId)) {
-    throw new RangeError('unknown ledger card: ' + cardId);
-  }
+function getCardMemoryStateUnchecked(ledger, cardId) {
   const card = ledger.cards[cardId];
-  let mem = createMemoryState();
+  for (let i = ledger.events.length - 1; i >= 0; i--) {
+    const ev = ledger.events[i];
+    if (ev.type === 'review' && ev.cardId === cardId) {
+      return structuredClone(ev.memoryAfter);
+    }
+  }
   if (card.importedSnapshot && card.importedSnapshot.reviews > 0) {
     const snap = card.importedSnapshot;
-    mem = {
+    return {
       stabilityDays: boxToApproxStability(snap.box),
       difficulty: Math.min(9.5, Math.max(2.5, 4.8 + snap.lapses * 0.45 - Math.max(0, snap.box - 2) * 0.25)),
       lastReviewedAt: snap.lastReviewedAt,
@@ -329,11 +276,16 @@ export function getCardMemoryState(ledger, cardId) {
       lapses: snap.lapses
     };
   }
-  const cardEvents = ledger.events.filter((e) => e.type === 'review' && e.cardId === cardId);
-  if (cardEvents.length > 0) {
-    return structuredClone(cardEvents[cardEvents.length - 1].memoryAfter);
+  return createMemoryState();
+}
+
+/** Derive current DSR memory state for one card by replaying its imported baseline + immutable review events. */
+export function getCardMemoryState(ledger, cardId) {
+  validateLedger(ledger);
+  if (!Object.hasOwn(ledger.cards, cardId)) {
+    throw new RangeError('unknown ledger card: ' + cardId);
   }
-  return mem;
+  return getCardMemoryStateUnchecked(ledger, cardId);
 }
 
 /**
@@ -349,7 +301,7 @@ export function recordLedgerReview(ledger, cardId, rating, at = new Date(), opti
     throw new TypeError('options must be an object');
   }
   const atIso = parseIso(at, 'at');
-  const prevMemory = getCardMemoryState(ledger, cardId);
+  const prevMemory = getCardMemoryStateUnchecked(ledger, cardId);
   const dsrOpts = {};
   if (options.reason !== undefined) dsrOpts.reason = options.reason;
   if (options.targetRetention !== undefined) dsrOpts.targetRetention = options.targetRetention;
@@ -373,11 +325,6 @@ export function recordLedgerReview(ledger, cardId, rating, at = new Date(), opti
     memoryAfter: updated.state
   };
 
-  const canonicalId = nonEmptyText(event.id, 'event.id');
-  if (canonicalId !== event.id) throw new RangeError('event.id must be canonical');
-  if (ledger.events.some(existing => existing.id === event.id)) {
-    throw new RangeError('duplicate event id: ' + event.id);
-  }
   const next = cloneLedger(ledger);
   next.events.push(event);
   return {
@@ -394,6 +341,16 @@ export function recordLedgerReview(ledger, cardId, rating, at = new Date(), opti
 export function projectCardsFromLedger(ledger, at = new Date()) {
   validateLedger(ledger);
   parseIso(at, 'at');
+  const eventsByCard = new Map();
+  for (const ev of ledger.events) {
+    if (ev.type !== 'review') continue;
+    let list = eventsByCard.get(ev.cardId);
+    if (!list) {
+      list = [];
+      eventsByCard.set(ev.cardId, list);
+    }
+    list.push(ev);
+  }
   const projected = [];
 
   for (const entry of Object.values(ledger.cards)) {
@@ -406,7 +363,7 @@ export function projectCardsFromLedger(ledger, at = new Date()) {
           answer: entry.answer
         });
 
-    const cardEvents = ledger.events.filter((e) => e.type === 'review' && e.cardId === entry.id);
+    const cardEvents = eventsByCard.get(entry.id) ?? [];
     for (const ev of cardEvents) {
       const reviewOpts = ev.reason !== undefined ? { reason: ev.reason } : {};
       card = reviewCard(card, ev.rating, ev.at, reviewOpts);

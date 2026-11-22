@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#eef0f7">
-  <meta name="description" content="Explore FARK Study Engine: adaptive SM-2 & Leitner strategies, Cloze/Anki TSV support, cohort simulator, and MCP-ready study planning.">
+  <meta name="description" content="Explore FARK Study Engine: closed-loop assessment, prerequisite concept maps, lesson designer, DSR & SM-2 scheduling, and MCP-ready study planning.">
+  <meta property="og:title" content="FARK Study Engine — Interactive Studio">
+  <meta property="og:description" content="Offline-first open learning studio: guided closed-loop mastery, interactive prerequisite maps, lesson designer, and DSR memory calibration.">
   <title>FARK Study Engine — Interactive Studio</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" type="module"></script>
@@ -19,6 +21,7 @@
       </a>
       <div class="header-right">
         <span class="privacy-label"><span class="privacy-dot" aria-hidden="true"></span><span id="privacy-text">Local-only studio</span></span>
+        <button id="theme-toggle" type="button" class="lang-toggle" aria-pressed="false" aria-label="Toggle dark reading mode">Dark</button>
         <button id="lang-toggle" type="button" class="lang-toggle" aria-label="Switch language between English and Turkish">TR</button>
         <a id="github-link" class="header-link" href="https://github.com/merttiramisu-art/fark-study-engine" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </div>
@@ -37,13 +40,6 @@
             <div class="v2-home-actions">
               <button id="start-learning-button" type="button" class="button welcome-start">Start studying <span aria-hidden="true">→</span></button>
               <button id="home-library-button" type="button" class="v2-home-secondary">Explore library</button>
-              <a class="journey-entry-link" href="./learning-path.html">Try the guided learning journey ↗</a>
-              <a class="journey-entry-link" href="./visual-math.html">Explore Visual Math ↗</a>
-              <a class="journey-entry-link" href="./visual-learning.html">Explore Visual Learning ↗</a>
-              <a class="journey-entry-link" href="./concept-map.html">Explore Concept Map ↗</a>
-              <a class="journey-entry-link" href="./study-desk.html">Open Study Desk ↗</a>
-              <a class="journey-entry-link" href="./lesson-designer.html">Open Lesson Designer ↗</a>
-              <a class="journey-entry-link" href="./course-designer.html">Open Course Designer ↗</a>
             </div>
           </div>
           <div class="v2-home-art" aria-hidden="true">
@@ -73,7 +69,34 @@
       </section>
 
       <section id="panel-study" role="tabpanel" aria-labelledby="tab-study">
-        <div class="workspace">
+        <div class="submode-bar" role="group" aria-label="Study mode">
+          <button id="submode-spaced" type="button" class="submode-btn active" aria-pressed="true">Spaced Review</button>
+          <button id="submode-guided" type="button" class="submode-btn" aria-pressed="false">Guided Closed Loop</button>
+        </div>
+
+        <div id="guided-study-view" class="guided-wrap" hidden>
+          <section class="work-card guided-card" aria-labelledby="guided-heading">
+            <div class="section-title-row">
+              <div><span id="kicker-guided" class="kicker">GUIDED CLOSED-LOOP SESSION</span><h2 id="guided-heading">Assess, diagnose, teach &amp; verify.</h2></div>
+              <span class="work-icon" aria-hidden="true">◎</span>
+            </div>
+            <p id="guided-blurb" class="add-card-blurb">Answer a baseline question, inspect prerequisite or misconception signals, complete a focused micro-lesson, and answer a fresh issued question.</p>
+            <div class="settings guided-controls">
+              <label for="guided-preset-select"><span id="label-guided-preset">Learning module</span><select id="guided-preset-select"></select></label>
+              <label for="guided-outcome-select"><span id="label-guided-outcome">Target outcome</span><select id="guided-outcome-select"></select></label>
+              <button id="guided-reset-module" type="button" class="button button-light">Reset module history ↻</button>
+            </div>
+            <div id="guided-stepper" class="cl-stepper" aria-label="Closed-loop workflow progress"></div>
+            <div id="guided-stage" class="cl-stage" aria-live="polite"></div>
+            <div class="cl-checkpoint-bar">
+              <button id="guided-save-checkpoint" type="button" class="button button-outline">Save Session Checkpoint (JSON) ↗</button>
+              <button id="guided-resume-trigger" type="button" class="button button-light">Resume Checkpoint ↑</button>
+              <input id="guided-resume-file" type="file" accept=".json,application/json" hidden>
+            </div>
+          </section>
+        </div>
+
+        <div id="spaced-study-view" class="workspace">
           <div class="left-column">
             <section class="work-card" aria-labelledby="session-heading">
               <div class="section-title-row">
@@ -225,7 +248,85 @@
       </section>
 
       <section id="panel-decks" role="tabpanel" aria-labelledby="tab-decks" hidden>
-        <div class="workspace">
+        <div class="submode-bar" role="group" aria-label="Deck and authoring mode">
+          <button id="deck-submode-cards" type="button" class="submode-btn active" aria-pressed="true">Flashcard Deck</button>
+          <button id="deck-submode-designer" type="button" class="submode-btn" aria-pressed="false">Lesson Designer</button>
+        </div>
+
+        <div id="decks-designer-view" class="designer-wrap" hidden>
+          <div class="workspace designer-grid">
+            <div class="left-column">
+              <section class="work-card" aria-labelledby="designer-heading">
+                <div class="section-title-row">
+                  <div><span id="kicker-designer" class="kicker">LESSON &amp; CURRICULUM DESIGNER</span><h2 id="designer-heading">Build verified closed-loop modules.</h2></div>
+                  <span class="work-icon" aria-hidden="true">✎</span>
+                </div>
+                <p id="designer-blurb" class="add-card-blurb">Author units, cycle-checked prerequisite outcomes, misconception-tagged questions, and targeted micro-lessons. Content Readiness checks every outcome live.</p>
+                <div class="settings designer-toolbar">
+                  <label for="designer-preset-select"><span id="label-designer-preset">Active curriculum core</span><select id="designer-preset-select"></select></label>
+                  <button id="designer-blank-btn" type="button" class="button button-light">New blank core +</button>
+                  <button id="designer-try-btn" type="button" class="button button-primary">Test in Guided Loop →</button>
+                </div>
+                <div class="designer-io-row">
+                  <button id="designer-export-btn" type="button" class="button button-outline">Export Core JSON ↗</button>
+                  <button id="designer-import-trigger" type="button" class="button button-light">Import Core JSON ↑</button>
+                  <input id="designer-import-file" type="file" accept=".json,application/json" hidden>
+                </div>
+              </section>
+
+              <section class="work-card" aria-labelledby="designer-unit-title">
+                <div class="designer-forms-grid">
+                  <form id="designer-unit-form" class="designer-form-block">
+                    <h3 id="designer-unit-title">Add Unit</h3>
+                    <label for="designer-unit-input"><span id="label-designer-unit">Unit title</span><input id="designer-unit-input" type="text" maxlength="90" required></label>
+                    <button id="designer-unit-btn" type="submit" class="button button-outline">Add unit +</button>
+                  </form>
+
+                  <form id="designer-outcome-form" class="designer-form-block">
+                    <h3 id="designer-outcome-title">Add Outcome</h3>
+                    <label for="designer-outcome-unit"><span id="label-designer-outcome-unit">Parent unit</span><select id="designer-outcome-unit"></select></label>
+                    <label for="designer-outcome-name"><span id="label-designer-outcome-name">Outcome label</span><input id="designer-outcome-name" type="text" maxlength="100" required></label>
+                    <label for="designer-outcome-prereq"><span id="label-designer-outcome-prereq">Prerequisite (optional)</span><select id="designer-outcome-prereq"></select></label>
+                    <button id="designer-outcome-btn" type="submit" class="button button-outline">Add outcome +</button>
+                  </form>
+
+                  <form id="designer-question-form" class="designer-form-block">
+                    <h3 id="designer-question-title">Add MCQ Question</h3>
+                    <label for="designer-q-outcome"><span id="label-designer-q-outcome">Target outcome</span><select id="designer-q-outcome"></select></label>
+                    <label for="designer-q-prompt"><span id="label-designer-q-prompt">Question prompt</span><input id="designer-q-prompt" type="text" maxlength="260" required></label>
+                    <label for="designer-q-a"><span id="label-designer-q-a">Choice A</span><input id="designer-q-a" type="text" maxlength="160" required></label>
+                    <label for="designer-q-b"><span id="label-designer-q-b">Choice B</span><input id="designer-q-b" type="text" maxlength="160" required></label>
+                    <label for="designer-q-c"><span id="label-designer-q-c">Choice C (optional)</span><input id="designer-q-c" type="text" maxlength="160"></label>
+                    <label for="designer-q-correct"><span id="label-designer-q-correct">Correct choice</span><select id="designer-q-correct"><option value="a">A</option><option value="b">B</option><option value="c">C</option></select></label>
+                    <label for="designer-q-misc"><span id="label-designer-q-misc">Distractor misconception tag (optional)</span><input id="designer-q-misc" type="text" maxlength="60" placeholder="e.g. since-vs-for"></label>
+                    <button id="designer-question-btn" type="submit" class="button button-outline">Add question +</button>
+                  </form>
+
+                  <form id="designer-lesson-form" class="designer-form-block">
+                    <h3 id="designer-lesson-title">Add Micro-Lesson</h3>
+                    <label for="designer-r-outcome"><span id="label-designer-r-outcome">Target outcome</span><select id="designer-r-outcome"></select></label>
+                    <label for="designer-r-title"><span id="label-designer-r-title">Lesson title</span><input id="designer-r-title" type="text" maxlength="120" required></label>
+                    <label for="designer-r-summary"><span id="label-designer-r-summary">Core explanation</span><textarea id="designer-r-summary" rows="2" maxlength="500" required></textarea></label>
+                    <label for="designer-r-wrong"><span id="label-designer-r-wrong">Common misconception</span><input id="designer-r-wrong" type="text" maxlength="220"></label>
+                    <label for="designer-r-right"><span id="label-designer-r-right">Core principle</span><input id="designer-r-right" type="text" maxlength="220"></label>
+                    <label for="designer-r-misc"><span id="label-designer-r-misc">Target misconception tag (optional)</span><input id="designer-r-misc" type="text" maxlength="60" placeholder="e.g. since-vs-for"></label>
+                    <button id="designer-lesson-btn" type="submit" class="button button-outline">Add micro-lesson +</button>
+                  </form>
+                </div>
+              </section>
+            </div>
+
+            <aside class="work-card readiness-card" aria-labelledby="designer-readiness-title">
+              <div class="section-title-row">
+                <div><span class="kicker">CONTENT READINESS AUDIT</span><h3 id="designer-readiness-title">Live content readiness audit</h3></div>
+              </div>
+              <p id="designer-readiness-summary" class="insight-subnote tabular-nums"></p>
+              <div id="designer-readiness-list" class="readiness-list" aria-live="polite"></div>
+            </aside>
+          </div>
+        </div>
+
+        <div id="decks-flashcard-view" class="workspace">
           <div class="left-column">
             <section class="work-card" aria-labelledby="packs-heading">
               <div class="section-title-row">
@@ -279,6 +380,31 @@
       </section>
 
       <section id="panel-intelligence" role="tabpanel" aria-labelledby="tab-intelligence" hidden>
+        <section class="work-card map-lab-card" aria-labelledby="map-heading">
+          <div class="section-title-row">
+            <div><span id="kicker-map" class="kicker">INTERACTIVE CONCEPT &amp; PREREQUISITE MAP</span><h2 id="map-heading">Knowledge graph &amp; forgetting curve.</h2></div>
+            <span class="work-icon" aria-hidden="true">◈</span>
+          </div>
+          <p id="map-blurb" class="add-card-blurb">Click any outcome node to inspect its prerequisite chain, observed assessment evidence, and live DSR memory decay R(t) = (1 + t/(9S))^-1.</p>
+          <div class="map-lab-grid">
+            <div class="map-canvas-wrap">
+              <div id="intel-concept-map" class="concept-map-host"></div>
+            </div>
+            <div class="map-side-panel">
+              <div id="intel-map-inspector" class="map-inspector" aria-live="polite"></div>
+              <div class="dsr-curve-panel">
+                <div class="dsr-curve-head">
+                  <strong id="dsr-curve-title">Live DSR forgetting curve</strong>
+                  <label for="dsr-day-slider" id="dsr-day-label" class="tabular-nums">Forecast day: +4d</label>
+                </div>
+                <input id="dsr-day-slider" type="range" min="0" max="30" step="1" value="4" class="dsr-slider">
+                <div id="intel-dsr-curve" class="dsr-curve-host"></div>
+                <p id="dsr-curve-readout" class="insight-subnote tabular-nums"></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <div class="sim-layout">
           <section class="work-card" aria-labelledby="intel-diag-heading">
             <div class="section-title-row">

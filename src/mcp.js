@@ -4,7 +4,6 @@
  * and portable converters so AI assistants never hallucinate schedule math.
  */
 import { readFileSync } from 'node:fs';
-import { readBoundedLines } from './mcp-line-reader.js';
 import {
   getMistakeBreakdown,
   getReviewForecast,
@@ -31,8 +30,8 @@ const PACKAGE_JSON = JSON.parse(
 );
 const SERVER_VERSION = PACKAGE_JSON.version;
 const PROTOCOL_VERSION = '2024-11-05';
-// Reject oversized stdio lines while streaming, before JSON parsing.
-// Only retained line fragments are bounded; upstream chunks and responses are not.
+// Reject oversized complete lines before parsing. readline buffers the entire
+// line first; this is not a hard streaming-memory limit.
 export const MAX_MCP_MESSAGE_BYTES = 1024 * 1024;
 
 export const MCP_TOOLS = Object.freeze([
@@ -528,17 +527,18 @@ export function handleMcpRequest(message) {
   }
 }
 
-/** Run the newline-delimited JSON-RPC 2.0 MCP server over stdin/stdout streams. */
+/** Run the newline-delimited JSON-RPC 2.0 MCP server over stdin/stdout streams with a hard streaming byte cap. */
 export async function startMcpServer({ input = process.stdin, output = process.stdout, errorOutput = process.stderr } = {}) {
   errorOutput.write(`FARK Study Engine MCP v${SERVER_VERSION} listening on stdio\n`);
 
-  for await (const incoming of readBoundedLines(input, MAX_MCP_MESSAGE_BYTES)) {
-    if (incoming.oversized) {
-      output.write(JSON.stringify({jsonrpc:'2.0',id:null,error:{code:-32600,message:'MCP message exceeds 1 MiB limit'}}) + '\n');
-      continue;
+  const processLineBuffer = (lineBuf, oversized) => {
+    if (oversized) {
+      output.write(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'MCP message exceeds 1 MiB limit' } }) + '\n');
+      return;
     }
-    const line = incoming.line.trim();
-    if (!line) continue;
+    const rawLine = lineBuf.toString('utf8');
+    const line = rawLine.trim();
+    if (!line) return;
     let reply;
     try {
       const msg = JSON.parse(line);
@@ -553,5 +553,67 @@ export async function startMcpServer({ input = process.stdin, output = process.s
     if (reply !== null) {
       output.write(JSON.stringify(reply) + '\n');
     }
+  };
+
+  let chunks = [];
+  let lineBytes = 0;
+  let discardingOversized = false;
+
+  for await (const rawChunk of input) {
+    const chunk = Buffer.isBuffer(rawChunk) ? rawChunk : Buffer.from(String(rawChunk), 'utf8');
+    let offset = 0;
+
+    while (offset < chunk.length) {
+      const nlIndex = chunk.indexOf(0x0a, offset); // '\n'
+      const end = nlIndex === -1 ? chunk.length : nlIndex;
+      let slice = chunk.subarray(offset, end);
+
+      // Strip trailing '\r' when line ends with CRLF
+      const endsLine = nlIndex !== -1;
+      if (endsLine && slice.length > 0 && slice[slice.length - 1] === 0x0d) {
+        slice = slice.subarray(0, slice.length - 1);
+      }
+
+      if (!discardingOversized) {
+        if (lineBytes + slice.length > MAX_MCP_MESSAGE_BYTES) {
+          discardingOversized = true;
+          chunks = [];
+          lineBytes = 0;
+        } else if (slice.length > 0) {
+          chunks.push(slice);
+          lineBytes += slice.length;
+        }
+      }
+
+      if (endsLine) {
+        if (discardingOversized) {
+          processLineBuffer(null, true);
+        } else {
+          // Handle '\r' split across chunk boundary before '\n'
+          let combined = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks, lineBytes);
+          if (combined.length > 0 && combined[combined.length - 1] === 0x0d) {
+            combined = combined.subarray(0, combined.length - 1);
+          }
+          processLineBuffer(combined, false);
+        }
+        chunks = [];
+        lineBytes = 0;
+        discardingOversized = false;
+        offset = nlIndex + 1;
+      } else {
+        offset = chunk.length;
+      }
+    }
+  }
+
+  // Flush final line without trailing newline
+  if (discardingOversized) {
+    processLineBuffer(null, true);
+  } else if (lineBytes > 0) {
+    let combined = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks, lineBytes);
+    if (combined.length > 0 && combined[combined.length - 1] === 0x0d) {
+      combined = combined.subarray(0, combined.length - 1);
+    }
+    processLineBuffer(combined, false);
   }
 }

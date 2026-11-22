@@ -81,12 +81,27 @@ export function computeConceptDynamics(ledger, at = new Date()) {
     }
   }
 
-  const reviewEvents = ledger.events.filter((e) => e.type === 'review');
+  const reviewEvents = [];
+  const eventsByConcept = new Map();
+  const lastMemoryByCard = new Map();
+  for (const ev of ledger.events) {
+    if (ev.type !== 'review') continue;
+    reviewEvents.push(ev);
+    lastMemoryByCard.set(ev.cardId, ev.memoryAfter);
+    for (const cid of ev.concepts) {
+      let list = eventsByConcept.get(cid);
+      if (!list) {
+        list = [];
+        eventsByConcept.set(cid, list);
+      }
+      list.push(ev);
+    }
+  }
   const results = {};
 
   for (const [conceptId, cardIds] of [...conceptCards.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     const node = ledger.concepts[conceptId] ?? { id: conceptId, label: conceptId, prerequisites: [] };
-    const events = reviewEvents.filter((e) => e.concepts.includes(conceptId));
+    const events = eventsByConcept.get(conceptId) ?? [];
     const overall = summarizeWindow(events);
     const recentSlice = events.slice(-6);
     const priorSlice = events.slice(0, Math.max(0, events.length - recentSlice.length));
@@ -115,7 +130,7 @@ export function computeConceptDynamics(ledger, at = new Date()) {
       if (cardProj && (cardProj.dueAt == null || Date.parse(cardProj.dueAt) <= nowMs)) {
         dueCount += 1;
       }
-      const mem = getCardMemoryState(ledger, cardId);
+      const mem = lastMemoryByCard.get(cardId) ?? getCardMemoryState(ledger, cardId);
       if (mem.reps > 0 && mem.lastReviewedAt) {
         const elapsedDays = Math.max(0, (nowMs - Date.parse(mem.lastReviewedAt)) / DAY_MS);
         const r = computeRetrievability(elapsedDays, mem.stabilityDays);
@@ -377,12 +392,6 @@ export function recordIntervention(ledger, proposal, at = new Date()) {
     }
   };
 
-  if (typeof intervention.id !== 'string' || !intervention.id.trim() || intervention.id.trim() !== intervention.id) {
-    throw new RangeError('intervention.id must be a canonical non-empty string');
-  }
-  if (ledger.events.some(ev => ev.id === intervention.id)) {
-    throw new RangeError('duplicate event id: ' + intervention.id);
-  }
   const next = structuredClone(ledger);
   next.events.push(intervention);
   return { ledger: next, intervention };
