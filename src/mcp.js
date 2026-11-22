@@ -4,7 +4,7 @@
  * and portable converters so AI assistants never hallucinate schedule math.
  */
 import { readFileSync } from 'node:fs';
-import { createInterface } from 'node:readline';
+import { readBoundedLines } from './mcp-line-reader.js';
 import {
   getMistakeBreakdown,
   getReviewForecast,
@@ -31,8 +31,8 @@ const PACKAGE_JSON = JSON.parse(
 );
 const SERVER_VERSION = PACKAGE_JSON.version;
 const PROTOCOL_VERSION = '2024-11-05';
-// Reject oversized complete lines before parsing. readline buffers the entire
-// line first; this is not a hard streaming-memory limit.
+// Reject oversized stdio lines while streaming, before JSON parsing.
+// Only retained line fragments are bounded; upstream chunks and responses are not.
 export const MAX_MCP_MESSAGE_BYTES = 1024 * 1024;
 
 export const MCP_TOOLS = Object.freeze([
@@ -530,16 +530,14 @@ export function handleMcpRequest(message) {
 
 /** Run the newline-delimited JSON-RPC 2.0 MCP server over stdin/stdout streams. */
 export async function startMcpServer({ input = process.stdin, output = process.stdout, errorOutput = process.stderr } = {}) {
-  const rl = createInterface({ input, crlfDelay: Infinity });
   errorOutput.write(`FARK Study Engine MCP v${SERVER_VERSION} listening on stdio\n`);
 
-  for await (const rawLine of rl) {
-    // Enforce the wire-size limit on the raw UTF-8 line, even if it is all whitespace.
-    if (Buffer.byteLength(rawLine, 'utf8') > MAX_MCP_MESSAGE_BYTES) {
+  for await (const incoming of readBoundedLines(input, MAX_MCP_MESSAGE_BYTES)) {
+    if (incoming.oversized) {
       output.write(JSON.stringify({jsonrpc:'2.0',id:null,error:{code:-32600,message:'MCP message exceeds 1 MiB limit'}}) + '\n');
       continue;
     }
-    const line = rawLine.trim();
+    const line = incoming.line.trim();
     if (!line) continue;
     let reply;
     try {

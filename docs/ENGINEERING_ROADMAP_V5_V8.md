@@ -18,7 +18,7 @@
 | B | V4.6 API and TypeScript contracts | Export/import smoke tests, TS compile fixture, Node 20/22 CI, compatibility matrix | In progress |
 | C | V5.0 Contributor experience | Quick start, bilingual API docs, issue templates, security policy, ADRs | In progress |
 | D | V5.1 MCP hardening | Protocol errors, schema validation, size limits, client integration proof | In progress |
-| E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | Not started |
+| E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | In progress |
 | F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | Not started |
 | G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | Not started |
 | H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | Not started |
@@ -36,6 +36,7 @@
 ### Gate B — API compatibility
 
 - Run package export tests and compile TypeScript consumer fixtures with a freely available compiler.
+- PR #37 proposes dynamic public-subpath runtime/declaration-name checks for every package export. This is **not** a TypeScript compiler proof; independent TS consumer compilation remains pending.
 - Compare runtime exports against declaration exports; test Node 20 and 22.
 - Make a version compatibility table. Avoid publishing V5 tags until SemVer is resolved.
 
@@ -44,12 +45,14 @@
 - Document a verified five-minute path from clone to tests and demos.
 - Maintain English/Turkish instructions, issue templates, security policy, architecture decisions.
 - Add one minimal original external-consumer example; verify instructions in CI.
+- PR #36 proposes an original zero-dependency public-package self-import example and subprocess smoke test on Node 20/22. This checks the exported API shape, but an independently installed third-party package consumer still needs separate verification.
 
 ### Gate D — MCP
 
 - PR #33 adds basic JSON-RPC argument-shape checks and a complete-line 1 MiB rejection guard. Acceptance remains pending passing Node 20/22 CI and real-client integration evidence.
-- The stdio implementation uses `readline`: an oversized line is buffered before rejection. This is **not** a hard streaming memory cap; a bounded streaming parser requires separate engineering and verification.
+- V5.1.1 replaces `readline` with a bounded retained-line reader: oversized lines are drained before JSON parsing, and later requests are processed. It bounds retained line fragments, **not** upstream input chunks, decoded JSON objects, tool outputs or total process memory. Node 20/22 CI and real-client integration proof remain acceptance requirements.
 
+- PR #34 includes an independent Node CLI subprocess test for initialize, discovery, synthetic tool calls, invalid calls and post-error recovery. It is a local-protocol client harness, **not** proof of successful integration with Claude Desktop or any specific external MCP client. On-device client testing remains pending.
 - Protocol-level integration for initialize, tool discovery, valid and invalid calls.
 - Negative tests for malformed JSON-RPC, oversized payloads, unsafe paths and unexpected writes.
 - Record client and runtime versions in the evidence report.
