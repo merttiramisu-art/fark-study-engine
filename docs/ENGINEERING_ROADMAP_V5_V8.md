@@ -46,7 +46,7 @@
 - Document a verified five-minute path from clone to tests and demos.
 - Maintain English/Turkish instructions, issue templates, security policy, architecture decisions.
 - Add one minimal original external-consumer example; verify instructions in CI.
-- PR #36 proposes an original zero-dependency public-package self-import example and subprocess smoke test on Node 20/22. This checks the exported API shape, but an independently installed third-party package consumer still needs separate verification.
+- PR #36 adds the public-package self-import example. The integrated acceptance bundle also tests a local npm tarball by `npm pack` and offline `npm install` into an isolated consumer project on Node 20/22. This does not prove compatibility with every third-party app.
 
 ### Gate D — MCP
 

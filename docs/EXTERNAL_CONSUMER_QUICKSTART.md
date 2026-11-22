@@ -13,7 +13,7 @@ node examples/external-consumer.mjs
 npm test
 ```
 
-The example imports from the **public package name** `fark-study-engine`, rather than a private source path. Since it runs inside the repository, Node resolves it by package self-reference; this is an export-contract smoke test, **not** evidence of an independently installed third-party consumer. To try the package in a separate local project without registry publication, install it from a local checkout using `npm install /absolute/path/to/fark-study-engine`.
+The example imports from the **public package name** `fark-study-engine`, rather than a private source path. This example uses Node package self-reference. The automated test `node --test test/package-install.test.js` also builds a local npm tarball, installs it **offline into an isolated project**, and imports public entry points. It verifies packaging and installation on tested Node versions, not arbitrary third-party integration. Final PC acceptance remains separate.
 
 Expected JSON includes `originalUnchanged: true`, `dueCardIds: ["demo-1"]`, and `totalReviews: 1`.
 
@@ -30,7 +30,7 @@ node examples/external-consumer.mjs
 npm test
 ```
 
-Örnek, iç kaynak dosyasını değil, doğrudan `fark-study-engine` paket adını içe aktarır. Ancak depo içinde çalıştığından bu bir **paket içi self-reference testi**dir. Başka bir projede gerçek kurulumun doğrulandığı anlamına gelmez. Ayrı bir yerel projede test etmek istersen `npm install /deponun/tam/yolu` komutunu kullanabilirsin.
+Örnek, iç kaynak dosyasını değil, doğrudan `fark-study-engine` paket adını içe aktarır. Bu örnek depo içinde paket self-reference kullanır. Ek test `node --test test/package-install.test.js` paketi tarball olarak oluşturur, **bağımsız klasöre çevrimdışı kurar** ve oradan kullanır. Test edilen Node sürümlerindeki paket kurulumu doğrulanır; her üçüncü taraf ortamında çalışacağının garantisi değildir. Son PC kabul testi ayrıca yapılacak.
 
 Beklenen JSON çıktısında `originalUnchanged: true`, `dueCardIds: ["demo-1"]` ve `totalReviews: 1` bulunur.
 
