@@ -36,6 +36,7 @@
 ### Gate B — API compatibility
 
 - Run package export tests and compile TypeScript consumer fixtures with a freely available compiler.
+- PR #37 proposes dynamic public-subpath runtime/declaration-name checks for every package export. This is **not** a TypeScript compiler proof; independent TS consumer compilation remains pending.
 - Compare runtime exports against declaration exports; test Node 20 and 22.
 - Make a version compatibility table. Avoid publishing V5 tags until SemVer is resolved.
 
