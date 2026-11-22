@@ -34,7 +34,8 @@ export async function* readBoundedLines(input, maxBytes) {
           bytes = 0;
           rejecting = true;
         } else if (segment.length) {
-          fragments.push(segment);
+          // Copy the bounded slice so a tiny fragment cannot retain an oversized backing chunk.
+          fragments.push(Buffer.from(segment));
           bytes += segment.length;
         }
       }

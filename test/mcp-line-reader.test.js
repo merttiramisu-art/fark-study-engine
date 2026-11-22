@@ -43,3 +43,16 @@ test('bounded MCP line reader recovers after oversized split chunks', async () =
   assert.deepEqual(await readChunks(['a'.repeat(30), 'b'.repeat(30), '\n', 'valid\n']),
     [{ oversized: true }, { line: 'valid' }]);
 });
+
+test('bounded MCP line reader is invariant to chunk fragmentation', async () => {
+  const stream = Buffer.from('ö\r\n' + 'a'.repeat(34) + '\n' + '😀\n' + 'done\n', 'utf8');
+  const expected = await readChunks([stream], 32);
+  for (const fragmentSize of [1, 2, 3, 4, 7, 13, 31]) {
+    const chunks = [];
+    for (let i = 0; i < stream.length; i += fragmentSize) chunks.push(stream.subarray(i, i + fragmentSize));
+    assert.deepEqual(await readChunks(chunks, 32), expected);
+  }
+  assert.deepEqual(expected, [
+    { line: 'ö' }, { oversized: true }, { line: '😀' }, { line: 'done' }
+  ]);
+});
