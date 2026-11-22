@@ -14,7 +14,7 @@ const ROOT = new Set(['version', 'title', 'creator', 'license', 'sourceUrl']);
 const FIELDS = {
   Unit: new Set(['label', 'prerequisiteIds']),
   Outcome: new Set(['label', 'unitId', 'prerequisiteIds']),
-  Lesson: new Set(['revision', 'title', 'outcomeIds', 'misconceptionIds']),
+  Lesson: new Set(['revision', 'title', 'outcomeIds', 'misconceptionIds', 'visualLeft', 'visualRight']),
   Question: new Set(['revision', 'outcomeIds', 'prompt', 'correctChoiceId']),
   Mapping: new Set(['questionId'])
 };
@@ -48,6 +48,11 @@ function requiredList(fields, key, where) {
   required(fields, key, where);
   return optionalList(fields, key);
 }
+function fractionField(raw, name) {
+  const match = /^(0|[1-9][0-9]?)\/([1-9][0-9]?)$/.exec(raw);
+  if (!match) throw new SyntaxError(name + ' must be a positive denominator fraction such as 1/3');
+  return { numerator: Number(match[1]), denominator: Number(match[2]) };
+}
 function finalize(section, pack) {
   if (!section) return;
   const { kind, id, fields } = section;
@@ -74,6 +79,14 @@ function finalize(section, pack) {
     };
     const misconceptionIds = optionalList(fields, 'misconceptionIds');
     if (misconceptionIds) entry.misconceptionIds = misconceptionIds;
+    if (fields.has('visualLeft') !== fields.has('visualRight')) {
+      throw new SyntaxError('visualLeft and visualRight must both be provided');
+    }
+    if (fields.has('visualLeft')) entry.visual = {
+      kind: 'fraction-comparison',
+      left: fractionField(fields.get('visualLeft'), 'visualLeft'),
+      right: fractionField(fields.get('visualRight'), 'visualRight')
+    };
     pack.lessons.push(entry);
   } else if (kind === 'Question') {
     if (section.choices.length < 2) throw new SyntaxError('question needs at least two choices: ' + id);

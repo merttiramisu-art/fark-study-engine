@@ -3,6 +3,8 @@
  * Only bounded numeric TeX is passed to an optional local KaTeX renderer.
  */
 import { compareFractionModels, renderOptionalKatex } from '../../src/visual-math.js';
+import { importOpenContentPack } from '../../src/content-adapter.js';
+import { importMarkdownContentPack } from '../../src/markdown-content.js';
 const $ = id => document.getElementById(id);
 const presetIds = ['preset-unit', 'preset-followup', 'preset-equal'];
 const controls = ['left-num', 'left-den', 'right-num', 'right-den'];
@@ -65,3 +67,46 @@ const presets = [
 presets.forEach(([id, values]) => $(id).addEventListener('click', () => setPreset(id, values)));
 controls.forEach(id => $(id).addEventListener('input', () => refresh()));
 setPreset(...presets[0]);
+
+/**
+ * Authoring preview uses the exact same validation boundary as FARK's public
+ * packages. Failure is atomic: no model/UI values change on invalid input.
+ * Only inert text is rendered, never author-controlled HTML.
+ */
+function previewAuthoredContent() {
+  const field = $('content-source');
+  try {
+    const text = field.value;
+    const imported = text.trimStart().startsWith('{')
+      ? importOpenContentPack(text)
+      : importMarkdownContentPack(text);
+    const lesson = imported.materials.lessons.find(item =>
+      item.visual?.kind === 'fraction-comparison');
+    if (!lesson) throw new RangeError('No lesson defines a supported fraction-comparison visual');
+    const visual = lesson.visual;
+    // Fully validate before changing any currently displayed content.
+    compareFractionModels(visual.left, visual.right);
+    const values = {
+      'left-num': visual.left.numerator,
+      'left-den': visual.left.denominator,
+      'right-num': visual.right.numerator,
+      'right-den': visual.right.denominator
+    };
+    for (const [key,value] of Object.entries(values)) $(key).value = String(value);
+    refresh();
+    $('authored-title').textContent = lesson.title;
+    $('authored-body').textContent = lesson.bodyText;
+    $('authored-source').textContent = imported.attribution.title +
+      ' · ' + imported.attribution.creator + ' · ' + imported.attribution.license;
+    $('authored-preview').hidden = false;
+    $('content-error').hidden = true;
+    $('content-feedback').textContent = 'Validated ' +
+      imported.core.questions.length + ' question(s) and linked visual ' +
+      $('visual-result').textContent + '. Content remains in memory.';
+  } catch (error) {
+    $('content-error').textContent = 'Cannot preview this content: ' + error.message;
+    $('content-error').hidden = false;
+    $('content-feedback').textContent = 'Import rejected. The previous valid visual remains visible.';
+  }
+}
+$('load-visual-content').addEventListener('click', previewAuthoredContent);

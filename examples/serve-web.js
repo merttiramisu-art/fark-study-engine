@@ -40,6 +40,8 @@ const ROUTES = new Map([
   ['/src/learning-orchestrator.js', ['src/learning-orchestrator.js', 'text/javascript; charset=utf-8']],
   ['/src/reassessment-ledger.js', ['src/reassessment-ledger.js', 'text/javascript; charset=utf-8']],
   ['/src/visual-math.js', ['src/visual-math.js', 'text/javascript; charset=utf-8']],
+  ['/src/content-adapter.js', ['src/content-adapter.js', 'text/javascript; charset=utf-8']],
+  ['/src/markdown-content.js', ['src/markdown-content.js', 'text/javascript; charset=utf-8']],
   ['/README.md', ['README.md', 'text/plain; charset=utf-8']]
 ]);
 

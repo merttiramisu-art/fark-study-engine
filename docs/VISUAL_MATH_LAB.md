@@ -43,3 +43,9 @@ The adapter sends **only internally generated numeric TeX** with `trust: false`,
 ## Türkçe
 
 **FARK Görsel Matematik Alanı**, özgün kesir derslerinde pay ve paydayı değiştirerek aynı büyüklükte bir bütünün eş parçalarını karşılaştırmayı sağlar. Tamamen çevrimdışı çalışır; kütüphane veya ücretli servis şartı yoktur. Formüller sayısal ve sınırlandırılmıştır. İleride KaTeX'i ayrı, yerel ve lisans bildirimleri korunmuş bir paketle bağlayabiliriz; **henüz gerçek KaTeX dağıtımı eklenmedi**. Ekrandaki karşılaştırma, öğrencinin gerçekten öğrendiğine dair kanıt değildir.
+
+## Author-specified visual previews (V6 ↔ V7)
+
+The Visual Math page now offers an **in-memory editor** accepting either the restricted FARK Markdown lesson format or a FARK JSON content pack. A lesson's optional `visual: { kind: 'fraction-comparison', left: {numerator:2,denominator:5}, right: {numerator:2,denominator:7} }` is validated using the exact same fraction model as the native sliders. The Markdown equivalent is `visualLeft: 2/5` and `visualRight: 2/7`, both in the Lesson metadata before `### Body`.
+
+Only validated, locally pasted content is displayed. Import errors leave the last valid visual untouched. Lesson text and author-declared attribution are set via `textContent`, never `innerHTML`. The editor does not write to storage or contact any server. As before, this is a demonstration of content-to-visual mapping, **not** a student learning experiment.

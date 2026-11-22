@@ -26,3 +26,7 @@ Bağımsız içerik üreticileri kendi özgün ders, kazanım ve soru JSON dosya
 ## Author lesson packs as Markdown
 
 See [FARK Markdown Content Bridge](MARKDOWN_CONTENT_BRIDGE.md). It is a strict, original authoring subset that converts into this identical validated JSON content pack. No Markdown renderer or executable MDX is part of the importer.
+
+## Optional numeric Visual Math lesson
+
+An author may add `visual` to a lesson: `{"kind":"fraction-comparison","left":{"numerator":1,"denominator":3},"right":{"numerator":1,"denominator":4}}`. This metadata is validated by the bounded Visual Math fraction model and returned in `materials.lessons[].visual`, **not** in the learning evidence ledger. Incorrect types, denominators outside 1–12 and unknown visual kinds/fields are rejected. Omitting it retains previous import behavior. The Markdown counterpart uses `visualLeft: 1/3` and `visualRight: 1/4` before `### Body`.

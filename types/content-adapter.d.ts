@@ -1,3 +1,8 @@
+export interface FractionLessonVisual {
+  kind: 'fraction-comparison';
+  left: { numerator: number; denominator: number };
+  right: { numerator: number; denominator: number };
+}
 import type { KnowledgeCore } from './knowledge-core.js';
 
 export interface OpenContentPack {
@@ -18,6 +23,7 @@ export interface OpenContentPack {
     title: string;
     bodyText: string;
     misconceptionIds?: string[];
+    visual?: FractionLessonVisual;
   }>;
   questions: Array<{
     id: string;
@@ -33,7 +39,7 @@ export interface OpenContentPack {
 export interface ImportedOpenContentPack {
   core: KnowledgeCore;
   materials: {
-    lessons: Array<{ id: string; title: string; bodyText: string }>;
+    lessons: Array<{ id: string; title: string; bodyText: string; visual?: FractionLessonVisual }>;
     questions: Array<{ id: string; prompt: string; choices: Array<{ id: string; text: string }> }>;
   };
   attribution: { title: string; creator: string; license: string; sourceUrl?: string };

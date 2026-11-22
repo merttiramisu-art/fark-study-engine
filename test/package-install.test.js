@@ -58,7 +58,13 @@ const pack = importOpenContentPack({
   attribution: { title: 'Local sample', creator: 'FARK contributors', license: 'MIT' },
   units: [{ id: 'math', label: 'Original math' }],
   outcomes: [{ id: 'fractions', unitId: 'math', label: 'Fractions' }],
-  lessons: [],
+  lessons: [{ id: 'viz', revision: '1', title: 'Fraction picture',
+    bodyText: 'Compare equal wholes', outcomeIds: ['fractions'],
+    visual: { kind: 'fraction-comparison',
+      left: { numerator: 1, denominator: 3 },
+      right: { numerator: 1, denominator: 4 }
+    }
+  }],
   questions: [{ id: 'q1', revision: '1', outcomeIds: ['fractions'],
     prompt: 'Choose the larger fraction', correctChoiceId: 'a',
     choices: [{ id: 'a', text: '1/3' }, { id: 'b', text: '1/4' }]
@@ -69,16 +75,22 @@ const sampleMarkdown = [
   'title: Offline sample', 'creator: FARK contributors', 'license: MIT',
   '## Unit: math', 'label: Original math',
   '## Outcome: fractions', 'unitId: math', 'label: Fractions',
+  '## Lesson: viz', 'revision: 1', 'title: Fraction picture',
+  'outcomeIds: fractions', 'visualLeft: 1/3', 'visualRight: 1/4',
+  '### Body', 'Compare equal wholes',
   '## Question: question-1', 'revision: 1', 'outcomeIds: fractions',
   'prompt: Which fraction is larger?', 'correctChoiceId: a',
   '- a | 1/3', '- b | 1/4'
 ].join(String.fromCharCode(10));
 const markdownPack = importMarkdownContentPack(sampleMarkdown);
-const visual = compareFractionModels({numerator:1,denominator:3},{numerator:1,denominator:4});
+const visualSpec = pack.materials.lessons[0].visual;
+const visual = compareFractionModels(visualSpec.left, visualSpec.right);
+const visualBridgeEqual = JSON.stringify(visualSpec) ===
+  JSON.stringify(markdownPack.materials.lessons[0].visual);
 const card = createCard({ id: 'c', topic: 'Math', question: '2+2?', answer: '4' });
 const reviewed = reviewCard(card, 'good', '2026-01-01T00:00:00.000Z');
 const summary = getStudySummary([reviewed], '2026-01-02T00:00:00.000Z');
-console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length, visualComparison: visual.label }));
+console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length, visualComparison: visual.label, visualBridgeEqual }));
 `);
     const execution = spawnSync(process.execPath, [join(consumer, 'main.mjs')], {
       cwd: consumer, encoding: 'utf8', timeout: 12_000, maxBuffer: 1024 * 1024
@@ -87,7 +99,7 @@ console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOL
     assert.equal(execution.status, 0, execution.stderr);
     assert.equal(execution.stderr, '');
     assert.deepEqual(JSON.parse(execution.stdout), {
-      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1, visualComparison: '1/3 > 1/4'
+      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1, visualComparison: '1/3 > 1/4', visualBridgeEqual: true
     });
   } finally {
     rmSync(root, { recursive: true, force: true });

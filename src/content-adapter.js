@@ -4,6 +4,7 @@
  * Supplied rights/provenance metadata is descriptive and cannot verify copyright.
  */
 import { validateKnowledgeCore } from './knowledge-core.js';
+import { compareFractionModels } from './visual-math.js';
 
 export const OPEN_CONTENT_PACK_LIMITS = Object.freeze({
   maxBytes: 1_048_576,
@@ -78,6 +79,33 @@ function decode(input) {
 }
 
 /**
+ * Optional declarative lesson visual. Fail closed on unknown props rather than
+ * silently dropping a future or unsafe visualization instruction. The model
+ * accepts only small, exact, nonnegative integer fractions.
+ */
+function lessonVisual(input) {
+  if (input === undefined) return undefined;
+  const visual = object(input, 'lesson.visual');
+  const allowed = ['kind', 'left', 'right'];
+  if (Object.keys(visual).some(key => !allowed.includes(key)) ||
+      visual.kind !== 'fraction-comparison') {
+    throw new RangeError('unsupported lesson.visual kind or field');
+  }
+  function fraction(value, name) {
+    const item = object(value, name);
+    if (Object.keys(item).some(key => !['numerator','denominator'].includes(key))) {
+      throw new RangeError('unsupported ' + name + ' field');
+    }
+    return { numerator: item.numerator, denominator: item.denominator };
+  }
+  const left = fraction(visual.left, 'lesson.visual.left');
+  const right = fraction(visual.right, 'lesson.visual.right');
+  // Reuse the Visual Math model as the single authority on numeric bounds.
+  compareFractionModels(left, right);
+  return { kind: 'fraction-comparison', left, right };
+}
+
+/**
  * Convert a human-authored plain JSON content pack to FARK's existing Knowledge Core
  * and separate read-only presentation data. Never execute or render supplied HTML.
  * Callers must display lesson/question text via safe text APIs such as textContent.
@@ -128,7 +156,11 @@ export function importOpenContentPack(input) {
       outcomeIds: ids(x.outcomeIds, 'lesson.outcomeIds', 1),
       ...(x.misconceptionIds === undefined ? {} : { misconceptionIds: ids(x.misconceptionIds, 'lesson.misconceptionIds') })
     };
-    materials.lessons.push({ id, title: text(x.title, 'lesson.title'), bodyText: text(x.bodyText, 'lesson.bodyText', 10000) });
+    materials.lessons.push({
+      id, title: text(x.title, 'lesson.title'),
+      bodyText: text(x.bodyText, 'lesson.bodyText', 10000),
+      ...(x.visual === undefined ? {} : { visual: lessonVisual(x.visual) })
+    });
     return resource;
   }), 'lesson');
   const questions = distinctEntries(rows(pack.questions, 'questions', OPEN_CONTENT_PACK_LIMITS.maxQuestions, 1).map((raw, i) => {

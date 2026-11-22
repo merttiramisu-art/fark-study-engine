@@ -17,6 +17,8 @@ revision: 1
 title: Same whole, different-sized pieces
 outcomeIds: compare-unit-fractions
 misconceptionIds: denominator-size
+visualLeft: 1/3
+visualRight: 1/4
 ### Body
 If the same whole is split into 3 equal parts, each piece is larger than when it is split into 4 equal parts. Therefore 1/3 is larger than 1/4. The denominator names how many equal pieces the whole has.
 

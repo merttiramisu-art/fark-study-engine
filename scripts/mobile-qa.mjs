@@ -372,6 +372,50 @@ async function run() {
           !visual.renderer.includes('Native readable math') || visual.scrollWidth > visual.viewport + 1) {
         throw new Error(viewport.label + ' Visual Math Lab failed: ' + JSON.stringify(visual));
       }
+      // A teacher-owned Markdown/JSON lesson can configure Visual Math.
+      // Invalid imports must leave previously rendered valid diagrams intact.
+      const contentQA = await devtools.eval(`(() => {
+        const source = document.getElementById('content-source');
+        const initial = source.value;
+        const load = () => document.getElementById('load-visual-content').click();
+        load();
+        const imported = document.getElementById('visual-result').textContent === '2/5 > 2/7' &&
+          document.getElementById('authored-title').textContent === 'Compare the same-sized whole' &&
+          !document.getElementById('authored-preview').hidden &&
+          document.getElementById('content-error').hidden;
+        source.value = initial.replace('visualRight: 2/7','visualRight: 2/0');
+        load();
+        const failureAtomic = document.getElementById('visual-result').textContent === '2/5 > 2/7' &&
+          !document.getElementById('content-error').hidden;
+        source.value = initial.replace('Divide the same-sized whole into equal parts.',
+          '<img src=x onerror=alert(1)>');
+        load();
+        const textIsInert = document.getElementById('authored-body').textContent.includes('<img src=x') &&
+          !document.getElementById('authored-body').querySelector('img') &&
+          document.getElementById('content-error').hidden;
+        source.value = JSON.stringify({
+          format: 'fark-open-content-pack', version: 1,
+          attribution: {title:'JSON visual example', creator:'Test author', license:'MIT'},
+          units:[{id:'u',label:'Fractions'}],
+          outcomes:[{id:'o',unitId:'u',label:'Compare'}],
+          lessons:[{id:'lesson',revision:'1',title:'JSON lesson',
+            outcomeIds:['o'],bodyText:'A new original lesson',
+            visual:{kind:'fraction-comparison',left:{numerator:1,denominator:2},
+              right:{numerator:2,denominator:4}}}],
+          questions:[{id:'q',revision:'1',outcomeIds:['o'],prompt:'A?',
+            correctChoiceId:'a',choices:[{id:'a',text:'Yes'},{id:'b',text:'No'}]}]
+        });
+        load();
+        const jsonImported = document.getElementById('visual-result').textContent === '1/2 = 2/4' &&
+          document.getElementById('authored-title').textContent === 'JSON lesson' &&
+          document.getElementById('content-error').hidden;
+        return {imported,failureAtomic,textIsInert,jsonImported,
+          scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!contentQA.imported || !contentQA.failureAtomic || !contentQA.textIsInert ||
+          !contentQA.jsonImported || contentQA.scrollWidth > contentQA.viewport + 1) {
+        throw new Error(viewport.label + ' author-driven Visual Math failed: ' + JSON.stringify(contentQA));
+      }
       await devtools.eval(`document.getElementById('preset-unit').click()`);
       const visualShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       await writeFile('artifacts/screenshots/fark-visual-math-' + viewport.label + '.png', Buffer.from(visualShot.data, 'base64'));
