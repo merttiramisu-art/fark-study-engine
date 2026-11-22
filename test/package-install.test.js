@@ -52,6 +52,7 @@ import { createCard, reviewCard, getStudySummary } from 'fark-study-engine';
 import { MCP_TOOLS } from 'fark-study-engine/mcp';
 import { importOpenContentPack } from 'fark-study-engine/content-adapter';
 import { importMarkdownContentPack } from 'fark-study-engine/markdown-content';
+import { compareFractionModels } from 'fark-study-engine/visual-math';
 const pack = importOpenContentPack({
   format: 'fark-open-content-pack', version: 1,
   attribution: { title: 'Local sample', creator: 'FARK contributors', license: 'MIT' },
@@ -73,10 +74,11 @@ const sampleMarkdown = [
   '- a | 1/3', '- b | 1/4'
 ].join(String.fromCharCode(10));
 const markdownPack = importMarkdownContentPack(sampleMarkdown);
+const visual = compareFractionModels({numerator:1,denominator:3},{numerator:1,denominator:4});
 const card = createCard({ id: 'c', topic: 'Math', question: '2+2?', answer: '4' });
 const reviewed = reviewCard(card, 'good', '2026-01-01T00:00:00.000Z');
 const summary = getStudySummary([reviewed], '2026-01-02T00:00:00.000Z');
-console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length }));
+console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length, visualComparison: visual.label }));
 `);
     const execution = spawnSync(process.execPath, [join(consumer, 'main.mjs')], {
       cwd: consumer, encoding: 'utf8', timeout: 12_000, maxBuffer: 1024 * 1024
@@ -85,7 +87,7 @@ console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOL
     assert.equal(execution.status, 0, execution.stderr);
     assert.equal(execution.stderr, '');
     assert.deepEqual(JSON.parse(execution.stdout), {
-      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1
+      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1, visualComparison: '1/3 > 1/4'
     });
   } finally {
     rmSync(root, { recursive: true, force: true });

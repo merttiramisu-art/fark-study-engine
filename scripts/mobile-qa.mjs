@@ -341,6 +341,41 @@ async function run() {
       const journeyShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       await writeFile('artifacts/screenshots/fark-learning-journey-' + viewport.label + '.png', Buffer.from(journeyShot.data, 'base64'));
       console.log(viewport.label + ' passed: new explainable assessment → lesson → issued reassessment journey');
+      // Visual Math Lab uses exact fraction models and the native offline fallback.
+      await devtools.send('Page.navigate', { url: address + 'visual-math.html' });
+      await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
+        document.getElementById('visual-result')?.textContent === '1/3 > 1/4'`));
+      const visual = await devtools.eval(`(() => {
+        const initial = document.getElementById('visual-result').textContent;
+        const baseSegments = document.querySelectorAll('#left-bar .fraction-cell').length;
+        const initialAria = document.getElementById('left-bar').getAttribute('aria-label');
+        document.getElementById('preset-followup').click();
+        const followup = document.getElementById('visual-result').textContent;
+        document.getElementById('preset-equal').click();
+        const equal = document.getElementById('visual-result').textContent;
+        const denominator = document.getElementById('left-den');
+        denominator.value = '6';
+        denominator.dispatchEvent(new Event('input', { bubbles: true }));
+        const adjusted = document.getElementById('visual-result').textContent;
+        const adjustedSegments = document.querySelectorAll('#left-bar .fraction-cell').length;
+        return {
+          initial, baseSegments, initialAria, followup, equal, adjusted, adjustedSegments,
+          viewport: window.innerWidth, scrollWidth: document.documentElement.scrollWidth,
+          label: document.getElementById('left-math').textContent,
+          renderer: document.getElementById('math-renderer-status').textContent
+        };
+      })()`);
+      if (visual.initial !== '1/3 > 1/4' || visual.baseSegments !== 3 ||
+          !visual.initialAria.includes('1 of 3') || visual.followup !== '2/5 > 2/7' ||
+          visual.equal !== '1/2 = 2/4' || visual.adjusted !== '1/6 < 2/4' ||
+          visual.adjustedSegments !== 6 || visual.label !== '1/6' ||
+          !visual.renderer.includes('Native readable math') || visual.scrollWidth > visual.viewport + 1) {
+        throw new Error(viewport.label + ' Visual Math Lab failed: ' + JSON.stringify(visual));
+      }
+      await devtools.eval(`document.getElementById('preset-unit').click()`);
+      const visualShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+      await writeFile('artifacts/screenshots/fark-visual-math-' + viewport.label + '.png', Buffer.from(visualShot.data, 'base64'));
+      console.log(viewport.label + ' passed: Visual Math fraction model, equal case, slider, no overflow and accessible fallback');
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

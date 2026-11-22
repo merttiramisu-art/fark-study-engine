@@ -14,6 +14,9 @@ const ROUTES = new Map([
   ['/examples/web/learning-path.html', ['examples/web/learning-path.html', 'text/html; charset=utf-8']],
   ['/examples/web/learning-path.js', ['examples/web/learning-path.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/learning-path.css', ['examples/web/learning-path.css', 'text/css; charset=utf-8']],
+  ['/examples/web/visual-math.html', ['examples/web/visual-math.html', 'text/html; charset=utf-8']],
+  ['/examples/web/visual-math.js', ['examples/web/visual-math.js', 'text/javascript; charset=utf-8']],
+  ['/examples/web/visual-math.css', ['examples/web/visual-math.css', 'text/css; charset=utf-8']],
   ['/examples/web/styles.css', ['examples/web/styles.css', 'text/css; charset=utf-8']],
   ['/examples/web/app.js', ['examples/web/app.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/tab-navigation.js', ['examples/web/tab-navigation.js', 'text/javascript; charset=utf-8']],
@@ -36,6 +39,7 @@ const ROUTES = new Map([
   ['/src/prerequisite-analysis.js', ['src/prerequisite-analysis.js', 'text/javascript; charset=utf-8']],
   ['/src/learning-orchestrator.js', ['src/learning-orchestrator.js', 'text/javascript; charset=utf-8']],
   ['/src/reassessment-ledger.js', ['src/reassessment-ledger.js', 'text/javascript; charset=utf-8']],
+  ['/src/visual-math.js', ['src/visual-math.js', 'text/javascript; charset=utf-8']],
   ['/README.md', ['README.md', 'text/plain; charset=utf-8']]
 ]);
 

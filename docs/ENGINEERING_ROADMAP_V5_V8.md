@@ -72,6 +72,7 @@
 - Demonstrate baseline assessment → editorial remediation → issued reassessment → observed comparison.
 - Verify keyboard, screen reader semantics, responsive layouts and storage disclosure.
 - Keep visuals faithful to actual API states and errors.
+- V6 Visual Math Lab adds original, bounded fraction comparisons, responsive accessible diagrams and an optional *locally supplied* KaTeX adapter with safe numeric TeX and native text fallback. KaTeX is **not bundled** or a runtime dependency; integrated rendering with a genuine KaTeX distribution, license notices/font assets and physical-device/screen-reader testing remain pending.
 
 ### Gate G — Scale
 

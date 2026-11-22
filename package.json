@@ -115,6 +115,10 @@
     "./markdown-content": {
       "types": "./types/markdown-content.d.ts",
       "default": "./src/markdown-content.js"
+    },
+    "./visual-math": {
+      "types": "./types/visual-math.d.ts",
+      "default": "./src/visual-math.js"
     }
   },
   "engines": {
