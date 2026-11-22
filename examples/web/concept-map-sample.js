@@ -36,6 +36,11 @@ export const CONCEPT_MAP_SAMPLE = Object.freeze({
       correctChoiceId:'a',choices:[
         {id:'a',text:'1/3'},
         {id:'b',text:'1/4',misconceptionId:'denominator-size'}]},
+    {id:'q-compare-followup',revision:'1',outcomeIds:['compare-fractions'],
+      prompt:'Which fraction is larger, when the whole is the same: 2/5 or 2/7?',
+      correctChoiceId:'a',choices:[
+        {id:'a',text:'2/5'},
+        {id:'b',text:'2/7'}]},
     {id:'q-equivalent',revision:'1',outcomeIds:['equivalent-fractions'],prompt:'Which fraction represents the same amount as 1/2?',
       correctChoiceId:'b',choices:[{id:'a',text:'1/4'},{id:'b',text:'2/4'}]}
   ]

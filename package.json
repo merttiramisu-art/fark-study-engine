@@ -127,6 +127,10 @@
     "./concept-map": {
       "types": "./types/concept-map.d.ts",
       "default": "./src/concept-map.js"
+    },
+    "./concept-study-path": {
+      "types": "./types/concept-study-path.d.ts",
+      "default": "./src/concept-study-path.js"
     }
   },
   "engines": {

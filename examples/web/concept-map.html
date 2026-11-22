@@ -56,8 +56,24 @@
           <div><h4>Required beforehand (declared)</h4><ul id="selected-prerequisites"><li>Not loaded</li></ul></div>
           <div><h4>Concepts that reference this one</h4><ul id="selected-dependents"><li>Not loaded</li></ul></div>
         </div>
+        <section class="guided-plan" aria-labelledby="path-heading">
+          <p class="eyebrow">03 / YOUR NEXT EXPLAINED STEP</p>
+          <h3 id="path-heading">A path for the selected concept</h3>
+          <p id="path-reason">Select a concept to inspect its next evidence-based step.</p>
+          <p class="path-prereq-label">Declared prerequisite observations (not requirements)</p>
+          <ul id="path-prerequisites"></ul>
+          <div id="path-lesson" class="path-lesson" hidden>
+            <h4 id="path-lesson-title"></h4>
+            <p id="path-lesson-body"></p>
+            <button id="mark-reviewed" type="button">I reviewed this lesson</button>
+            <p>Self-report only. FARK cannot verify that the lesson was read or understood.</p>
+          </div>
+          <button id="issue-check" type="button" hidden>Issue a different check question</button>
+          <p id="path-status" class="path-status" role="status" aria-live="polite">No action taken yet.</p>
+          <p id="path-error" class="path-error" role="alert" hidden></p>
+        </section>
         <div class="quiz">
-          <p class="eyebrow">03 / MAKE A REAL OBSERVATION</p>
+          <p class="eyebrow">04 / MAKE A REAL OBSERVATION</p>
           <label for="question-select">Choose a question from the current content pack</label>
           <select id="question-select"></select>
           <p id="quiz-prompt" class="question">Which fraction is larger?</p>
@@ -69,7 +85,7 @@
     </div>
     <section class="content-import" aria-labelledby="content-import-heading">
       <div>
-        <p class="eyebrow">04 / YOUR OWN CURRICULUM</p>
+        <p class="eyebrow">05 / YOUR OWN CURRICULUM</p>
         <h2 id="content-import-heading">Bring your own connections.</h2>
         <p>Paste a restricted FARK Markdown pack or a FARK Open Content Pack JSON document. FARK validates every prerequisite, question and content link before replacing this map. Importing a new pack clears the previous fictional answer history.</p>
       </div>

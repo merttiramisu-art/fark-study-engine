@@ -77,6 +77,7 @@
 - Visual Learning v1 adds bounded `number-line` and `timeline` content models using the same adapter and strict Markdown subset, with a responsive standalone local Studio and deterministic original/fictional content. This demonstrates ordering and representation, **not** verified historical facts, student learning effectiveness, arbitrary diagram support or full CommonMark compatibility.
 - The **Concept Map** proof-of-concept renders only editorial outcome prerequisite edges from Knowledge Core, overlays recorded *answer-key observations* via the existing assessment API and explicitly reports stale/orphan observations. Node depth is layout, not readiness or mastery. CI covers responsive interaction, reset, invalid evidence and isolated offline package installation. Real learner validation and physical-device/screen-reader acceptance remain open.
 - **Educator-owned Content-to-Concept Map:** bounded attributed FARK Markdown/JSON from local editor/file picker; candidate map validated before state swap, old answer observations reset on success, graph/answers preserved on failure, exact prerequisite edges listed as text.
+- **Concept Study Path v1** exposes a read-only, outcome-specific next-step explanation based on latest current assessment and self-reported teaching. Interactive Concept Map can explicitly mark a linked lesson reviewed, issue an unused different question and verify its first after-issuance response. No lesson-completion automation, fabricated prerequisite failure, mastery claim or causal teaching attribution.
 
 ### Gate G — Scale
 

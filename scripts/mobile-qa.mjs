@@ -598,6 +598,73 @@ async function run() {
       await devtools.eval(`document.getElementById('restore-sample').click()`);
       console.log(viewport.label+' passed: author Markdown/JSON, atomic invalid import, inert labels, local .md selection and answer isolation');
 
+      // Selected Concept → explainable pathway with real editorial lesson,
+      // self-reported review, explicit different-question issue and verification.
+      const studyPath = await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        document.querySelector('[data-concept="compare-fractions"]').click();
+        const start=$('path-reason').textContent.includes('No valid answer recorded') &&
+          $('path-prerequisites').textContent.includes('no answer recorded') &&
+          $('path-lesson').hidden;
+        $('quiz-choices').querySelector('[data-choice="b"]').click();
+        const wrong=$('path-reason').textContent.includes('current incorrect answer') &&
+          !$('path-lesson').hidden && $('path-lesson-title').textContent==='Compare one piece' &&
+          $('path-prerequisites').textContent.includes('no answer recorded');
+        $('mark-reviewed').click();
+        const review=!$('issue-check').hidden &&
+          $('path-status').textContent.includes('self-reported');
+        $('issue-check').click();
+        const issued=$('question-select').value==='q-compare-followup' &&
+          $('path-status').textContent.includes('explicitly issued') &&
+          $('quiz-prompt').textContent.includes('2/5 or 2/7');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const verified=$('path-status').textContent.includes('Verified first response') &&
+          $('path-status').textContent.includes('Mastery unknown') &&
+          $('quiz-feedback').textContent.includes('verified') &&
+          document.querySelector('[data-concept="unit-fraction"] .concept-observation')
+          .textContent==='No answer yet';
+        $('reset-evidence').click();
+        const reset=$('selected-evidence').textContent.includes('0 observed') &&
+          $('path-lesson').hidden && $('issue-check').hidden &&
+          !$('path-status').textContent.includes('Verified first response');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const correct=$('path-reason').textContent.includes('most recent current answer') &&
+          $('path-lesson').hidden && $('issue-check').hidden;
+        $('reset-evidence').click();
+        return {start,wrong,review,issued,verified,reset,correct,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!studyPath.start || !studyPath.wrong || !studyPath.review ||
+          !studyPath.issued || !studyPath.verified || !studyPath.reset ||
+          !studyPath.correct || studyPath.width>studyPath.viewport+1) {
+        throw new Error(viewport.label+' Concept Study Path failed: '+JSON.stringify(studyPath));
+      }
+
+      const limitedPath = await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        $('import-content').click(); // Editable 3-concept shape sample.
+        document.querySelector('[data-concept="compare-shapes"]').click();
+        const starts=$('path-reason').textContent.includes('No valid answer recorded');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const lesson=!$('path-lesson').hidden &&
+          $('path-lesson-title').textContent==='Compare original shapes';
+        $('mark-reviewed').click();
+        const noFollowup=$('path-reason').textContent.includes('no unused different question') &&
+          $('issue-check').hidden && $('selected-evidence').textContent.includes('1 observed');
+        $('restore-sample').click();
+        const clean=$('selected-evidence').textContent.includes('0 observed') &&
+          $('path-lesson').hidden && $('issue-check').hidden;
+        return {starts,lesson,noFollowup,clean,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!limitedPath.starts || !limitedPath.lesson ||
+          !limitedPath.noFollowup || !limitedPath.clean ||
+          limitedPath.width>limitedPath.viewport+1) {
+        throw new Error(viewport.label+' custom-content study path failed: '+JSON.stringify(limitedPath));
+      }
+      console.log(viewport.label+' passed: selected concept → linked lesson → review report → issued distinct question → verified first response; no-followup case honest');
+
+
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

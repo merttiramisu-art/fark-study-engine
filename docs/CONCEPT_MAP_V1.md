@@ -54,3 +54,22 @@ Below the concept layers, an exact, accessible text list shows each `from → to
 This is still **not a general Markdown parser**, unrestricted graphing engine, learner account, or history synchronizer. Real educator tests, physical file-chooser usability and screen-reader acceptance remain pending.
 
 **Türkçe:** Eğitimci kendi FARK Markdown veya JSON ders paketinden kavram haritası oluşturabilir. Dosya cihazda okunur, sunucuya gönderilmez. Yeni müfredat kabul edilince eski örnek cevap kayıtları temizlenir. Hatalı içerik sağlam haritayı ve kayıtları değiştirmez.
+
+## Selected concept → explained learning path (V1.2)
+
+When a concept is selected, the adjacent panel calls the **public, read-only** `getConceptStudyPath` API. It reports declared prerequisite observations, the latest current response, and a defensible next action.
+
+- No valid answer: offer an unanswered editorial question when available. An unanswered concept is not a failure.
+- Most recent answer correct: record a correct observation, **not** mastery; do not infer a remedial need from an older wrong answer.
+- Most recent answer incorrect: use the existing `getLearningNextStep` orchestration to show a matching author-supplied lesson, or explicitly state when none exists.
+- The learner presses **I reviewed this lesson** to call `recordTeachingCompletion`. It is a self-report, not verified reading.
+- Only after completion: `issueReassessment` issues a **different, never-answered question**. A new original `q-compare-followup` sample supports a full path.
+- The first post-issuance response is checked by `verifyIssuedReassessment`. Correctness is an observation, never durable mastery or evidence that the lesson caused a change.
+
+Imported content may have no second question. In that case the UI explains `no-reassessment-question` and does not forge one. Each answer, lesson review and question issuance requires an explicit user interaction.
+
+Switching a curriculum or pressing reset clears the **assessment history, teaching self-reports, issuance ledger and active verification**, so no old evidence crosses curricula. Failed imports preserve all valid state. Browser events use monotonically advancing demonstration timestamps.
+
+Prerequisite statuses are descriptive and never gate content. No causal prerequisites, diagnoses, learning efficacy or calibrated mastery probabilities are claimed. Multiple outcomes aligned to one question share evidence.
+
+**Türkçe:** Öğrenci kavramı seçtiğinde FARK son geçerli cevaba dayanarak sıradaki adımı gerekçelendirir. Yanlış cevapla ilişkili özgün ders gösterilebilir. Öğrenci dersi incelediğini belirttikten sonra, mevcutsa farklı bir soru gerçekten düzenlenir ve ilk cevabı doğrulanır. Tek doğru cevap kalıcı öğrenme kanıtı değildir.

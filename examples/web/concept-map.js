@@ -6,6 +6,9 @@
 import { importOpenContentPack, OPEN_CONTENT_PACK_LIMITS } from '../../src/content-adapter.js';
 import { importMarkdownContentPack } from '../../src/markdown-content.js';
 import { createAssessmentHistory, recordAssessment } from '../../src/assessment.js';
+import { createTeachingHistory, recordTeachingCompletion } from '../../src/learning-progress.js';
+import { getConceptStudyPath } from '../../src/concept-study-path.js';
+import { createReassessmentLedger, issueReassessment, verifyIssuedReassessment } from '../../src/reassessment-ledger.js';
 import { buildConceptMap } from '../../src/concept-map.js';
 import { CONCEPT_MAP_SAMPLE } from './concept-map-sample.js';
 import { CONCEPT_AUTHORING_SAMPLE } from './concept-map-authoring-sample.js';
@@ -17,6 +20,33 @@ let attemptSequence = 0;
 let selectedId = 'compare-fractions';
 let questionId = 'q-compare';
 let feedback = 'No answers recorded.';
+let teaching = createTeachingHistory();
+let issued = createReassessmentLedger();
+let activeIssue = null;
+let lastVerification = null;
+let currentGuide = null;
+let lastEventMs = 0;
+let issueSequence = 0;
+let completionSequence = 0;
+
+function nextEventTime() {
+  lastEventMs = Math.max(Date.now(), lastEventMs + 1);
+  return new Date(lastEventMs).toISOString();
+}
+function pathMessage(message, error = false) {
+  $('path-error').hidden = !error;
+  if (error) $('path-error').textContent = message;
+  else $('path-status').textContent = message;
+}
+function guardedPath(action) {
+  try {
+    $('path-error').hidden = true;
+    action();
+  } catch (error) {
+    pathMessage('This step could not continue: ' + error.message, true);
+  }
+}
+
 
 function evidenceLabel(node) {
   if (node.status === 'not-observed') return 'No answer yet';
@@ -119,6 +149,7 @@ function graph() {
       ' unmatched answer(s); neither counts toward concept evidence.'
     : 'No outdated or unmatched answers are included in this example.';
   quiz();
+  showGuidedPlan();
 }
 function quiz() {
   const dropdown = $('question-select');
@@ -140,16 +171,33 @@ function quiz() {
     button.type = 'button';
     button.dataset.choice = choice.id;
     button.addEventListener('click', () => {
-      const result = recordAssessment(core,history,{
-        attemptId:'example-a'+(++attemptSequence),questionId:chosen.id,
-        selectedChoiceId:choice.id,at:new Date().toISOString()
+      guardedPath(() => {
+        const at = nextEventTime();
+        const attemptId = 'example-a' + (++attemptSequence);
+        const result = recordAssessment(core, history, {
+          attemptId, questionId: chosen.id, selectedChoiceId: choice.id, at
+        });
+        let verification = null;
+        if (activeIssue && chosen.id === activeIssue.questionId) {
+          verification = verifyIssuedReassessment(core, result.history, issued, {
+            issueId: activeIssue.id, followupAttemptId: attemptId, at: nextEventTime()
+          });
+          if (verification.status !== 'verified-issued-answer') {
+            throw new RangeError('Issued question could not be verified: ' + verification.status);
+          }
+        }
+        history = result.history;
+        feedback = result.attempt.correct
+          ? 'Correct answer observed on this question. Mastery is still unknown.'
+          : 'Incorrect answer observed on this question. This is not a diagnosis.';
+        if (verification) {
+          lastVerification = { outcomeId: activeIssue.outcomeId, result: verification };
+          activeIssue = null;
+          feedback += ' A different, previously issued question was verified. Causal effect is unknown.';
+        }
+        selectedId = chosen.outcomeIds[0];
+        graph();
       });
-      history = result.history;
-      feedback = result.attempt.correct
-        ? 'Correct answer observed on this question. Mastery is still unknown.'
-        : 'Incorrect answer observed on this question. This is not a diagnosis.';
-      selectedId = chosen.outcomeIds[0];
-      graph();
     });
     options.append(button);
   }
@@ -176,7 +224,14 @@ function applyCurriculum(parsed) {
   materials = parsed.materials;
   attribution = parsed.attribution;
   history = createAssessmentHistory();
+  teaching = createTeachingHistory();
+  issued = createReassessmentLedger();
+  activeIssue = null;
+  lastVerification = null;
+  lastEventMs = 0;
   attemptSequence = 0;
+  completionSequence = 0;
+  issueSequence = 0;
   selectedId = core.outcomes[0].id;
   questionId = core.questions[0].id;
   feedback = 'New curriculum loaded. Previous answer history cleared; no answers recorded.';
@@ -235,14 +290,108 @@ $('content-file').addEventListener('change', async () => {
   }
 });
 
+
+function showGuidedPlan() {
+  const path = getConceptStudyPath(core, history, teaching, {
+    at: new Date(Math.max(Date.now(), lastEventMs)).toISOString(),
+    outcomeId: selectedId
+  });
+  currentGuide = path;
+  $('path-heading').textContent = 'Next step for: ' + path.outcomeLabel;
+  $('path-reason').textContent = path.reason;
+  const prereqs = $('path-prerequisites');
+  prereqs.replaceChildren();
+  if (!path.prerequisites.length) {
+    prereqs.append(textNode('li', '', 'No prerequisites declared for this concept.'));
+  } else {
+    for (const item of path.prerequisites) {
+      const label = item.status === 'not-observed' ? 'no answer recorded' :
+        item.status === 'mixed-observations' ? 'mixed answers observed' :
+        item.status === 'incorrect-observed' ? 'incorrect answer observed' :
+        'correct answer observed';
+      prereqs.append(textNode('li', '', item.label + ': ' + label +
+        ' (' + item.observedAttempts + ' answer(s); mastery unknown)'));
+    }
+  }
+  const lesson = path.resourceId
+    ? materials.lessons.find(row => row.id === path.resourceId) : null;
+  const showLesson = path.status === 'teaching-needed' && !!lesson;
+  $('path-lesson').hidden = !showLesson;
+  if (showLesson) {
+    $('path-lesson-title').textContent = lesson.title;
+    $('path-lesson-body').textContent = lesson.bodyText;
+  }
+  $('issue-check').hidden = path.status !== 'ready-to-reassess' || !!activeIssue;
+  let status = path.status === 'first-question' && path.questionId
+    ? 'Start with an unanswered question to establish an observation. Choose it from the question selector.'
+    : 'Next step: ' + path.nextAction + '. No mastery inferred.';
+  if (activeIssue) {
+    status = activeIssue.outcomeId === selectedId
+      ? 'Different question explicitly issued: ' + activeIssue.questionId +
+        '. Its first answer after issuance can be verified. Mastery is unknown.'
+      : 'A different-question check is already issued for another concept. Answer it before issuing a new check.';
+  } else if (lastVerification && lastVerification.outcomeId === selectedId) {
+    status = 'Verified first response to an explicitly issued, distinct question: ' +
+      (lastVerification.result.comparison.followupCorrect ? 'correct' : 'incorrect') +
+      '. Mastery unknown; teaching impact not established.';
+  }
+  $('path-status').textContent = status;
+}
+function markLessonReviewed() {
+  const path = currentGuide;
+  if (!path || path.outcomeId !== selectedId || path.status !== 'teaching-needed' ||
+      !path.resourceId || !materials.lessons.some(row => row.id === path.resourceId)) {
+    throw new RangeError('No matching editable lesson for this observed error');
+  }
+  const recorded = recordTeachingCompletion(core, history, teaching, {
+    completionId: 'map-lesson-' + (++completionSequence),
+    resourceId: path.resourceId, baselineAttemptId: path.baselineAttemptId,
+    at: nextEventTime()
+  });
+  teaching = recorded.history;
+  lastVerification = null;
+  graph();
+  $('path-status').textContent = 'Lesson review self-reported, not verified. The engine will only issue a different question if one is available.';
+}
+function issueDifferentQuestion() {
+  const path = currentGuide;
+  if (activeIssue) throw new RangeError('Another issued question is still awaiting its first answer');
+  if (!path || path.outcomeId !== selectedId || path.status !== 'ready-to-reassess') {
+    throw new RangeError('A reviewed lesson and an incorrect baseline are required');
+  }
+  const output = issueReassessment(core, history, teaching, issued, {
+    issueId: 'map-check-' + (++issueSequence),
+    baselineAttemptId: path.baselineAttemptId,
+    outcomeId: path.outcomeId,
+    at: nextEventTime()
+  });
+  if (output.status !== 'issued') {
+    throw new RangeError('Cannot issue a different question: ' + output.status);
+  }
+  issued = output.ledger;
+  activeIssue = output.issue;
+  lastVerification = null;
+  questionId = output.issue.questionId;
+  graph();
+}
+$('mark-reviewed').addEventListener('click', () => guardedPath(markLessonReviewed));
+$('issue-check').addEventListener('click', () => guardedPath(issueDifferentQuestion));
+
 $('question-select').addEventListener('change', () => {
   questionId = $('question-select').value;
   quiz();
 });
 $('reset-evidence').addEventListener('click', () => {
   history = createAssessmentHistory();
+  teaching = createTeachingHistory();
+  issued = createReassessmentLedger();
+  activeIssue = null;
+  lastVerification = null;
   attemptSequence = 0;
-  feedback = 'Answer history cleared. No observations are recorded.';
+  completionSequence = 0;
+  issueSequence = 0;
+  lastEventMs = 0;
+  feedback = 'Answer and lesson-review histories cleared. No observations are recorded.';
   graph();
 });
 $('content-source').value = CONCEPT_AUTHORING_SAMPLE;
