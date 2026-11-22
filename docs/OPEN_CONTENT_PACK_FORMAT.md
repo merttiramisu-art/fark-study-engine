@@ -22,3 +22,7 @@ This is not a native Kolibri, Moodle, H5P, QTI or Anki package importer. Such fo
 ## Türkçe
 
 Bağımsız içerik üreticileri kendi özgün ders, kazanım ve soru JSON dosyalarını FARK Bilgi Çekirdeği'ne bağlayabilir. Paketin kaynak ve lisans bilgisi zorunludur ama doğrulanmış sayılmaz. Ders metinleri öğrencinin kayıtlarından ayrı kalır. Herhangi bir ücretli servis ya da zorunlu kütüphane gerektirmez.
+
+## Author lesson packs as Markdown
+
+See [FARK Markdown Content Bridge](MARKDOWN_CONTENT_BRIDGE.md). It is a strict, original authoring subset that converts into this identical validated JSON content pack. No Markdown renderer or executable MDX is part of the importer.

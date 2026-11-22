@@ -88,6 +88,7 @@
 - Proposed native JSON content-pack adapter: units, outcomes, lessons and answer-key questions become Knowledge Core records, with separate plain-text materials and required but unverified attribution. No third-party code or assets copied.
 - Original synthetic fixture tests the actual assessment → linked lesson → issued different follow-up → verified response pathway.
 - This is not a Kolibri/H5P/QTI native importer; rights review and format-specific connectors remain separate work.
+- V7 Markdown Content Bridge adds an independently authored, strictly delimited Markdown v1 educational pack format and routes it through the same validated JSON adapter. It is not full CommonMark/MDX; imported text stays inert. A public package subpath, deterministic fixture, offline-install smoke test and regression suite exercise the new boundary.
 
 - Document versioned schemas for external content and learning records.
 - Provide an original synthetic content adapter and runnable example.
