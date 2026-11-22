@@ -56,6 +56,7 @@ import { compareFractionModels } from 'fark-study-engine/visual-math';
 import { buildNumberLineModel, buildTimelineModel } from 'fark-study-engine/visual-learning';
 import { buildConceptMap } from 'fark-study-engine/concept-map';
 import { getConceptStudyPath } from 'fark-study-engine/concept-study-path';
+import { buildStudyDeskView } from 'fark-study-engine/study-desk';
 import { createTeachingHistory } from 'fark-study-engine/learning-progress';
 import { createAssessmentHistory } from 'fark-study-engine/assessment';
 const pack = importOpenContentPack({
@@ -94,6 +95,7 @@ const visualBridgeEqual = JSON.stringify(visualSpec) ===
   JSON.stringify(markdownPack.materials.lessons[0].visual);
 const conceptMap = buildConceptMap(pack.core, createAssessmentHistory());
 const conceptPath = getConceptStudyPath(pack.core, createAssessmentHistory(), createTeachingHistory(), {outcomeId:'fractions',at:'2026-01-01T10:00:00.000Z'});
+const deskView = buildStudyDeskView(pack, createAssessmentHistory(), createTeachingHistory(), {outcomeId:'fractions',at:'2026-01-01T10:00:00.000Z'});
 const numberLine = buildNumberLineModel({min:-5,max:5,points:[-3,0,4]});
 const timeline = buildTimelineModel({events:[
   {id:'early',year:1860,label:'Fictional beginning'},
@@ -102,7 +104,7 @@ const timeline = buildTimelineModel({events:[
 const card = createCard({ id: 'c', topic: 'Math', question: '2+2?', answer: '4' });
 const reviewed = reviewCard(card, 'good', '2026-01-01T00:00:00.000Z');
 const summary = getStudySummary([reviewed], '2026-01-02T00:00:00.000Z');
-console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length, visualComparison: visual.label, visualBridgeEqual, numberedTicks: numberLine.ticks.length, chronologyYears: timeline.events.map(e => e.year), conceptNodes: conceptMap.nodes.length, conceptMastery: conceptMap.mastery, pathAction: conceptPath.nextAction, pathMastery: conceptPath.mastery }));
+console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length, visualComparison: visual.label, visualBridgeEqual, numberedTicks: numberLine.ticks.length, chronologyYears: timeline.events.map(e => e.year), conceptNodes: conceptMap.nodes.length, conceptMastery: conceptMap.mastery, pathAction: conceptPath.nextAction, pathMastery: conceptPath.mastery, deskVisual: deskView.lesson.visual.model.label, deskQuestion: deskView.question.id, deskMastery: deskView.mastery }));
 `);
     const execution = spawnSync(process.execPath, [join(consumer, 'main.mjs')], {
       cwd: consumer, encoding: 'utf8', timeout: 12_000, maxBuffer: 1024 * 1024
@@ -111,7 +113,7 @@ console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOL
     assert.equal(execution.status, 0, execution.stderr);
     assert.equal(execution.stderr, '');
     assert.deepEqual(JSON.parse(execution.stdout), {
-      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1, visualComparison: '1/3 > 1/4', visualBridgeEqual: true, numberedTicks: 11, chronologyYears: [1860,1872], conceptNodes: 1, conceptMastery: null, pathAction: 'answer-question', pathMastery: null
+      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1, visualComparison: '1/3 > 1/4', visualBridgeEqual: true, numberedTicks: 11, chronologyYears: [1860,1872], conceptNodes: 1, conceptMastery: null, pathAction: 'answer-question', pathMastery: null, deskVisual: '1/3 > 1/4', deskQuestion: 'q1', deskMastery: null
     });
   } finally {
     rmSync(root, { recursive: true, force: true });

@@ -131,6 +131,10 @@
     "./concept-study-path": {
       "types": "./types/concept-study-path.d.ts",
       "default": "./src/concept-study-path.js"
+    },
+    "./study-desk": {
+      "types": "./types/study-desk.d.ts",
+      "default": "./src/study-desk.js"
     }
   },
   "engines": {

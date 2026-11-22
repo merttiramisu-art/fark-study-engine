@@ -664,6 +664,105 @@ async function run() {
       }
       console.log(viewport.label+' passed: selected concept → linked lesson → review report → issued distinct question → verified first response; no-followup case honest');
 
+      // Study Desk: single integrated UI for lessons, visuals, answer-key
+      // observations, explainable workflow and original author-supplied packs.
+      await devtools.send('Page.navigate',{url:address+'study-desk.html'});
+      await retry(async()=>await devtools.eval(`document.readyState==='complete' &&
+        document.querySelectorAll('[data-outcome]').length===4 &&
+        document.getElementById('lesson-title').textContent==='Compare the size of one piece'`));
+      const desk=await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const topic=id=>document.querySelector('[data-outcome="'+id+'"]');
+        const choose=id=>$('practice-options').querySelector('[data-choice="'+id+'"]').click();
+        const original=topic('compare-fractions').getAttribute('aria-pressed')==='true' &&
+          $('lesson-visual').querySelectorAll('.fraction-bar').length===2 &&
+          $('practice-question').textContent.includes('Which is larger') &&
+          $('path-status').textContent==='first-question';
+        topic('signed-position').click();
+        const line=$('lesson-visual').querySelectorAll('.tick-list li').length===11 &&
+          $('lesson-title').textContent==='On either side of zero';
+        topic('fictional-order').click();
+        const chronology=$('lesson-visual').querySelectorAll('.timeline-list li').length===3 &&
+          $('visual-note').textContent.includes('Fictional events');
+        topic('compare-fractions').click();
+        choose('b');
+        const incorrect=$('path-status').textContent==='teaching-needed' &&
+          !$('lesson-review-area').hidden &&
+          $('path-reason').textContent.includes('current incorrect answer') &&
+          $('practice-options').children.length===1;
+        $('review-lesson').click();
+        const reviewed=$('path-status').textContent==='ready-to-reassess' &&
+          !$('issue-different').hidden;
+        $('issue-different').click();
+        const issued=$('practice-question').textContent.includes('Which fraction is larger') &&
+          $('practice-options').children.length===2 &&
+          $('path-message').textContent.includes('explicitly issued');
+        choose('a');
+        const verified=$('answer-feedback').textContent.includes('verified') &&
+          $('path-message').textContent.includes('Verified first answer') &&
+          $('path-message').textContent.includes('Durable mastery') &&
+          $('practice-options').children.length===1 &&
+          topic('equal-parts').textContent.includes('No answer yet');
+        $('clear-session').click();
+        const reset=topic('compare-fractions').textContent.includes('No answer yet') &&
+          $('practice-options').children.length===2 &&
+          $('path-status').textContent==='first-question';
+        choose('a');
+        const correct=$('path-status').textContent==='latest-correct' &&
+          $('lesson-review-area').hidden && $('issue-different').hidden;
+        $('clear-session').click();
+        return {original,line,chronology,incorrect,reviewed,issued,verified,reset,correct,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!desk.original||!desk.line||!desk.chronology||!desk.incorrect||
+          !desk.reviewed||!desk.issued||!desk.verified||!desk.reset||
+          !desk.correct||desk.width>desk.viewport+1) {
+        throw new Error(viewport.label+' Study Desk flow failed: '+JSON.stringify(desk));
+      }
+      const authoredDesk=await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const original=$('desk-source').value;
+        const load=()=>$('load-desk-source').click();
+        const choose=id=>$('practice-options').querySelector('[data-choice="'+id+'"]').click();
+        load();
+        const markdown=document.querySelectorAll('[data-outcome]').length===1 &&
+          $('lesson-visual').querySelectorAll('.tick-list li').length===11 &&
+          $('lesson-title').textContent==='Left of zero, right of zero' &&
+          $('source-error').hidden;
+        choose('b');
+        const answered=document.querySelector('[data-outcome]').textContent.includes('incorrect observed') ||
+          document.querySelector('[data-outcome]').textContent.includes('1 incorrect observed');
+        $('desk-source').value=original.replace('visualRange: -5..5','visualRange: not-a-range');
+        load();
+        const atomic=answered && !$('source-error').hidden &&
+          $('source-status').textContent.includes('preserved') &&
+          $('lesson-title').textContent==='Left of zero, right of zero' &&
+          document.querySelector('[data-outcome]').textContent.includes('1 incorrect observed');
+        $('desk-source').value=original.replace('label: Locate integers on a number line',
+          'label: <img src=x onerror=alert(1)>');
+        load();
+        const inert=document.querySelector('[data-outcome] strong').textContent.includes('<img src=x') &&
+          !document.querySelector('.topic-list img') &&
+          document.querySelector('[data-outcome]').textContent.includes('No answer yet') &&
+          $('source-error').hidden;
+        $('restore-desk-demo').click();
+        const restored=document.querySelectorAll('[data-outcome]').length===4 &&
+          $('lesson-title').textContent==='Every piece is equal' &&
+          $('source-status').textContent.includes('Original demo restored') &&
+          $('path-status').textContent==='first-question';
+        return {markdown,answered,atomic,inert,restored,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!authoredDesk.markdown || !authoredDesk.answered ||
+          !authoredDesk.atomic || !authoredDesk.inert || !authoredDesk.restored ||
+          authoredDesk.width>authoredDesk.viewport+1) {
+        throw new Error(viewport.label+' Study Desk authored pack failed: '+JSON.stringify(authoredDesk));
+      }
+      const deskShot=await devtools.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+      await writeFile('artifacts/screenshots/fark-study-desk-'+viewport.label+'.png',Buffer.from(deskShot.data,'base64'));
+      console.log(viewport.label+' passed: integrated Study Desk fraction/numberline/timeline, lesson review, explicit issued question, safe Markdown replacement');
+
+
 
     }
     if (devtools.exceptions.length) {

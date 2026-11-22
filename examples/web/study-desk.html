@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="FARK Study Desk: original, offline lessons, visual models, questions and explained learning paths on one screen.">
+  <title>Study Desk — FARK Study Engine</title>
+  <link rel="stylesheet" href="./study-desk.css">
+  <script type="module" src="./study-desk.js"></script>
+</head>
+<body>
+  <a class="skip" href="#study-main">Skip to your lesson</a>
+  <header class="topbar">
+    <a class="brand" href="./"><span class="brand-mark">F.</span><span>FARK <small>STUDY ENGINE</small></span></a>
+    <div class="top-right">
+      <span class="local-signal"><span class="signal" aria-hidden="true"></span> OFFLINE FIRST</span>
+      <a href="./concept-map.html" class="nav-link">Concept Map</a>
+    </div>
+  </header>
+  <main id="study-main">
+    <div class="intro">
+      <p class="eyebrow">ONE CONTENT CORE · MANY WAYS TO LEARN</p>
+      <h1>Your learning, <em>connected.</em></h1>
+      <p>Read an original lesson, explore its visual model, answer a question and discover exactly why FARK suggests the next step. Nothing is uploaded or tracked.</p>
+    </div>
+    <div class="desk-layout">
+      <nav class="course-rail" aria-labelledby="rail-title">
+        <div class="rail-head">
+          <p class="eyebrow">01 / YOUR TOPICS</p>
+          <h2 id="rail-title">Choose a concept</h2>
+        </div>
+        <div id="topic-list" class="topic-list" role="group" aria-label="Course topics"></div>
+        <div class="rail-proof">
+          <strong>One source of truth</strong>
+          <p>The lesson, diagram, question and declared prerequisites all come from the same validated content pack.</p>
+        </div>
+      </nav>
+      <section class="lesson-panel" aria-labelledby="lesson-title">
+        <div class="panel-top">
+          <span class="eyebrow" id="lesson-unit">02 / ORIGINAL LESSON</span>
+          <span class="source-pill" id="source-pill">Author-declared content</span>
+        </div>
+        <h2 id="lesson-title">Loading original lesson…</h2>
+        <p id="lesson-body" class="lesson-body"></p>
+        <div id="lesson-visual" class="visual-box" aria-label="Lesson visual model"></div>
+        <p class="visual-note" id="visual-note">The same teaching data drives this visualization.</p>
+        <div class="question-zone" aria-labelledby="practice-heading">
+          <div class="practice-title">
+            <div><span class="eyebrow">03 / PRACTICE</span><h3 id="practice-heading">Check what you noticed</h3></div>
+            <span class="question-pill">ANSWER-KEY OBSERVATION</span>
+          </div>
+          <p class="practice-question" id="practice-question">Select a topic to begin.</p>
+          <div id="practice-options" class="practice-options" role="group" aria-label="Answer choices"></div>
+          <p id="answer-feedback" class="answer-feedback" role="status" aria-live="polite">Answers are recorded only when you choose an option.</p>
+        </div>
+      </section>
+      <aside class="path-panel" aria-labelledby="path-title">
+        <p class="eyebrow">04 / WHY THIS STEP?</p>
+        <h2 id="path-title">Your explained path</h2>
+        <p class="path-subtitle" id="path-outcome">Selected concept</p>
+        <div id="path-status" class="status-pill" role="status" aria-live="polite">No answer observed</div>
+        <p id="path-reason" class="path-reason">Select a concept to see its evidence and next action.</p>
+        <p class="mini-heading">Declared prerequisites</p>
+        <ul id="path-prereqs" class="prereq-list"></ul>
+        <div id="lesson-review-area" class="next-action" hidden>
+          <strong>Review before another check</strong>
+          <p>This lesson is linked to the observed answer. Marking it reviewed is your self-report, not proof of reading or understanding.</p>
+          <button type="button" id="review-lesson">I reviewed this lesson</button>
+        </div>
+        <button type="button" id="issue-different" class="issue-button" hidden>Issue a different question</button>
+        <p id="path-message" class="path-message" role="status" aria-live="polite">No learning result is inferred.</p>
+        <p id="desk-error" class="desk-error" role="alert" hidden></p>
+        <button type="button" id="clear-session" class="reset-button">Clear this session's observations</button>
+      </aside>
+    </div>
+    <section class="author-panel" aria-labelledby="author-heading">
+      <div class="author-copy">
+        <p class="eyebrow">05 / EDUCATOR CONTENT BRIDGE</p>
+        <h2 id="author-heading">A new subject? Same learning desk.</h2>
+        <p>Paste a validated FARK Markdown or JSON content pack. The new lessons and questions replace this fictional example only after the entire pack passes validation. Successful imports clear the current memory-only answer history.</p>
+      </div>
+      <div class="author-controls">
+        <label for="desk-source">Your original lesson pack</label>
+        <textarea id="desk-source" spellcheck="false" maxlength="1048576" rows="8"></textarea>
+        <div class="author-actions">
+          <button type="button" id="load-desk-source">Validate and load course</button>
+          <button type="button" id="restore-desk-demo">Restore original demo</button>
+        </div>
+        <p id="source-status" class="source-status" role="status" aria-live="polite">Using the original demonstration pack.</p>
+        <p id="source-error" class="desk-error" role="alert" hidden></p>
+      </div>
+    </section>
+    <footer>Original sample lessons · No third-party tracking · No mastery score · No claims of historical verification or teaching effectiveness · Physical-device acceptance pending</footer>
+  </main>
+</body>
+</html>
