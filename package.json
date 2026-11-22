@@ -118,7 +118,8 @@
     "demo:planner": "node examples/session-planning.js",
     "demo:web": "node examples/serve-web.js",
     "demo:english": "node examples/english-closed-loop.js",
-    "demo:session": "node examples/learning-session-demo.js"
+    "demo:session": "node examples/learning-session-demo.js",
+    "bench:learning": "node scripts/benchmark-learning.mjs"
   },
   "license": "MIT",
   "keywords": [

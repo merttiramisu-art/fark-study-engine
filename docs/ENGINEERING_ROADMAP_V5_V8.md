@@ -20,7 +20,7 @@
 | D | V5.1 MCP hardening | Protocol errors, schema validation, size limits, client integration proof | In progress |
 | E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | In progress |
 | F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | Not started |
-| G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | Not started |
+| G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | In progress |
 | H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | Not started |
 | I | V7.1 Research validation | Predeclared metrics, synthetic/real-data separation, leakage checks | Not started |
 | J | V8.0 Community sustainability | Maintainer policy, public backlog, versioning and release checklist | Not started |
@@ -71,6 +71,10 @@
 - Keep visuals faithful to actual API states and errors.
 
 ### Gate G — Scale
+
+- A deterministic, opt-in `npm run bench:learning` benchmark measures replay of 1k, 10k and 50k synthetic review events. Results report Node version, platform, architecture, seed, repetitions, fixture hash, elapsed wall-clock time and observed memory deltas.
+- **100k cannot currently be replayed**: `src/calibrate.js` enforces `MAX_EVENTS = 50_000`. The benchmark must report this scenario as `unsupported` rather than fabricate numbers. Extending the cap would require separate safety and performance review.
+- GitHub CI covers a small 1k smoke measurement and 100k rejection; timings are not fixed performance pass/fail targets. Larger measurements are optional and machine-dependent.
 
 - Benchmark 1k, 10k, 100k events with fixed seeds and measured runtime/memory.
 - State hardware, Node version, run count and variance. Do not invent results.
