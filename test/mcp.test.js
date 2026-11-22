@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PassThrough } from 'node:stream';
 import { exportStudyDeck } from '../src/portable.js';
 import { buildSamplePack } from '../src/interchange.js';
-import { MCP_TOOLS, handleMcpRequest, startMcpServer } from '../src/mcp.js';
+import { MAX_MCP_MESSAGE_BYTES, MCP_TOOLS, handleMcpRequest, startMcpServer } from '../src/mcp.js';
 
 const NOW = '2026-11-13T12:00:00.000Z';
 
@@ -247,4 +247,58 @@ test('MCP rejects malformed request ids and missing methods without treating the
   const noMethodNotification = handleMcpRequest({jsonrpc:'2.0'});
   assert.equal(noMethodNotification.error.code, -32600);
   assert.equal(handleMcpRequest({jsonrpc:'2.0',method:'notifications/initialized'}), null);
+});
+
+test('MCP validates required, unknown and incorrectly typed tool arguments', () => {
+  const invoke = (args) => handleMcpRequest({
+    jsonrpc:'2.0',id:88,method:'tools/call',
+    params:{name:'fark_validate_deck',arguments:args}
+  });
+  for (const args of [{format:'json'}, {deckText:'[]',format:'xml'}, {deckText:'[]',format:'json',extra:1}, {deckText:42,format:'json'}]) {
+    const result = invoke(args);
+    assert.equal(result.result.isError,true);
+  }
+});
+
+test('MCP stdio rejects oversized lines and keeps subsequent requests working', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const chunks = [];
+  output.on('data', c => chunks.push(c.toString('utf8')));
+  const server = startMcpServer({input,output,errorOutput:new PassThrough()});
+  input.write(' '.repeat(1024*1024 + 1) + '\n');
+  input.write(JSON.stringify({jsonrpc:'2.0',id:99,method:'ping'}) + '\n');
+  input.end();
+  await server;
+  const replies = chunks.join('').trim().split('\n').map(JSON.parse);
+  assert.equal(replies.length,2);
+  assert.equal(replies[0].error.code,-32600);
+  assert.deepEqual(replies[1].result,{});
+});
+
+test('MCP stdio enforces raw UTF-8 byte boundaries and recovers after rejection', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  const chunks = [];
+  output.on('data', chunk => chunks.push(chunk.toString('utf8')));
+  const server = startMcpServer({ input, output, errorOutput: new PassThrough() });
+  const sizedPing = (id, byteLength, unicode = false) => {
+    const payload = JSON.stringify({ jsonrpc: '2.0', id, method: 'ping', ...(unicode ? { note: 'ö' } : {}) });
+    const padding = byteLength - Buffer.byteLength(payload, 'utf8');
+    assert.ok(padding >= 0);
+    return payload + ' '.repeat(padding) + '\n';
+  };
+  input.write(sizedPing(201, MAX_MCP_MESSAGE_BYTES - 1));
+  input.write(sizedPing(202, MAX_MCP_MESSAGE_BYTES, true));
+  input.write(sizedPing(203, MAX_MCP_MESSAGE_BYTES + 1, true));
+  input.write(JSON.stringify({ jsonrpc: '2.0', id: 204, method: 'ping' }) + '\n');
+  input.end();
+  await server;
+  const replies = chunks.join('').trim().split('\n').map(JSON.parse);
+  assert.equal(replies.length, 4);
+  assert.deepEqual(replies.map(reply => reply.id), [201, 202, null, 204]);
+  assert.deepEqual(replies[0].result, {});
+  assert.deepEqual(replies[1].result, {});
+  assert.equal(replies[2].error.code, -32600);
+  assert.deepEqual(replies[3].result, {});
 });
