@@ -12,7 +12,10 @@ cd fark-study-engine
 npm test
 npm run demo
 npm run demo:session
+node examples/external-consumer.mjs
 ```
+
+See [External consumer quick start (EN/TR)](docs/EXTERNAL_CONSUMER_QUICKSTART.md) for the minimal public-package API example and its limitations.
 
 For the local browser demo, run `npm run demo:web` and open `http://127.0.0.1:4173/examples/web/`.
 
