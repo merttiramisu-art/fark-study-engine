@@ -1,5 +1,5 @@
 /** Original, wholly fictional sample teaching content for FARK Visual Learning. */
-export const NUMBER_LINE_SAMPLE = \`# FARK Content Pack
+export const NUMBER_LINE_SAMPLE = `# FARK Content Pack
 version: 1
 title: Signed numbers visual lab
 creator: FARK Study Engine contributors
@@ -28,9 +28,9 @@ outcomeIds: locate-integers
 prompt: Which number is located to the left of zero?
 correctChoiceId: a
 - a | -3
-- b | 4\`;
+- b | 4`;
 
-export const TIMELINE_SAMPLE = \`# FARK Content Pack
+export const TIMELINE_SAMPLE = `# FARK Content Pack
 version: 1
 title: Fictional town chronology
 creator: FARK Study Engine contributors
@@ -58,4 +58,4 @@ outcomeIds: sort-events
 prompt: Which invented event happened first?
 correctChoiceId: a
 - a | Fictional archive founded
-- b | Fictional library expands\`;
+- b | Fictional library expands`;
