@@ -48,8 +48,9 @@
 ### Gate D — MCP
 
 - PR #33 adds basic JSON-RPC argument-shape checks and a complete-line 1 MiB rejection guard. Acceptance remains pending passing Node 20/22 CI and real-client integration evidence.
-- The stdio implementation uses `readline`: an oversized line is buffered before rejection. This is **not** a hard streaming memory cap; a bounded streaming parser requires separate engineering and verification.
+- V5.1.1 replaces `readline` with a bounded retained-line reader: oversized lines are drained before JSON parsing, and later requests are processed. It bounds retained line fragments, **not** upstream input chunks, decoded JSON objects, tool outputs or total process memory. Node 20/22 CI and real-client integration proof remain acceptance requirements.
 
+- PR #34 includes an independent Node CLI subprocess test for initialize, discovery, synthetic tool calls, invalid calls and post-error recovery. It is a local-protocol client harness, **not** proof of successful integration with Claude Desktop or any specific external MCP client. On-device client testing remains pending.
 - Protocol-level integration for initialize, tool discovery, valid and invalid calls.
 - Negative tests for malformed JSON-RPC, oversized payloads, unsafe paths and unexpected writes.
 - Record client and runtime versions in the evidence report.
