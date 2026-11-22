@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="FARK Ders Tasarımcısı: kod yazmadan özgün ders, görsel model, kazanım ve soru oluşturun.">
+  <title>Ders Tasarımcısı — FARK Study Engine</title>
+  <link rel="stylesheet" href="./lesson-designer.css">
+  <script type="module" src="./lesson-designer.js"></script>
+</head>
+<body>
+  <a class="skip" href="#author-main">İçeriğe geç</a>
+  <header class="topbar">
+    <a class="brand" href="./"><span class="mark">F.</span><span>FARK <small>STUDY ENGINE</small></span></a>
+    <div class="nav"><span class="offline">● YEREL · ÇEVRİMDIŞI</span><a href="./study-desk.html">Ders Deneyimi</a></div>
+  </header>
+  <main id="author-main">
+    <section class="hero">
+      <p class="eyebrow">EĞİTİMCİ ÇALIŞMA ALANI · V1</p>
+      <h1>Bir fikirden, <em>öğrenme deneyimine.</em></h1>
+      <p>Kazanımı tanımla, dersini anlat, görsel model seç ve sorularını yaz. Markdown veya kod gerekmez. Her şey FARK'ın aynı Bilgi Çekirdeği için hazırlanır.</p>
+      <div class="hero-meta"><span>Tek içerik kaynağı</span><span>Ücretli servis yok</span><span>Öğrenci verisi yok</span></div>
+    </section>
+    <section class="import-strip" aria-labelledby="import-title">
+      <div><h2 id="import-title">Kaydettiğin dersi yeniden düzenle</h2>
+      <p>Bu tasarımcıyla hazırlanmış JSON paketini cihazından seç. Dosya dışarı gönderilmez; yapısı korunamıyorsa mevcut taslak değişmez.</p></div>
+      <label class="file-button" for="import-file">JSON dersini seç <input id="import-file" type="file" accept=".json,application/json"></label>
+      <p id="import-status" class="import-status" role="status" aria-live="polite">İçe aktarma isteğe bağlıdır.</p>
+      <p id="import-error" class="error" role="alert" hidden></p>
+    </section>
+    <div class="layout">
+      <form id="designer-form" class="form-panel" novalidate>
+        <section class="form-section" aria-labelledby="s1">
+          <div class="step-head"><span class="step">01</span><div><p class="eyebrow">İÇERİK KİMLİĞİ</p><h2 id="s1">Dersinin temeli</h2></div></div>
+          <div class="fields two">
+            <label>İçerik paketi adı <input id="pack-title" maxlength="240" value="Özgün Matematik Atölyesi" required></label>
+            <label>İçerik üreticisi <input id="creator" maxlength="240" value="Örnek Eğitimci" required></label>
+          </div>
+          <label>Lisans / kullanım hakkı beyanı <input id="license" maxlength="80" value="MIT" required></label>
+          <p class="hint">Bu alan hak sahipliğini doğrulamaz. Yalnızca kendine ait veya kullanma iznin olan içerikleri ekle.</p>
+        </section>
+        <section class="form-section" aria-labelledby="s2">
+          <div class="step-head"><span class="step">02</span><div><p class="eyebrow">BİLGİ ÇEKİRDEĞİ</p><h2 id="s2">Ünite ve kazanım</h2></div></div>
+          <div class="fields two">
+            <label>Ünite adı <input id="unit" maxlength="240" value="Kesirler" required></label>
+            <label>Öğrencinin kazanımı <input id="outcome" maxlength="240" value="Birim kesirleri karşılaştırır" required></label>
+          </div>
+          <p class="hint">Bu V1 tek ünite ve tek kazanım içerir. İleride aynı formatla daha büyük içerik paketleri bağlanabilir.</p>
+        </section>
+        <section class="form-section" aria-labelledby="s3">
+          <div class="step-head"><span class="step">03</span><div><p class="eyebrow">ÖĞRETİM İÇERİĞİ</p><h2 id="s3">Ders anlatımı ve görsel</h2></div></div>
+          <label>Ders başlığı <input id="lesson-title" maxlength="240" value="Birim kesirlerin büyüklüğü" required></label>
+          <label>Ders metni <textarea id="lesson-body" maxlength="10000" rows="5" required>Aynı bütün daha az eşit parçaya ayrıldığında her bir parça daha büyük olur. Bu nedenle 1/3, 1/4'ten büyüktür.</textarea></label>
+          <label>Görsel model
+            <select id="visual-kind"><option value="none">Görsel kullanma</option><option value="fraction-comparison" selected>Kesir karşılaştırma</option><option value="number-line">Sayı doğrusu</option><option value="timeline">Zaman çizelgesi</option></select>
+          </label>
+          <div id="visual-fraction" class="visual-fields"><p class="visual-label">İki kesri göster</p><div class="fields four">
+            <label>1. pay <input id="ln" type="number" step="1" value="1"></label><label>1. payda <input id="ld" type="number" step="1" value="3"></label>
+            <label>2. pay <input id="rn" type="number" step="1" value="1"></label><label>2. payda <input id="rd" type="number" step="1" value="4"></label>
+          </div></div>
+          <div id="visual-number" class="visual-fields" hidden><p class="visual-label">Sayı doğrusunda işaretlenecek noktalar</p><div class="fields three">
+            <label>Başlangıç <input id="min" type="number" step="1" value="-5"></label><label>Bitiş <input id="max" type="number" step="1" value="5"></label><label>Noktalar (virgülle) <input id="points" value="-3,0,4"></label>
+          </div></div>
+          <div id="visual-timeline" class="visual-fields" hidden><p class="visual-label">İki örnek olay</p><div class="fields two">
+            <label>1. olay yılı <input id="year1" type="number" step="1" value="1860"></label><label>1. olay adı <input id="event1" value="Kurgu başlangıç"></label>
+            <label>2. olay yılı <input id="year2" type="number" step="1" value="1872"></label><label>2. olay adı <input id="event2" value="Kurgu devam"></label>
+          </div></div>
+          <p class="hint">Görseller resim dosyası değil, doğrulanabilir sayısal/olaysal modellerdir. Kullanıcı metni HTML olarak çalıştırılmaz.</p>
+        </section>
+        <section class="form-section" aria-labelledby="s4">
+          <div class="step-head"><span class="step">04</span><div><p class="eyebrow">ÖLÇME</p><h2 id="s4">Çoktan seçmeli sorular</h2></div></div>
+          <div class="question-editor" data-question="0">
+            <p class="visual-label">Soru 1 · zorunlu</p>
+            <label>Soru kökü <textarea id="q1-prompt" maxlength="2000" rows="2">Hangisi daha büyüktür?</textarea></label>
+            <div class="fields two">
+              <label>A seçeneği <input id="q1-a" value="1/3"></label><label>B seçeneği <input id="q1-b" value="1/4"></label>
+              <label>C (isteğe bağlı) <input id="q1-c" value="Eşitler"></label><label>D (isteğe bağlı) <input id="q1-d"></label>
+            </div>
+            <label>Doğru yanıt <select id="q1-correct"><option value="0" selected>A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></label>
+          </div>
+          <label class="toggle"><input type="checkbox" id="second-question"> İkinci bir soru ekle <span>(tekrar değerlendirme için yararlı)</span></label>
+          <div class="question-editor" id="question-two" hidden>
+            <p class="visual-label">Soru 2 · isteğe bağlı</p>
+            <label>Soru kökü <textarea id="q2-prompt" maxlength="2000" rows="2">Hangisi daha küçüktür?</textarea></label>
+            <div class="fields two">
+              <label>A seçeneği <input id="q2-a" value="1/3"></label><label>B seçeneği <input id="q2-b" value="1/4"></label>
+              <label>C (isteğe bağlı) <input id="q2-c"></label><label>D (isteğe bağlı) <input id="q2-d"></label>
+            </div>
+            <label>Doğru yanıt <select id="q2-correct"><option value="0">A</option><option value="1" selected>B</option><option value="2">C</option><option value="3">D</option></select></label>
+          </div>
+        </section>
+        <div class="actions"><button class="primary" type="submit">Dersi doğrula ve önizle <span aria-hidden="true">↗</span></button><button id="download" class="secondary" type="button" disabled>JSON içeriğini indir</button></div>
+        <p id="designer-status" role="status" aria-live="polite" class="status">Henüz doğrulama yapılmadı. Dosya oluşturmak için önce doğrula.</p>
+        <p id="designer-error" role="alert" class="error" hidden></p>
+      </form>
+      <aside class="preview-panel" aria-labelledby="preview-title">
+        <div class="preview-header"><span class="eyebrow">CANLI İÇERİK ÖNİZLEMESİ</span><span id="preview-state" class="preview-tag">Doğrulanmadı</span></div>
+        <h2 id="preview-title">Öğrenci ne görecek?</h2>
+        <p class="preview-caption">Güncel ve doğrulanmış içerik gösterilir; öğrenci başarısı veya öğrenme ölçümü üretilmez.</p>
+        <div id="preview-content" class="preview-content"><p class="empty">Dersi doğruladığında kazanım, anlatım, görsel ve sorular burada görünecek.</p></div>
+        <div class="preview-foot"><strong>Güvenli içerik köprüsü</strong><p>FARK açık içerik paketi v1 → mevcut Bilgi Çekirdeği. Eğitimci beyanı lisans doğrulaması değildir.</p></div>
+      </aside>
+    </div>
+    <footer>FARK Study Engine · Yerel taslak · Kaydetme ve bulut senkronizasyonu yok · İlk sürüm öğretmen kullanılabilirlik testini bekliyor</footer>
+  </main>
+</body>
+</html>

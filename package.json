@@ -135,6 +135,10 @@
     "./study-desk": {
       "types": "./types/study-desk.d.ts",
       "default": "./src/study-desk.js"
+    },
+    "./course-authoring": {
+      "types": "./types/course-authoring.d.ts",
+      "default": "./src/course-authoring.js"
     }
   },
   "engines": {
