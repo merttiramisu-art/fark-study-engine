@@ -10,7 +10,7 @@ const CLI = fileURLToPath(new URL('../bin/fark.js', import.meta.url));
 
 function runStdioClient(lines) {
   const execution = spawnSync(process.execPath, [CLI, 'mcp'], {
-    input: lines.join('\\n') + '\\n',
+    input: lines.join('\n') + '\n',
     encoding: 'utf8',
     maxBuffer: 4 * 1024 * 1024,
     timeout: 20_000
@@ -18,7 +18,7 @@ function runStdioClient(lines) {
   assert.equal(execution.error, undefined, String(execution.error));
   assert.equal(execution.status, 0, execution.stderr);
   assert.match(execution.stderr, /MCP v/);
-  const messages = execution.stdout.trim().split('\\n').filter(Boolean).map(JSON.parse);
+  const messages = execution.stdout.trim().split('\n').filter(Boolean).map(JSON.parse);
   return messages;
 }
 
