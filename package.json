@@ -123,6 +123,10 @@
     "./visual-learning": {
       "types": "./types/visual-learning.d.ts",
       "default": "./src/visual-learning.js"
+    },
+    "./concept-map": {
+      "types": "./types/concept-map.d.ts",
+      "default": "./src/concept-map.js"
     }
   },
   "engines": {

@@ -473,6 +473,47 @@ async function run() {
       const learningShot = await devtools.send('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
       await writeFile('artifacts/screenshots/fark-visual-learning-' + viewport.label + '.png', Buffer.from(learningShot.data,'base64'));
       console.log(viewport.label + ' passed: real number-line/timeline browser interaction, safe rejection, inert text, JSON bridge');
+      // Concept Map: real declared prerequisite links and answer-key evidence.
+      await devtools.send('Page.navigate', {url:address+'concept-map.html'});
+      await retry(async()=>await devtools.eval(`document.readyState === 'complete' &&
+        document.querySelectorAll('.concept-node').length === 5`));
+      const concept=await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const target=()=>document.querySelector('[data-concept="compare-fractions"]');
+        const status=()=>target().querySelector('.concept-observation').textContent;
+        const initial=$('graph-count').textContent.includes('4 declared links') &&
+          document.querySelectorAll('.layer-arrow').length===3 &&
+          status()==='No answer yet' && $('selected-evidence').textContent.includes('0 observed');
+        $('quiz-choices').querySelector('[data-choice="b"]').click();
+        const incorrect=status()==='Incorrect answer observed' &&
+          $('quiz-feedback').textContent.includes('Incorrect answer observed') &&
+          document.querySelector('[data-concept="unit-fraction"] .concept-observation').textContent==='No answer yet';
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const mixed=status()==='Mixed answers observed' &&
+          $('selected-evidence').textContent.includes('2 observed answer(s)') &&
+          $('mastery-warning').textContent.includes('Mastery: unknown');
+        $('reset-evidence').click();
+        const reset=status()==='No answer yet' &&
+          $('selected-evidence').textContent.includes('0 observed answer(s)');
+        document.querySelector('[data-concept="unit-fraction"]').click();
+        const changedQuestion=$('question-select').value==='q-unit' &&
+          $('selected-prerequisites').textContent.includes('Understand numerator');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const isolated=document.querySelector('[data-concept="unit-fraction"] .concept-observation').textContent==='Correct answer observed' &&
+          document.querySelector('[data-concept="numerator"] .concept-observation').textContent==='No answer yet';
+        return {initial,incorrect,mixed,reset,changedQuestion,isolated,
+          width:document.documentElement.scrollWidth,viewport:innerWidth,
+          safeButtons:[...document.querySelectorAll('.concept-node')].every(el=>el.tagName==='BUTTON')};
+      })()`);
+      if (!concept.initial || !concept.incorrect || !concept.mixed ||
+          !concept.reset || !concept.changedQuestion || !concept.isolated ||
+          !concept.safeButtons || concept.width>concept.viewport+1) {
+        throw new Error(viewport.label+' concept map flow failed: '+JSON.stringify(concept));
+      }
+      await devtools.eval(`document.getElementById('reset-evidence').click()`);
+      const mapShot=await devtools.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+      await writeFile('artifacts/screenshots/fark-concept-map-'+viewport.label+'.png',Buffer.from(mapShot.data,'base64'));
+      console.log(viewport.label+' passed: declared concept links, observed statuses, mixed/reset, no invented prerequisite failure');
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

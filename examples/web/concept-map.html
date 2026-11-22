@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Explore explicitly authored prerequisite links and observed answers with FARK Concept Map.">
+  <title>Concept Map — FARK Study Engine</title>
+  <link rel="stylesheet" href="./concept-map.css">
+  <script src="./concept-map.js" type="module"></script>
+</head>
+<body>
+  <a class="skip" href="#concept-main">Skip to concept map</a>
+  <header class="topbar">
+    <a class="brand" href="./"><span class="logo">F.</span><span>FARK <small>STUDY ENGINE</small></span></a>
+    <span class="local">LOCAL DEMO · NO TRACKING</span>
+    <a class="back" href="./visual-learning.html">Visual Learning</a>
+  </header>
+  <main id="concept-main">
+    <section class="hero">
+      <p class="eyebrow">FARK · EXPLAINABLE LEARNING PATHS</p>
+      <h1>Every idea has <em>connections.</em></h1>
+      <p>A concept map built from the curriculum's actual prerequisite links—not a guessed learner profile. Answer a fictional question and watch the observation appear without pretending it proves mastery.</p>
+      <div class="legend" aria-label="Evidence status legend">
+        <span><i class="dot unknown"></i>No answer yet</span>
+        <span><i class="dot correct"></i>Correct observed</span>
+        <span><i class="dot incorrect"></i>Incorrect observed</span>
+        <span><i class="dot mixed"></i>Mixed answers</span>
+      </div>
+    </section>
+    <div class="layout">
+      <section class="graph-card" aria-labelledby="graph-title">
+        <div class="section-head"><p class="eyebrow">01 / DECLARED CURRICULUM</p><span class="graph-badge" id="graph-count">5 concepts</span></div>
+        <h2 id="graph-title">The learning connections</h2>
+        <p class="description">Each arrow follows a prerequisite declared by the lesson author. It does not imply that the learner is blocked, failing or ready to advance.</p>
+        <div id="map-levels" class="map-levels" aria-label="Curriculum dependency levels">
+          <p>Loading original fraction concept map.</p>
+        </div>
+        <p class="graph-footnote">Select a concept to inspect its exact links and evidence. Shared outcomes may use the same answer record, so counts must not be treated as independent proofs.</p>
+      </section>
+      <aside class="details-card" aria-labelledby="details-heading">
+        <p class="eyebrow">02 / WHY THIS CONNECTION?</p>
+        <h2 id="details-heading">Concept details</h2>
+        <h3 id="selected-title">Compare unit fractions</h3>
+        <p id="selected-unit" class="unit-label">Fractions</p>
+        <div class="evidence-reading">
+          <strong>Observed answer history</strong>
+          <p id="selected-evidence">No answer yet.</p>
+          <p id="mastery-warning">Mastery: unknown. No answer is not a failure.</p>
+        </div>
+        <div class="connections">
+          <div><h4>Required beforehand (declared)</h4><ul id="selected-prerequisites"><li>Not loaded</li></ul></div>
+          <div><h4>Concepts that reference this one</h4><ul id="selected-dependents"><li>Not loaded</li></ul></div>
+        </div>
+        <div class="quiz">
+          <p class="eyebrow">03 / MAKE A REAL OBSERVATION</p>
+          <label for="question-select">Choose one original example question</label>
+          <select id="question-select"></select>
+          <p id="quiz-prompt" class="question">Which fraction is larger?</p>
+          <div id="quiz-choices" class="choices" role="group" aria-label="Answer options"></div>
+          <p id="quiz-feedback" class="quiz-feedback" role="status" aria-live="polite">No answers recorded.</p>
+          <button id="reset-evidence" class="reset" type="button">↺ Clear fictional answer history</button>
+        </div>
+      </aside>
+    </div>
+    <section class="limits" aria-labelledby="limitations-heading">
+      <h2 id="limitations-heading">What FARK can—and cannot—say</h2>
+      <p id="excluded-report">All observations are tied to current question revisions.</p>
+      <p>The content links are editorial declarations, not discovered causal relations. The colored evidence markers represent answer-key observations only. No persistent profile, mastery probability, diagnosis or teaching-effectiveness claim is produced.</p>
+      <p class="privacy-note">This is original fictional arithmetic content. Runs only in browser memory; refresh or reset clears answers. No accounts, remote assets, paid services or analytics.</p>
+    </section>
+    <footer>FARK Study Engine · Curriculum links and answer evidence are intentionally separate.</footer>
+  </main>
+</body>
+</html>

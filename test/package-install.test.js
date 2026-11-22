@@ -54,6 +54,8 @@ import { importOpenContentPack } from 'fark-study-engine/content-adapter';
 import { importMarkdownContentPack } from 'fark-study-engine/markdown-content';
 import { compareFractionModels } from 'fark-study-engine/visual-math';
 import { buildNumberLineModel, buildTimelineModel } from 'fark-study-engine/visual-learning';
+import { buildConceptMap } from 'fark-study-engine/concept-map';
+import { createAssessmentHistory } from 'fark-study-engine/assessment';
 const pack = importOpenContentPack({
   format: 'fark-open-content-pack', version: 1,
   attribution: { title: 'Local sample', creator: 'FARK contributors', license: 'MIT' },
@@ -88,6 +90,7 @@ const visualSpec = pack.materials.lessons[0].visual;
 const visual = compareFractionModels(visualSpec.left, visualSpec.right);
 const visualBridgeEqual = JSON.stringify(visualSpec) ===
   JSON.stringify(markdownPack.materials.lessons[0].visual);
+const conceptMap = buildConceptMap(pack.core, createAssessmentHistory());
 const numberLine = buildNumberLineModel({min:-5,max:5,points:[-3,0,4]});
 const timeline = buildTimelineModel({events:[
   {id:'early',year:1860,label:'Fictional beginning'},
@@ -96,7 +99,7 @@ const timeline = buildTimelineModel({events:[
 const card = createCard({ id: 'c', topic: 'Math', question: '2+2?', answer: '4' });
 const reviewed = reviewCard(card, 'good', '2026-01-01T00:00:00.000Z');
 const summary = getStudySummary([reviewed], '2026-01-02T00:00:00.000Z');
-console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length, visualComparison: visual.label, visualBridgeEqual, numberedTicks: numberLine.ticks.length, chronologyYears: timeline.events.map(e => e.year) }));
+console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOLS.length, unchanged: card.reviews === 0, importedQuestions: pack.core.questions.length, contentLicense: pack.attribution.license, markdownQuestions: markdownPack.core.questions.length, visualComparison: visual.label, visualBridgeEqual, numberedTicks: numberLine.ticks.length, chronologyYears: timeline.events.map(e => e.year), conceptNodes: conceptMap.nodes.length, conceptMastery: conceptMap.mastery }));
 `);
     const execution = spawnSync(process.execPath, [join(consumer, 'main.mjs')], {
       cwd: consumer, encoding: 'utf8', timeout: 12_000, maxBuffer: 1024 * 1024
@@ -105,7 +108,7 @@ console.log(JSON.stringify({ totalReviews: summary.totalReviews, tools: MCP_TOOL
     assert.equal(execution.status, 0, execution.stderr);
     assert.equal(execution.stderr, '');
     assert.deepEqual(JSON.parse(execution.stdout), {
-      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1, visualComparison: '1/3 > 1/4', visualBridgeEqual: true, numberedTicks: 11, chronologyYears: [1860,1872]
+      totalReviews: 1, tools: 13, unchanged: true, importedQuestions: 1, contentLicense: 'MIT', markdownQuestions: 1, visualComparison: '1/3 > 1/4', visualBridgeEqual: true, numberedTicks: 11, chronologyYears: [1860,1872], conceptNodes: 1, conceptMastery: null
     });
   } finally {
     rmSync(root, { recursive: true, force: true });
