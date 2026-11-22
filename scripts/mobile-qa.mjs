@@ -279,6 +279,38 @@ async function run() {
         throw new Error(viewport.label + ' CS Cloze pack failed to render blanks: ' + JSON.stringify(studioChecks));
       }
       console.log(viewport.label + ' passed: 4-tab Studio QA, no overflow, visible controls, skip+rating+cloze+intelligence, screenshot saved');
+
+      // Separate original Learning Journey page: real engine answer -> linked lesson ->
+      // explicit issuance -> distinct follow-up, across the same responsive viewports.
+      await devtools.send('Page.navigate', { url: address + 'learning-path.html' });
+      await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
+        document.getElementById('progress-baseline')?.classList.contains('active')`));
+      const journey = await devtools.eval(`(() => {
+        const beforeWidth = document.documentElement.scrollWidth;
+        document.getElementById('choice-b').click();
+        const lesson = !document.getElementById('lesson-block').hidden;
+        const lessonWhy = document.getElementById('why-description').textContent;
+        document.getElementById('lesson-reviewed').click();
+        const issued = document.getElementById('progress-followup').classList.contains('active');
+        document.getElementById('choice-a').click();
+        const verified = document.getElementById('progress-evidence').classList.contains('active');
+        const evidence = document.getElementById('journey-status').textContent;
+        const explanationCount = document.querySelectorAll('#evidence-list li').length;
+        return {
+          beforeWidth, afterWidth: document.documentElement.scrollWidth, viewport: window.innerWidth,
+          lesson, lessonWhy, issued, verified, evidence, explanationCount,
+          errorHidden: document.getElementById('journey-error').hidden
+        };
+      })()`);
+      if (journey.beforeWidth > viewport.width + 1 || journey.afterWidth > viewport.width + 1 ||
+          !journey.lesson || !journey.issued || !journey.verified ||
+          !journey.lessonWhy.includes('curriculum') && !journey.lessonWhy.includes('curriculum editors') ||
+          !journey.evidence.includes('Mastery: unknown') || journey.explanationCount < 4 || !journey.errorHidden) {
+        throw new Error(viewport.label + ' guided learning journey failed: ' + JSON.stringify(journey));
+      }
+      const journeyShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+      await writeFile('artifacts/screenshots/fark-learning-journey-' + viewport.label + '.png', Buffer.from(journeyShot.data, 'base64'));
+      console.log(viewport.label + ' passed: new explainable assessment → lesson → issued reassessment journey');
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

@@ -1743,3 +1743,9 @@ body {
     scroll-snap-align: none;
   }
 }
+
+/* New discoverable learning journey — same calm visual system as Studio. */
+.journey-entry-link{min-height:44px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid rgba(105,75,173,.32);background:#faf7ff;color:#543590;border-radius:12px;padding:11px 14px;font-size:13px;font-weight:800;max-width:100%}
+.journey-entry-link:hover{background:#eee5fc}
+.journey-entry-link:focus-visible{outline:3px solid #b77114;outline-offset:3px}
+@media(max-width:420px){.v2-home-actions>.journey-entry-link{width:100%;text-align:center}}

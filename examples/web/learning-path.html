@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="An offline, interactive FARK Study Engine journey through an observed answer, a linked lesson, and an issued reassessment.">
+  <title>Why this step? — FARK Study Engine</title>
+  <link rel="stylesheet" href="./learning-path.css">
+  <script src="./learning-path.js" type="module"></script>
+</head>
+<body>
+  <a class="skip" href="#journey-main">Skip to the learning experience</a>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Back to FARK Study Studio"><span class="mark">F.</span><span>FARK <small>STUDY ENGINE</small></span></a>
+    <span class="offline">● LOCAL DEMO · NO TRACKING</span>
+    <a class="back" href="./">Back to Studio</a>
+  </header>
+  <main id="journey-main">
+    <div class="hero">
+      <p class="eyebrow">AN EXPLAINABLE LEARNING JOURNEY</p>
+      <h1>Don't just say <em>what</em> to study.<br>Show <em>why.</em></h1>
+      <p class="intro">Follow one original, fictional mathematics example from an answer to a linked explanation and a new question. Every step comes from FARK's real learning APIs.</p>
+      <div class="hero-tags"><span>100% offline</span><span>Original questions</span><span>No learner data saved</span></div>
+    </div>
+    <ol class="progress" aria-label="Journey stages">
+      <li id="progress-baseline"><b>01</b> First answer</li>
+      <li id="progress-lesson"><b>02</b> Understand why</li>
+      <li id="progress-followup"><b>03</b> Different question</li>
+      <li id="progress-evidence"><b>04</b> Honest evidence</li>
+    </ol>
+    <div class="layout">
+      <section class="learning-card" aria-labelledby="stage-heading">
+        <div class="card-kicker"><span id="stage-number">STEP 01 / 04</span><span id="stage-badge" class="stage-badge">OBSERVATION</span></div>
+        <h2 id="stage-heading">Start with a question</h2>
+        <p id="stage-description" class="stage-description">Choose the larger fraction. This answer is checked against an explicit answer key; no ability score is invented.</p>
+        <div class="question-shell">
+          <p class="tiny" id="question-kicker">FIRST OBSERVATION · FRACTIONS</p>
+          <h3 id="journey-question">Which fraction is larger?</h3>
+          <div id="choices" class="choices" role="group" aria-label="Choose one answer">
+            <button id="choice-a" type="button" data-choice="a">1/3</button>
+            <button id="choice-b" type="button" data-choice="b">1/4</button>
+          </div>
+        </div>
+        <section id="lesson-block" class="lesson" aria-labelledby="lesson-title" hidden>
+          <div class="lesson-head"><span>LINKED MINI LESSON</span><span>ORIGINAL EXAMPLE</span></div>
+          <h3 id="lesson-title">Same numerator, different-sized pieces</h3>
+          <p>A whole cut into <strong>3 equal parts</strong> has larger pieces than the same whole cut into <strong>4 equal parts</strong>. So 1/3 is larger than 1/4. Compare the size of a single piece, not just the denominator.</p>
+          <div class="fraction-compare" role="img" aria-label="One out of three equal segments is larger than one out of four equal segments">
+            <div><span>1/3</span><div class="fraction-bar thirds"><i></i><i></i><i></i></div></div>
+            <div><span>1/4</span><div class="fraction-bar fourths"><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <p class="lesson-note">Marking this explanation as reviewed is a self-report—not proof of comprehension.</p>
+        </section>
+        <button type="button" id="lesson-reviewed" class="primary" hidden>I reviewed the explanation →</button>
+        <div id="journey-status" class="status" role="status" aria-live="polite"></div>
+        <div id="journey-error" class="error" role="alert" hidden></div>
+        <button type="button" id="restart-journey" class="restart">↺ Start again with a fresh fictional learner</button>
+      </section>
+      <aside class="evidence-card" aria-labelledby="why-heading">
+        <p class="eyebrow">THE ENGINE'S EXPLANATION</p>
+        <h2 id="why-heading">Why this step?</h2>
+        <p id="why-description">We begin with an observed answer. FARK will not infer a learning gap before an answer is recorded.</p>
+        <div class="evidence-divider"></div>
+        <h3>Evidence trail</h3>
+        <ol id="evidence-list" class="evidence-list" aria-live="polite">
+          <li>Nothing recorded yet. Choose an answer to begin.</li>
+        </ol>
+        <div class="truth">
+          <strong>What FARK does <em>not</em> know</strong>
+          <p id="uncertainty">A single answer cannot establish mastery, durable retention, or whether a lesson caused improvement.</p>
+        </div>
+      </aside>
+    </div>
+    <p class="footer-note">FARK's assessments, teaching-completion records and issued-reassessment ledger run in memory. Reloading or restarting clears the scenario. Nothing is uploaded, tracked, or stored.</p>
+  </main>
+</body>
+</html>

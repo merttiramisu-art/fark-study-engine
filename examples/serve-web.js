@@ -11,6 +11,9 @@ const baseDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ROUTES = new Map([
   ['/examples/web/', ['examples/web/index.html', 'text/html; charset=utf-8']],
   ['/examples/web/index.html', ['examples/web/index.html', 'text/html; charset=utf-8']],
+  ['/examples/web/learning-path.html', ['examples/web/learning-path.html', 'text/html; charset=utf-8']],
+  ['/examples/web/learning-path.js', ['examples/web/learning-path.js', 'text/javascript; charset=utf-8']],
+  ['/examples/web/learning-path.css', ['examples/web/learning-path.css', 'text/css; charset=utf-8']],
   ['/examples/web/styles.css', ['examples/web/styles.css', 'text/css; charset=utf-8']],
   ['/examples/web/app.js', ['examples/web/app.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/tab-navigation.js', ['examples/web/tab-navigation.js', 'text/javascript; charset=utf-8']],
@@ -26,6 +29,13 @@ const ROUTES = new Map([
   ['/src/ledger.js', ['src/ledger.js', 'text/javascript; charset=utf-8']],
   ['/src/diagnosis.js', ['src/diagnosis.js', 'text/javascript; charset=utf-8']],
   ['/src/calibrate.js', ['src/calibrate.js', 'text/javascript; charset=utf-8']],
+  ['/src/knowledge-core.js', ['src/knowledge-core.js', 'text/javascript; charset=utf-8']],
+  ['/src/assessment.js', ['src/assessment.js', 'text/javascript; charset=utf-8']],
+  ['/src/learning-loop.js', ['src/learning-loop.js', 'text/javascript; charset=utf-8']],
+  ['/src/learning-progress.js', ['src/learning-progress.js', 'text/javascript; charset=utf-8']],
+  ['/src/prerequisite-analysis.js', ['src/prerequisite-analysis.js', 'text/javascript; charset=utf-8']],
+  ['/src/learning-orchestrator.js', ['src/learning-orchestrator.js', 'text/javascript; charset=utf-8']],
+  ['/src/reassessment-ledger.js', ['src/reassessment-ledger.js', 'text/javascript; charset=utf-8']],
   ['/README.md', ['README.md', 'text/plain; charset=utf-8']]
 ]);
 

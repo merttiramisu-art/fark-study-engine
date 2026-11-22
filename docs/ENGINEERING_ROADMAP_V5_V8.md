@@ -19,7 +19,7 @@
 | C | V5.0 Contributor experience | Quick start, bilingual API docs, issue templates, security policy, ADRs | In progress |
 | D | V5.1 MCP hardening | Protocol errors, schema validation, size limits, client integration proof | In progress |
 | E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | In progress |
-| F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | Not started |
+| F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | In progress |
 | G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | In progress |
 | H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | Not started |
 | I | V7.1 Research validation | Predeclared metrics, synthetic/real-data separation, leakage checks | Not started |
@@ -65,6 +65,9 @@
 - Never infer causal teaching effectiveness or durable mastery from two answers.
 
 ### Gate F — Browser Studio
+
+- The new independent, local-only **Why this step?** demonstration connects actual assessment, linked editorial lesson, self-reported completion, explicit issuance and verified independent follow-up. It never presents a synthetic answer as mastery or a lesson as causal proof. The demo uses no storage or telemetry.
+- Browser CI smoke checks the full interactive sequence at 360px, 393px and 1280px widths using Chromium emulation, plus accessibility and privacy notes. Physical-device and assistive-technology acceptance remains pending.
 
 - Demonstrate baseline assessment → editorial remediation → issued reassessment → observed comparison.
 - Verify keyboard, screen reader semantics, responsive layouts and storage disclosure.
