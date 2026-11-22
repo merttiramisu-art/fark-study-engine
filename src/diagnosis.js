@@ -377,6 +377,12 @@ export function recordIntervention(ledger, proposal, at = new Date()) {
     }
   };
 
+  if (typeof intervention.id !== 'string' || !intervention.id.trim() || intervention.id.trim() !== intervention.id) {
+    throw new RangeError('intervention.id must be a canonical non-empty string');
+  }
+  if (ledger.events.some(ev => ev.id === intervention.id)) {
+    throw new RangeError('duplicate event id: ' + intervention.id);
+  }
   const next = structuredClone(ledger);
   next.events.push(intervention);
   return { ledger: next, intervention };

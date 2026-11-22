@@ -16,6 +16,7 @@ const MAX_EVENTS = 50_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EVENT_TYPES = new Set(['review', 'intervention']);
 const REASONS = new Set(MISTAKE_REASONS);
+const RATINGS = new Set(['again', 'hard', 'good', 'easy']);
 
 function parseIso(at, field = 'timestamp') {
   const date = at instanceof Date ? new Date(at.getTime()) : new Date(at);
@@ -129,11 +130,14 @@ export function validateLedger(ledger) {
   }
 
   const eventIds = new Set();
+  const lastReviewTimeByCard = new Map();
+  const reviewCountersByCard = new Map();
   for (const ev of ledger.events) {
     if (!ev || typeof ev !== 'object' || Array.isArray(ev)) {
       throw new TypeError('event must be an object');
     }
-    nonEmptyText(ev.id, 'event.id');
+    const canonicalId = nonEmptyText(ev.id, 'event.id');
+    if (canonicalId !== ev.id) throw new RangeError('event.id must be canonical');
     if (eventIds.has(ev.id)) {
       throw new RangeError('duplicate event id: ' + ev.id);
     }
@@ -141,13 +145,62 @@ export function validateLedger(ledger) {
     if (!EVENT_TYPES.has(ev.type)) {
       throw new RangeError('unknown ledger event type: ' + ev.type);
     }
-    parseIso(ev.at, 'event.at');
+    const atIso = parseIso(ev.at, 'event.at');
     if (ev.type === 'review') {
       if (!Object.hasOwn(ledger.cards, ev.cardId)) {
         throw new RangeError('review event references unknown card: ' + ev.cardId);
       }
-      if (ev.reason != null && !REASONS.has(ev.reason)) {
-        throw new RangeError('unknown event mistake reason: ' + ev.reason);
+      if (!RATINGS.has(ev.rating)) throw new RangeError('unknown review rating');
+      if (ev.reason != null && (!REASONS.has(ev.reason) || ev.rating !== 'again')) {
+        throw new RangeError('mistake reason requires an again review');
+      }
+      nonEmptyText(ev.topic, 'review.topic');
+      if (!Array.isArray(ev.concepts) || ev.concepts.length === 0) {
+        throw new TypeError('review.concepts must be a non-empty array');
+      }
+      for (const concept of ev.concepts) nonEmptyText(concept, 'review concept');
+      const previousTime = lastReviewTimeByCard.get(ev.cardId);
+      if (previousTime != null && Date.parse(atIso) < previousTime) {
+        throw new RangeError('reordered review history for card: ' + ev.cardId);
+      }
+      lastReviewTimeByCard.set(ev.cardId, Date.parse(atIso));
+
+      const state = ev.memoryAfter;
+      if (!state || typeof state !== 'object' || Array.isArray(state)) {
+        throw new TypeError('review.memoryAfter must be an object');
+      }
+      if (!Number.isFinite(state.stabilityDays) || state.stabilityDays <= 0 ||
+          !Number.isFinite(state.difficulty) || state.difficulty < 1 || state.difficulty > 10 ||
+          !Number.isSafeInteger(state.reps) || !Number.isSafeInteger(state.lapses) ||
+          state.lapses < 0 || state.lapses > state.reps ||
+          parseIso(state.lastReviewedAt, 'memoryAfter.lastReviewedAt') !== atIso ||
+          Date.parse(parseIso(state.dueAt, 'memoryAfter.dueAt')) < Date.parse(atIso)) {
+        throw new RangeError('invalid review memory state');
+      }
+      if (!Number.isFinite(ev.elapsedDays) || ev.elapsedDays < 0 ||
+          !Number.isFinite(ev.intervalDays) || ev.intervalDays < 0 ||
+          (ev.predictedR !== null && (!Number.isFinite(ev.predictedR) || ev.predictedR < 0 || ev.predictedR > 1))) {
+        throw new RangeError('invalid review prediction metrics');
+      }
+
+      const snapshot = ledger.cards[ev.cardId].importedSnapshot;
+      const previousCounters = reviewCountersByCard.get(ev.cardId) ?? {
+        reps: snapshot?.reviews ?? 0,
+        lapses: snapshot?.lapses ?? 0
+      };
+      const expectedLapses = previousCounters.lapses + (ev.rating === 'again' ? 1 : 0);
+      if (state.reps !== previousCounters.reps + 1 || state.lapses !== expectedLapses) {
+        throw new RangeError('inconsistent review counters for card: ' + ev.cardId);
+      }
+      reviewCountersByCard.set(ev.cardId, { reps: state.reps, lapses: state.lapses });
+    } else {
+      nonEmptyText(ev.targetTopic, 'intervention.targetTopic');
+      if (!Array.isArray(ev.targetConcepts) || ev.targetConcepts.length === 0) {
+        throw new TypeError('intervention.targetConcepts must be a non-empty array');
+      }
+      for (const concept of ev.targetConcepts) nonEmptyText(concept, 'intervention concept');
+      if (!ev.baseline || typeof ev.baseline !== 'object' || Array.isArray(ev.baseline)) {
+        throw new TypeError('intervention.baseline must be an object');
       }
     }
   }
@@ -320,6 +373,11 @@ export function recordLedgerReview(ledger, cardId, rating, at = new Date(), opti
     memoryAfter: updated.state
   };
 
+  const canonicalId = nonEmptyText(event.id, 'event.id');
+  if (canonicalId !== event.id) throw new RangeError('event.id must be canonical');
+  if (ledger.events.some(existing => existing.id === event.id)) {
+    throw new RangeError('duplicate event id: ' + event.id);
+  }
   const next = cloneLedger(ledger);
   next.events.push(event);
   return {
