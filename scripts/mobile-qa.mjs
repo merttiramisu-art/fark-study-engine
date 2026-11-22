@@ -279,6 +279,491 @@ async function run() {
         throw new Error(viewport.label + ' CS Cloze pack failed to render blanks: ' + JSON.stringify(studioChecks));
       }
       console.log(viewport.label + ' passed: 4-tab Studio QA, no overflow, visible controls, skip+rating+cloze+intelligence, screenshot saved');
+
+      // Separate original Learning Journey page: real engine answer -> linked lesson ->
+      // explicit issuance -> distinct follow-up, across the same responsive viewports.
+      await devtools.send('Page.navigate', { url: address + 'learning-path.html' });
+      await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
+        document.getElementById('progress-baseline')?.classList.contains('active')`));
+      const journey = await devtools.eval(`(() => {
+        const beforeWidth = document.documentElement.scrollWidth;
+        document.getElementById('choice-b').click();
+        const lesson = !document.getElementById('lesson-block').hidden;
+        const lessonWhy = document.getElementById('why-description').textContent;
+        document.getElementById('lesson-reviewed').click();
+        const issued = document.getElementById('progress-followup').classList.contains('active');
+        document.getElementById('choice-a').click();
+        const verified = document.getElementById('progress-evidence').classList.contains('active');
+        const evidence = document.getElementById('journey-status').textContent;
+        const explanationCount = document.querySelectorAll('#evidence-list li').length;
+        return {
+          beforeWidth, afterWidth: document.documentElement.scrollWidth, viewport: window.innerWidth,
+          lesson, lessonWhy, issued, verified, evidence, explanationCount,
+          errorHidden: document.getElementById('journey-error').hidden
+        };
+      })()`);
+      if (journey.beforeWidth > viewport.width + 1 || journey.afterWidth > viewport.width + 1 ||
+          !journey.lesson || !journey.issued || !journey.verified ||
+          !journey.lessonWhy.includes('curriculum') && !journey.lessonWhy.includes('curriculum editors') ||
+          !journey.evidence.includes('Mastery: unknown') || journey.explanationCount < 4 || !journey.errorHidden) {
+        throw new Error(viewport.label + ' guided learning journey failed: ' + JSON.stringify(journey));
+      }
+      // Validate the alternative paths: a correct baseline must not invent remediation,
+      // and an incorrect issued follow-up must never be presented as success.
+      const alternateJourney = await devtools.eval(`(() => {
+        document.getElementById('restart-journey').click();
+        const reset = document.getElementById('progress-baseline').classList.contains('active') &&
+          document.querySelectorAll('#evidence-list li').length === 1;
+        document.getElementById('choice-a').click();
+        const correctBaseline = document.getElementById('stage-heading').textContent.includes('correctly') &&
+          document.getElementById('lesson-block').hidden &&
+          document.getElementById('lesson-reviewed').hidden;
+        document.getElementById('restart-journey').click();
+        document.getElementById('choice-b').click();
+        document.getElementById('lesson-reviewed').click();
+        document.getElementById('choice-b').click();
+        const wrongFollowup = document.getElementById('journey-status').textContent.includes('Different follow-up: incorrect') &&
+          document.getElementById('journey-status').textContent.includes('Mastery: unknown') &&
+          document.getElementById('progress-evidence').classList.contains('active');
+        return { reset, correctBaseline, wrongFollowup, errorHidden: document.getElementById('journey-error').hidden };
+      })()`);
+      if (!alternateJourney.reset || !alternateJourney.correctBaseline ||
+          !alternateJourney.wrongFollowup || !alternateJourney.errorHidden) {
+        throw new Error(viewport.label + ' alternative journey paths failed: ' + JSON.stringify(alternateJourney));
+      }
+      // Return to the positive, verified answer path for screenshot review.
+      await devtools.eval(`(() => {
+        document.getElementById('restart-journey').click();
+        document.getElementById('choice-b').click();
+        document.getElementById('lesson-reviewed').click();
+        document.getElementById('choice-a').click();
+      })()`);
+      const journeyShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+      await writeFile('artifacts/screenshots/fark-learning-journey-' + viewport.label + '.png', Buffer.from(journeyShot.data, 'base64'));
+      console.log(viewport.label + ' passed: new explainable assessment → lesson → issued reassessment journey');
+      // Visual Math Lab uses exact fraction models and the native offline fallback.
+      await devtools.send('Page.navigate', { url: address + 'visual-math.html' });
+      await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
+        document.getElementById('visual-result')?.textContent === '1/3 > 1/4'`));
+      const visual = await devtools.eval(`(() => {
+        const initial = document.getElementById('visual-result').textContent;
+        const baseSegments = document.querySelectorAll('#left-bar .fraction-cell').length;
+        const initialAria = document.getElementById('left-bar').getAttribute('aria-label');
+        document.getElementById('preset-followup').click();
+        const followup = document.getElementById('visual-result').textContent;
+        document.getElementById('preset-equal').click();
+        const equal = document.getElementById('visual-result').textContent;
+        const denominator = document.getElementById('left-den');
+        denominator.value = '6';
+        denominator.dispatchEvent(new Event('input', { bubbles: true }));
+        const adjusted = document.getElementById('visual-result').textContent;
+        const adjustedSegments = document.querySelectorAll('#left-bar .fraction-cell').length;
+        return {
+          initial, baseSegments, initialAria, followup, equal, adjusted, adjustedSegments,
+          viewport: window.innerWidth, scrollWidth: document.documentElement.scrollWidth,
+          label: document.getElementById('left-math').textContent,
+          renderer: document.getElementById('math-renderer-status').textContent
+        };
+      })()`);
+      if (visual.initial !== '1/3 > 1/4' || visual.baseSegments !== 3 ||
+          !visual.initialAria.includes('1 of 3') || visual.followup !== '2/5 > 2/7' ||
+          visual.equal !== '1/2 = 2/4' || visual.adjusted !== '1/6 < 2/4' ||
+          visual.adjustedSegments !== 6 || visual.label !== '1/6' ||
+          !visual.renderer.includes('Native readable math') || visual.scrollWidth > visual.viewport + 1) {
+        throw new Error(viewport.label + ' Visual Math Lab failed: ' + JSON.stringify(visual));
+      }
+      // A teacher-owned Markdown/JSON lesson can configure Visual Math.
+      // Invalid imports must leave previously rendered valid diagrams intact.
+      const contentQA = await devtools.eval(`(() => {
+        const source = document.getElementById('content-source');
+        const initial = source.value;
+        const load = () => document.getElementById('load-visual-content').click();
+        load();
+        const imported = document.getElementById('visual-result').textContent === '2/5 > 2/7' &&
+          document.getElementById('authored-title').textContent === 'Compare the same-sized whole' &&
+          !document.getElementById('authored-preview').hidden &&
+          document.getElementById('content-error').hidden;
+        source.value = initial.replace('visualRight: 2/7','visualRight: 2/0');
+        load();
+        const failureAtomic = document.getElementById('visual-result').textContent === '2/5 > 2/7' &&
+          !document.getElementById('content-error').hidden;
+        source.value = initial.replace('Divide the same-sized whole into equal parts.',
+          '<img src=x onerror=alert(1)>');
+        load();
+        const textIsInert = document.getElementById('authored-body').textContent.includes('<img src=x') &&
+          !document.getElementById('authored-body').querySelector('img') &&
+          document.getElementById('content-error').hidden;
+        source.value = JSON.stringify({
+          format: 'fark-open-content-pack', version: 1,
+          attribution: {title:'JSON visual example', creator:'Test author', license:'MIT'},
+          units:[{id:'u',label:'Fractions'}],
+          outcomes:[{id:'o',unitId:'u',label:'Compare'}],
+          lessons:[{id:'lesson',revision:'1',title:'JSON lesson',
+            outcomeIds:['o'],bodyText:'A new original lesson',
+            visual:{kind:'fraction-comparison',left:{numerator:1,denominator:2},
+              right:{numerator:2,denominator:4}}}],
+          questions:[{id:'q',revision:'1',outcomeIds:['o'],prompt:'A?',
+            correctChoiceId:'a',choices:[{id:'a',text:'Yes'},{id:'b',text:'No'}]}]
+        });
+        load();
+        const jsonImported = document.getElementById('visual-result').textContent === '1/2 = 2/4' &&
+          document.getElementById('authored-title').textContent === 'JSON lesson' &&
+          document.getElementById('content-error').hidden;
+        return {imported,failureAtomic,textIsInert,jsonImported,
+          scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!contentQA.imported || !contentQA.failureAtomic || !contentQA.textIsInert ||
+          !contentQA.jsonImported || contentQA.scrollWidth > contentQA.viewport + 1) {
+        throw new Error(viewport.label + ' author-driven Visual Math failed: ' + JSON.stringify(contentQA));
+      }
+      await devtools.eval(`document.getElementById('preset-unit').click()`);
+      const visualShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+      await writeFile('artifacts/screenshots/fark-visual-math-' + viewport.label + '.png', Buffer.from(visualShot.data, 'base64'));
+      console.log(viewport.label + ' passed: Visual Math fraction model, equal case, slider, no overflow and accessible fallback');
+      // Visual Learning: a real authored number line -> fictional chronology ->
+      // invalid data nonmutation -> inert hostile label -> JSON bridge.
+      await devtools.send('Page.navigate', { url: address + 'visual-learning.html' });
+      await retry(async () => await devtools.eval(`document.readyState === 'complete' &&
+        document.getElementById('visual-summary')?.textContent.includes('Number line from -5 to 5')`));
+      const learning = await devtools.eval(`(() => {
+        const summary = document.getElementById('visual-summary');
+        const field = document.getElementById('lesson-source');
+        const load = () => document.getElementById('preview-lesson').click();
+        const line = summary.textContent.includes('Number line from -5 to 5') &&
+          document.querySelectorAll('.numberline-tick').length === 11 &&
+          document.querySelectorAll('.numberline-tick.selected').length === 3;
+        document.getElementById('sample-timeline').click();
+        const chron = summary.textContent.includes('Illustrative chronology with 3 events') &&
+          document.querySelectorAll('.timeline-list li').length === 3 &&
+          document.querySelector('.timeline-list .event-year').textContent === '1860';
+        const source = field.value;
+        field.value = source.replace('visualEvents: ', 'visualEvents: 3500|Invalid,');
+        load();
+        const invalidSafe = summary.textContent.includes('Illustrative chronology with 3 events') &&
+          !document.getElementById('preview-error').hidden &&
+          document.querySelectorAll('.timeline-list li').length === 3;
+        field.value = source.replace('Fictional archive founded', '<img src=x onerror=alert(1)>');
+        load();
+        const inert = document.querySelector('.timeline-list .event-label').textContent.includes('<img src=x') &&
+          !document.querySelector('.timeline-list img') && document.getElementById('preview-error').hidden;
+        field.value = JSON.stringify({
+          format:'fark-open-content-pack',version:1,
+          attribution:{title:'JSON Number line',creator:'Demo',license:'MIT'},
+          units:[{id:'u',label:'Signed numbers'}],
+          outcomes:[{id:'o',unitId:'u',label:'Signed positions'}],
+          lessons:[{id:'l',revision:'1',title:'JSON line',outcomeIds:['o'],
+            bodyText:'Signed positions in an original lesson',
+            visual:{kind:'number-line',min:-2,max:3,points:[-1,0,2]}}],
+          questions:[{id:'q',revision:'1',outcomeIds:['o'],prompt:'Which is negative?',
+            correctChoiceId:'a',choices:[{id:'a',text:'-1'},{id:'b',text:'2'}]}]
+        });
+        load();
+        const json = summary.textContent.includes('Number line from -2 to 3') &&
+          document.querySelectorAll('.numberline-tick').length === 6 &&
+          document.getElementById('lesson-heading').textContent === 'JSON line' &&
+          document.getElementById('preview-error').hidden;
+        return {line,chron,invalidSafe,inert,json,
+          scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!learning.line || !learning.chron || !learning.invalidSafe ||
+          !learning.inert || !learning.json || learning.scrollWidth > learning.viewport + 1) {
+        throw new Error(viewport.label + ' Visual Learning integration failed: ' + JSON.stringify(learning));
+      }
+      await devtools.eval(`document.getElementById('sample-number-line').click()`);
+      const learningShot = await devtools.send('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
+      await writeFile('artifacts/screenshots/fark-visual-learning-' + viewport.label + '.png', Buffer.from(learningShot.data,'base64'));
+      console.log(viewport.label + ' passed: real number-line/timeline browser interaction, safe rejection, inert text, JSON bridge');
+      // Concept Map: real declared prerequisite links and answer-key evidence.
+      await devtools.send('Page.navigate', {url:address+'concept-map.html'});
+      await retry(async()=>await devtools.eval(`document.readyState === 'complete' &&
+        document.querySelectorAll('.concept-node').length === 5`));
+      const concept=await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const target=()=>document.querySelector('[data-concept="compare-fractions"]');
+        const status=()=>target().querySelector('.concept-observation').textContent;
+        const initial=$('graph-count').textContent.includes('4 declared links') &&
+          document.querySelectorAll('.layer-arrow').length===3 &&
+          status()==='No answer yet' && $('selected-evidence').textContent.includes('0 observed');
+        $('quiz-choices').querySelector('[data-choice="b"]').click();
+        const incorrect=status()==='Incorrect answer observed' &&
+          $('quiz-feedback').textContent.includes('Incorrect answer observed') &&
+          document.querySelector('[data-concept="unit-fraction"] .concept-observation').textContent==='No answer yet';
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const mixed=status()==='Mixed answers observed' &&
+          $('selected-evidence').textContent.includes('2 observed answer(s)') &&
+          $('mastery-warning').textContent.includes('Mastery: unknown');
+        $('reset-evidence').click();
+        const reset=status()==='No answer yet' &&
+          $('selected-evidence').textContent.includes('0 observed answer(s)');
+        document.querySelector('[data-concept="unit-fraction"]').click();
+        const changedQuestion=$('question-select').value==='q-unit' &&
+          $('selected-prerequisites').textContent.includes('Understand numerator');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const isolated=document.querySelector('[data-concept="unit-fraction"] .concept-observation').textContent==='Correct answer observed' &&
+          document.querySelector('[data-concept="numerator"] .concept-observation').textContent==='No answer yet';
+        return {initial,incorrect,mixed,reset,changedQuestion,isolated,
+          width:document.documentElement.scrollWidth,viewport:innerWidth,
+          safeButtons:[...document.querySelectorAll('.concept-node')].every(el=>el.tagName==='BUTTON')};
+      })()`);
+      if (!concept.initial || !concept.incorrect || !concept.mixed ||
+          !concept.reset || !concept.changedQuestion || !concept.isolated ||
+          !concept.safeButtons || concept.width>concept.viewport+1) {
+        throw new Error(viewport.label+' concept map flow failed: '+JSON.stringify(concept));
+      }
+      await devtools.eval(`document.getElementById('reset-evidence').click()`);
+      const mapShot=await devtools.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+      await writeFile('artifacts/screenshots/fark-concept-map-'+viewport.label+'.png',Buffer.from(mapShot.data,'base64'));
+      console.log(viewport.label+' passed: declared concept links, observed statuses, mixed/reset, no invented prerequisite failure');
+
+      // Author-owned content replaces the initial graph atomically, using the
+      // SAME public Markdown/JSON importer and concept-map model.
+      const authorMap = await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const field=$('content-source');
+        const original=field.value;
+        const load=()=>$('import-content').click();
+        const seeded=original.includes('# FARK Content Pack') &&
+          $('declared-links').children.length===4;
+        load();
+        const markdown=$('graph-count').textContent.includes('3 concepts') &&
+          $('graph-count').textContent.includes('2 declared links') &&
+          $('declared-links').children.length===2 &&
+          $('source-title').textContent==='Original Shape Connections' &&
+          $('import-error').hidden &&
+          $('quiz-choices').children.length===2;
+        $('quiz-choices').querySelector('[data-choice="b"]').click();
+        const wrong=document.querySelector('[data-concept="recognize-shape"]')
+          .querySelector('.concept-observation').textContent==='Incorrect answer observed';
+        field.value=original.replace('## Outcome: compare-shapes','## Outcome: recognize-shape');
+        load();
+        const atomic=wrong &&
+          $('graph-count').textContent.includes('3 concepts') &&
+          document.querySelector('[data-concept="recognize-shape"]')
+          .querySelector('.concept-observation').textContent==='Incorrect answer observed' &&
+          !$('import-error').hidden &&
+          $('import-status').textContent.includes('unchanged');
+        field.value=original.replace('label: Compare two shapes','label: <img src=x onerror=alert(1)>');
+        load();
+        const inert=$('graph-count').textContent.includes('3 concepts') &&
+          document.querySelector('[data-concept="compare-shapes"] .concept-label')
+          .textContent.includes('<img src=x') &&
+          !document.querySelector('.concept-node img') &&
+          document.querySelector('[data-concept="recognize-shape"]')
+          .querySelector('.concept-observation').textContent==='No answer yet';
+        field.value=JSON.stringify({
+          format:'fark-open-content-pack',version:1,
+          attribution:{title:'Custom JSON Course',creator:'Demo editor',license:'MIT'},
+          units:[{id:'u',label:'Original course'}],
+          outcomes:[{id:'first',unitId:'u',label:'First idea'},
+            {id:'second',unitId:'u',label:'Second idea',prerequisiteIds:['first']}],
+          lessons:[],
+          questions:[{id:'q',revision:'1',outcomeIds:['second'],
+            prompt:'Which answer is correct?',correctChoiceId:'a',
+            choices:[{id:'a',text:'Alpha'},{id:'b',text:'Beta'}]}]
+        });
+        load();
+        const json=$('graph-count').textContent.includes('2 concepts') &&
+          $('graph-count').textContent.includes('1 declared links') &&
+          $('source-title').textContent==='Custom JSON Course' &&
+          $('declared-links').textContent.includes('First idea → Second idea') &&
+          $('selected-evidence').textContent.includes('0 observed') &&
+          $('import-error').hidden;
+        $('restore-sample').click();
+        const restored=$('graph-count').textContent.includes('5 concepts') &&
+          $('graph-count').textContent.includes('4 declared links') &&
+          $('source-title').textContent==='Original Fraction Concept Path' &&
+          $('selected-evidence').textContent.includes('0 observed') &&
+          field.value.includes('# FARK Content Pack');
+        return {seeded,markdown,wrong,atomic,inert,json,restored,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!authorMap.seeded || !authorMap.markdown || !authorMap.wrong ||
+          !authorMap.atomic || !authorMap.inert || !authorMap.json ||
+          !authorMap.restored || authorMap.width>authorMap.viewport+1) {
+        throw new Error(viewport.label+' imported Concept Map QA failed: '+JSON.stringify(authorMap));
+      }
+
+      // Verify the browser can read an explicitly selected local Markdown file.
+      await devtools.eval(`(() => {
+        const selector=document.getElementById('content-file');
+        const text=document.getElementById('content-source').value;
+        const transfer=new DataTransfer();
+        transfer.items.add(new File([text], 'original-local.md', {type:'text/markdown'}));
+        selector.files=transfer.files;
+        selector.dispatchEvent(new Event('change',{bubbles:true}));
+      })()`);
+      await retry(async()=>await devtools.eval(`document.getElementById('graph-count').textContent.includes('3 concepts') &&
+        document.getElementById('source-title').textContent==='Original Shape Connections' &&
+        document.getElementById('import-error').hidden`));
+      await devtools.eval(`document.getElementById('restore-sample').click()`);
+      console.log(viewport.label+' passed: author Markdown/JSON, atomic invalid import, inert labels, local .md selection and answer isolation');
+
+      // Selected Concept → explainable pathway with real editorial lesson,
+      // self-reported review, explicit different-question issue and verification.
+      const studyPath = await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        document.querySelector('[data-concept="compare-fractions"]').click();
+        const start=$('path-reason').textContent.includes('No valid answer recorded') &&
+          $('path-prerequisites').textContent.includes('no answer recorded') &&
+          $('path-lesson').hidden;
+        $('quiz-choices').querySelector('[data-choice="b"]').click();
+        const wrong=$('path-reason').textContent.includes('current incorrect answer') &&
+          !$('path-lesson').hidden && $('path-lesson-title').textContent==='Compare one piece' &&
+          $('path-prerequisites').textContent.includes('no answer recorded');
+        $('mark-reviewed').click();
+        const review=!$('issue-check').hidden &&
+          $('path-status').textContent.includes('self-reported');
+        $('issue-check').click();
+        const issued=$('question-select').value==='q-compare-followup' &&
+          $('path-status').textContent.includes('explicitly issued') &&
+          $('quiz-prompt').textContent.includes('2/5 or 2/7');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const verified=$('path-status').textContent.includes('Verified first response') &&
+          $('path-status').textContent.includes('Mastery unknown') &&
+          $('quiz-feedback').textContent.includes('verified') &&
+          document.querySelector('[data-concept="unit-fraction"] .concept-observation')
+          .textContent==='No answer yet';
+        $('reset-evidence').click();
+        const reset=$('selected-evidence').textContent.includes('0 observed') &&
+          $('path-lesson').hidden && $('issue-check').hidden &&
+          !$('path-status').textContent.includes('Verified first response');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const correct=$('path-reason').textContent.includes('most recent current answer') &&
+          $('path-lesson').hidden && $('issue-check').hidden;
+        $('reset-evidence').click();
+        return {start,wrong,review,issued,verified,reset,correct,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!studyPath.start || !studyPath.wrong || !studyPath.review ||
+          !studyPath.issued || !studyPath.verified || !studyPath.reset ||
+          !studyPath.correct || studyPath.width>studyPath.viewport+1) {
+        throw new Error(viewport.label+' Concept Study Path failed: '+JSON.stringify(studyPath));
+      }
+
+      const limitedPath = await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        $('import-content').click(); // Editable 3-concept shape sample.
+        document.querySelector('[data-concept="compare-shapes"]').click();
+        const starts=$('path-reason').textContent.includes('No valid answer recorded');
+        $('quiz-choices').querySelector('[data-choice="a"]').click();
+        const lesson=!$('path-lesson').hidden &&
+          $('path-lesson-title').textContent==='Compare original shapes';
+        $('mark-reviewed').click();
+        const noFollowup=$('path-reason').textContent.includes('no unused different question') &&
+          $('issue-check').hidden && $('selected-evidence').textContent.includes('1 observed');
+        $('restore-sample').click();
+        const clean=$('selected-evidence').textContent.includes('0 observed') &&
+          $('path-lesson').hidden && $('issue-check').hidden;
+        return {starts,lesson,noFollowup,clean,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!limitedPath.starts || !limitedPath.lesson ||
+          !limitedPath.noFollowup || !limitedPath.clean ||
+          limitedPath.width>limitedPath.viewport+1) {
+        throw new Error(viewport.label+' custom-content study path failed: '+JSON.stringify(limitedPath));
+      }
+      console.log(viewport.label+' passed: selected concept → linked lesson → review report → issued distinct question → verified first response; no-followup case honest');
+
+      // Study Desk: single integrated UI for lessons, visuals, answer-key
+      // observations, explainable workflow and original author-supplied packs.
+      await devtools.send('Page.navigate',{url:address+'study-desk.html'});
+      await retry(async()=>await devtools.eval(`document.readyState==='complete' &&
+        document.querySelectorAll('[data-outcome]').length===4 &&
+        document.getElementById('lesson-title').textContent==='Compare the size of one piece'`));
+      const desk=await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const topic=id=>document.querySelector('[data-outcome="'+id+'"]');
+        const choose=id=>$('practice-options').querySelector('[data-choice="'+id+'"]').click();
+        const original=topic('compare-fractions').getAttribute('aria-pressed')==='true' &&
+          $('lesson-visual').querySelectorAll('.fraction-bar').length===2 &&
+          $('practice-question').textContent.includes('Which is larger') &&
+          $('path-status').textContent==='first-question';
+        topic('signed-position').click();
+        const line=$('lesson-visual').querySelectorAll('.tick-list li').length===11 &&
+          $('lesson-title').textContent==='On either side of zero';
+        topic('fictional-order').click();
+        const chronology=$('lesson-visual').querySelectorAll('.timeline-list li').length===3 &&
+          $('visual-note').textContent.includes('Fictional events');
+        topic('compare-fractions').click();
+        choose('b');
+        const incorrect=$('path-status').textContent==='teaching-needed' &&
+          !$('lesson-review-area').hidden &&
+          $('path-reason').textContent.includes('current incorrect answer') &&
+          $('practice-options').children.length===1;
+        $('review-lesson').click();
+        const reviewed=$('path-status').textContent==='ready-to-reassess' &&
+          !$('issue-different').hidden;
+        $('issue-different').click();
+        const issued=$('practice-question').textContent.includes('Which fraction is larger') &&
+          $('practice-options').children.length===2 &&
+          $('path-message').textContent.includes('explicitly issued');
+        choose('a');
+        const verified=$('answer-feedback').textContent.includes('verified') &&
+          $('path-message').textContent.includes('Verified first answer') &&
+          $('path-message').textContent.includes('Durable mastery') &&
+          $('practice-options').children.length===1 &&
+          topic('equal-parts').textContent.includes('No answer yet');
+        $('clear-session').click();
+        const reset=topic('compare-fractions').textContent.includes('No answer yet') &&
+          $('practice-options').children.length===2 &&
+          $('path-status').textContent==='first-question';
+        choose('a');
+        const correct=$('path-status').textContent==='latest-correct' &&
+          $('lesson-review-area').hidden && $('issue-different').hidden;
+        $('clear-session').click();
+        return {original,line,chronology,incorrect,reviewed,issued,verified,reset,correct,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!desk.original||!desk.line||!desk.chronology||!desk.incorrect||
+          !desk.reviewed||!desk.issued||!desk.verified||!desk.reset||
+          !desk.correct||desk.width>desk.viewport+1) {
+        throw new Error(viewport.label+' Study Desk flow failed: '+JSON.stringify(desk));
+      }
+      const authoredDesk=await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const original=$('desk-source').value;
+        const load=()=>$('load-desk-source').click();
+        const choose=id=>$('practice-options').querySelector('[data-choice="'+id+'"]').click();
+        load();
+        const markdown=document.querySelectorAll('[data-outcome]').length===1 &&
+          $('lesson-visual').querySelectorAll('.tick-list li').length===11 &&
+          $('lesson-title').textContent==='Left of zero, right of zero' &&
+          $('source-error').hidden;
+        choose('b');
+        const answered=document.querySelector('[data-outcome]').textContent.includes('incorrect observed') ||
+          document.querySelector('[data-outcome]').textContent.includes('1 incorrect observed');
+        $('desk-source').value=original.replace('visualRange: -5..5','visualRange: not-a-range');
+        load();
+        const atomic=answered && !$('source-error').hidden &&
+          $('source-status').textContent.includes('preserved') &&
+          $('lesson-title').textContent==='Left of zero, right of zero' &&
+          document.querySelector('[data-outcome]').textContent.includes('1 incorrect observed');
+        $('desk-source').value=original.replace('label: Locate integers on a number line',
+          'label: <img src=x onerror=alert(1)>');
+        load();
+        const inert=document.querySelector('[data-outcome] strong').textContent.includes('<img src=x') &&
+          !document.querySelector('.topic-list img') &&
+          document.querySelector('[data-outcome]').textContent.includes('No answer yet') &&
+          $('source-error').hidden;
+        $('restore-desk-demo').click();
+        const restored=document.querySelectorAll('[data-outcome]').length===4 &&
+          $('lesson-title').textContent==='Every piece is equal' &&
+          $('source-status').textContent.includes('Original demo restored') &&
+          $('path-status').textContent==='first-question';
+        return {markdown,answered,atomic,inert,restored,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!authoredDesk.markdown || !authoredDesk.answered ||
+          !authoredDesk.atomic || !authoredDesk.inert || !authoredDesk.restored ||
+          authoredDesk.width>authoredDesk.viewport+1) {
+        throw new Error(viewport.label+' Study Desk authored pack failed: '+JSON.stringify(authoredDesk));
+      }
+      const deskShot=await devtools.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+      await writeFile('artifacts/screenshots/fark-study-desk-'+viewport.label+'.png',Buffer.from(deskShot.data,'base64'));
+      console.log(viewport.label+' passed: integrated Study Desk fraction/numberline/timeline, lesson review, explicit issued question, safe Markdown replacement');
+
+
+
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));

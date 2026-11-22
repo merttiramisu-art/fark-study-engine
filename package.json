@@ -107,6 +107,34 @@
     "./reassessment-ledger": {
       "types": "./types/reassessment-ledger.d.ts",
       "default": "./src/reassessment-ledger.js"
+    },
+    "./content-adapter": {
+      "types": "./types/content-adapter.d.ts",
+      "default": "./src/content-adapter.js"
+    },
+    "./markdown-content": {
+      "types": "./types/markdown-content.d.ts",
+      "default": "./src/markdown-content.js"
+    },
+    "./visual-math": {
+      "types": "./types/visual-math.d.ts",
+      "default": "./src/visual-math.js"
+    },
+    "./visual-learning": {
+      "types": "./types/visual-learning.d.ts",
+      "default": "./src/visual-learning.js"
+    },
+    "./concept-map": {
+      "types": "./types/concept-map.d.ts",
+      "default": "./src/concept-map.js"
+    },
+    "./concept-study-path": {
+      "types": "./types/concept-study-path.d.ts",
+      "default": "./src/concept-study-path.js"
+    },
+    "./study-desk": {
+      "types": "./types/study-desk.d.ts",
+      "default": "./src/study-desk.js"
     }
   },
   "engines": {
@@ -118,7 +146,10 @@
     "demo:planner": "node examples/session-planning.js",
     "demo:web": "node examples/serve-web.js",
     "demo:english": "node examples/english-closed-loop.js",
-    "demo:session": "node examples/learning-session-demo.js"
+    "demo:session": "node examples/learning-session-demo.js",
+    "bench:learning": "node scripts/benchmark-learning.mjs",
+    "demo:content": "node examples/content-pack-demo.js",
+    "demo:markdown": "node examples/markdown-content-demo.js"
   },
   "license": "MIT",
   "keywords": [

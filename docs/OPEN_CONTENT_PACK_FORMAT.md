@@ -1,0 +1,36 @@
+# FARK content-pack adapter v1
+
+An original, zero-dependency, offline conversion from user-authored JSON to the existing FARK Knowledge Core. No other repository's implementation is copied.
+
+## Run
+
+    npm run demo:content
+    node --test test/content-adapter.test.js
+
+Example source: examples/content-packs/original-fractions.json (original MIT-licensed fictional math questions).
+
+## Public API
+
+Import `importOpenContentPack` from `fark-study-engine/content-adapter` and pass a JSON string or a plain structured object. The returned `{ core, materials, attribution, disclaimer }` separates the engine's validated content graph from the display strings.
+
+Top-level pack fields: `format: fark-open-content-pack`, `version: 1`, `attribution`, `units`, `outcomes`, `lessons`, `questions`, and optional `mappings`. Attribution requires a creator, title, license and optionally an HTTPS sourceUrl. Each question needs an answer key and 2–8 choices. Lessons use `bodyText` as plain text, not HTML. Cross-links, duplicates, cycles and a 1 MiB input bound are checked.
+
+The adapter NEVER verifies whether user-supplied rights declarations are true. The author must have reuse rights for all question text, illustrations and media. Return `materials` strings to the UI using `textContent` rather than `innerHTML` to avoid executing foreign markup. Content import does not create learner evidence or mastery estimates.
+
+This is not a native Kolibri, Moodle, H5P, QTI or Anki package importer. Such format-specific converters are separate opt-in work. Keeping the FARK core dependency-free remains nonnegotiable.
+
+## Türkçe
+
+Bağımsız içerik üreticileri kendi özgün ders, kazanım ve soru JSON dosyalarını FARK Bilgi Çekirdeği'ne bağlayabilir. Paketin kaynak ve lisans bilgisi zorunludur ama doğrulanmış sayılmaz. Ders metinleri öğrencinin kayıtlarından ayrı kalır. Herhangi bir ücretli servis ya da zorunlu kütüphane gerektirmez.
+
+## Author lesson packs as Markdown
+
+See [FARK Markdown Content Bridge](MARKDOWN_CONTENT_BRIDGE.md). It is a strict, original authoring subset that converts into this identical validated JSON content pack. No Markdown renderer or executable MDX is part of the importer.
+
+## Optional numeric Visual Math lesson
+
+An author may add `visual` to a lesson: `{"kind":"fraction-comparison","left":{"numerator":1,"denominator":3},"right":{"numerator":1,"denominator":4}}`. This metadata is validated by the bounded Visual Math fraction model and returned in `materials.lessons[].visual`, **not** in the learning evidence ledger. Incorrect types, denominators outside 1–12 and unknown visual kinds/fields are rejected. Omitting it retains previous import behavior. The Markdown counterpart uses `visualLeft: 1/3` and `visualRight: 1/4` before `### Body`.
+
+## Additional original visual kinds
+
+The same optional `lessons[].visual` field now accepts `{"kind":"number-line","min":-5,"max":5,"points":[-3,0,4]}` or `{"kind":"timeline","events":[{"id":"a","year":1860,"label":"Fictional start"},{"id":"b","year":1872,"label":"Fictional change"}]}`. All input is numerically bounded and text-only. Existing fraction-comparison behavior remains unchanged. See [Visual Learning Studio](VISUAL_LEARNING_LAB.md).

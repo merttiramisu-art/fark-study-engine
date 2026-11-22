@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Explore original fraction diagrams with FARK Visual Math, completely offline.">
+  <title>Visual Math Lab — FARK Study Engine</title>
+  <link rel="stylesheet" href="./visual-math.css">
+  <script src="./visual-math.js" type="module"></script>
+</head>
+<body>
+  <a class="skip" href="#math-main">Skip to math explorer</a>
+  <header class="topbar">
+    <a class="brand" href="./"><span class="brand-icon">F.</span><span>FARK <small>STUDY ENGINE</small></span></a>
+    <span class="privacy">OFFLINE · NO TRACKING</span>
+    <a class="back" href="./learning-path.html">Learning Journey</a>
+  </header>
+  <main id="math-main">
+    <div class="intro">
+      <div class="eyebrow">FARK VISUAL MATH · ORIGINAL EXPLORER</div>
+      <h1>See the <em>whole</em> picture.</h1>
+      <p>Change the numerator and denominator to see why two fractions compare the way they do. Both bars represent the same-sized whole. No student answers are recorded.</p>
+      <div class="preset-row" aria-label="Example comparisons">
+        <button id="preset-unit" type="button" class="preset active" aria-pressed="true">1/3 vs 1/4</button>
+        <button id="preset-followup" type="button" class="preset" aria-pressed="false">2/5 vs 2/7</button>
+        <button id="preset-equal" type="button" class="preset" aria-pressed="false">Equivalent fractions</button>
+      </div>
+    </div>
+    <section class="layout" aria-label="Interactive fraction comparison">
+      <div class="workbench">
+        <div class="workbench-heading"><span>01 / EXPLORE</span><span>Each bar = one whole</span></div>
+        <div class="fraction-row" id="visual-left">
+          <div class="fraction-heading"><span>FRACTION A</span><span id="left-math" class="math-label">1/3</span></div>
+          <div id="left-bar" class="fraction-bar" role="img" aria-label="1 of 3 equal parts shaded"></div>
+          <div class="fraction-controls">
+            <label for="left-num">Shaded parts <output id="left-num-out" for="left-num">1</output></label>
+            <input id="left-num" type="range" min="0" max="12" value="1" step="1">
+            <label for="left-den">Equal parts <output id="left-den-out" for="left-den">3</output></label>
+            <input id="left-den" type="range" min="1" max="12" value="3" step="1">
+          </div>
+        </div>
+        <div class="vs" aria-hidden="true">VS</div>
+        <div class="fraction-row second" id="visual-right">
+          <div class="fraction-heading"><span>FRACTION B</span><span id="right-math" class="math-label">1/4</span></div>
+          <div id="right-bar" class="fraction-bar" role="img" aria-label="1 of 4 equal parts shaded"></div>
+          <div class="fraction-controls">
+            <label for="right-num">Shaded parts <output id="right-num-out" for="right-num">1</output></label>
+            <input id="right-num" type="range" min="0" max="12" value="1" step="1">
+            <label for="right-den">Equal parts <output id="right-den-out" for="right-den">4</output></label>
+            <input id="right-den" type="range" min="1" max="12" value="4" step="1">
+          </div>
+        </div>
+      </div>
+      <aside class="insight" aria-labelledby="insight-title">
+        <span class="eyebrow">02 / UNDERSTAND</span>
+        <h2 id="insight-title">Why is it larger?</h2>
+        <p class="comparison" id="visual-result" role="status" aria-live="polite">1/3 &gt; 1/4</p>
+        <p id="visual-explanation" class="explanation">One third is larger than one fourth.</p>
+        <div class="insight-note">
+          <strong>What this shows</strong>
+          <p>Fractions are compared by their actual values. Drawing equal-sized wholes helps visualize the comparison.</p>
+        </div>
+        <div class="honest">
+          <strong>What this does not show</strong>
+          <p>No learner mastery, retention, diagnosis or intervention effect is inferred from moving these sliders.</p>
+        </div>
+        <p id="math-renderer-status" class="renderer-note">Native readable math — no additional library required.</p>
+        <a class="journey-link" href="./learning-path.html">Try this in a learning journey</a>
+      </aside>
+    </section>
+
+    <section class="content-studio" aria-labelledby="content-studio-heading">
+      <div class="studio-copy">
+        <p class="eyebrow">03 / YOUR OWN CONTENT</p>
+        <h2 id="content-studio-heading">Give your lesson a visual.</h2>
+        <p>Edit the original Markdown below, or paste a FARK JSON content pack. The lesson must include an explicit fraction comparison. All content stays in memory; nothing is sent or stored.</p>
+      </div>
+      <div class="authoring-layout">
+        <div class="editor-col">
+          <label for="content-source">Educator-authored lesson (Markdown or JSON)</label>
+          <textarea id="content-source" spellcheck="false" maxlength="1048576" rows="14"># FARK Content Pack
+version: 1
+title: Original visual fraction lesson
+creator: Example educator
+license: MIT
+
+## Unit: fractions
+label: Fractions
+
+## Outcome: compare
+unitId: fractions
+label: Compare fractions
+
+## Lesson: pieces
+revision: 1
+title: Compare the same-sized whole
+outcomeIds: compare
+visualLeft: 2/5
+visualRight: 2/7
+### Body
+Divide the same-sized whole into equal parts. Two fifths occupies a larger area than two sevenths.
+
+## Question: practice
+revision: 1
+outcomeIds: compare
+prompt: Which fraction is larger?
+correctChoiceId: a
+- a | 2/5
+- b | 2/7</textarea>
+          <button id="load-visual-content" type="button" class="load-button">Preview authored lesson</button>
+          <p id="content-error" class="content-error" role="alert" hidden></p>
+          <p id="content-feedback" class="content-feedback" role="status" aria-live="polite">Built-in explorer is active. Your content has not been imported.</p>
+        </div>
+        <article id="authored-preview" class="authored-preview" aria-labelledby="authored-title" hidden>
+          <p class="eyebrow">VALIDATED CONTENT PREVIEW</p>
+          <h3 id="authored-title"></h3>
+          <p id="authored-body" class="authored-body"></p>
+          <p id="authored-source" class="authored-source"></p>
+          <p class="authored-caution">Source and license details are author-declared, not independently verified. This preview never estimates mastery.</p>
+        </article>
+      </div>
+    </section>
+    <p class="footer"><a href="./visual-learning.html">Continue with Number Lines &amp; Chronology in Visual Learning Studio</a></p>
+    <p class="footer">Original math visuals. Runs locally. Optional KaTeX can be supplied by a developer as a separately licensed, local renderer. No CDN, external requests, tracking or storage.</p>
+  </main>
+</body>
+</html>
