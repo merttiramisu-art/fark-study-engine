@@ -15,6 +15,9 @@ import * as memoryMod from '../src/memory.js';
 import * as ledgerMod from '../src/ledger.js';
 import * as diagnosisMod from '../src/diagnosis.js';
 import * as calibrateMod from '../src/calibrate.js';
+import * as metacognitionMod from '../src/metacognition.js';
+import * as coreAdapterMod from '../src/core-adapter.js';
+import * as coursePackMod from '../src/course-pack.js';
 
 const MODULE_CHECKS = [
   ['.', indexMod, 'types/index.d.ts'],
@@ -29,7 +32,10 @@ const MODULE_CHECKS = [
   ['./memory', memoryMod, 'types/memory.d.ts'],
   ['./ledger', ledgerMod, 'types/ledger.d.ts'],
   ['./diagnosis', diagnosisMod, 'types/diagnosis.d.ts'],
-  ['./calibrate', calibrateMod, 'types/calibrate.d.ts']
+  ['./calibrate', calibrateMod, 'types/calibrate.d.ts'],
+  ['./metacognition', metacognitionMod, 'types/metacognition.d.ts'],
+  ['./core-adapter', coreAdapterMod, 'types/core-adapter.d.ts'],
+  ['./course-pack', coursePackMod, 'types/course-pack.d.ts']
 ];
 
 test('every runtime export has a matching TypeScript declaration', async () => {
@@ -66,6 +72,9 @@ test('all added JavaScript source and CLI files pass node --check', () => {
     'src/ledger.js',
     'src/diagnosis.js',
     'src/calibrate.js',
+    'src/metacognition.js',
+    'src/core-adapter.js',
+    'src/course-pack.js',
     'src/cli.js',
     'bin/fark.js'
   ]) {

@@ -25,75 +25,99 @@ import {
   issueReassessment,
   verifyIssuedReassessment
 } from '../../src/reassessment-ledger.js';
+import {
+  analyzeMetacognitiveCalibration,
+  classifyConfidenceOutcome,
+  forecastForgettingHorizon
+} from '../../src/metacognition.js';
+import {
+  SAMPLE_CORE_MARKDOWN,
+  parseCsvToKnowledgeCore,
+  parseMarkdownToKnowledgeCore
+} from '../../src/core-adapter.js';
 import { KNOWLEDGE_CORE_PRESETS, cloneKnowledgeCorePreset, localizedText } from './knowledge-presets.js';
-import { renderConceptMapSvg, renderDsrCurveSvg } from './visual-labs.js';
+import {
+  renderCalibrationDiagramSvg,
+  renderConceptMapSvg,
+  renderDsrCurveSvg,
+  renderForgettingHorizonSvg
+} from './visual-labs.js';
+
+const SAMPLE_CORE_CSV = {
+  en: `unit,outcome,prerequisite,question,choice_a,choice_b,choice_c,correct,misconception,lesson_summary,wrong_intuition,right_principle
+Data Literacy,Mean vs Median,,Which statistic resists extreme outliers better?,Median,Arithmetic mean,Range,a,outlier-sensitivity,Median splits ordered data in half and stays stable when one extreme value appears.,The mean always represents a typical student score.,Use median alongside mean whenever a distribution is skewed.
+Data Literacy,Mean vs Median,,If one value in [2, 3, 4, 5, 6] changes from 6 to 600 which measure stays 4?,Median,Mean,Sum,a,outlier-sensitivity,Median splits ordered data in half and stays stable when one extreme value appears.,The mean always represents a typical student score.,Use median alongside mean whenever a distribution is skewed.`,
+  tr: `unit,outcome,prerequisite,question,choice_a,choice_b,choice_c,correct,misconception,lesson_summary,wrong_intuition,right_principle
+Veri Okuryazarlığı,Ortalama ve Ortanca,,Aşırı uç değerlerden en az etkilenen ölçü hangisidir?,Ortanca (Medyan),Aritmetik ortalama,Aralık (Ranj),a,uc-deger-hassasiyeti,Ortanca sıralı veriyi ikiye böler ve tek bir aşırı değer eklense de dengede kalır.,Ortalama her zaman tipik öğrenci performansını gösterir.,Dağılım çarpıksa ortalamayı mutlaka ortanca ile birlikte incele.
+Veri Okuryazarlığı,Ortalama ve Ortanca,,[2, 3, 4, 5, 6] dizisinde 6 yerine 600 yazılırsa hangi ölçü 4 olarak kalır?,Ortanca (Medyan),Aritmetik ortalama,Toplam,a,uc-deger-hassasiyeti,Ortanca sıralı veriyi ikiye böler ve tek bir aşırı değer eklense de dengede kalır.,Ortalama her zaman tipik öğrenci performansını gösterir.,Dağılım çarpıksa ortalamayı mutlaka ortanca ile birlikte incele.`
+};
 
 const CLOSED_LOOP_STORAGE_KEY = 'fark-study-studio-closed-loop-v1';
 
 const COPY = {
   en: {
-    modeSpaced: 'Spaced Review',
-    modeGuided: 'Guided Closed Loop',
-    deckModeCards: 'Flashcard Deck',
-    deckModeDesigner: 'Lesson Designer',
-    guidedKicker: 'GUIDED CLOSED-LOOP SESSION',
-    guidedHeading: 'Assess, diagnose, teach & verify.',
-    guidedBlurb: 'Answer a baseline question, inspect prerequisite or misconception signals, complete a focused micro-lesson, and answer a fresh issued question.',
-    labelCorePreset: 'Learning module',
-    labelOutcomeSelect: 'Target outcome',
-    stepLabels: ['1. Baseline', '2. Micro-Lesson', '3. Reassessment', '4. Observed Comparison'],
+    modeSpaced: 'Flashcard Review',
+    modeGuided: 'Mistake → Lesson → Check',
+    deckModeCards: 'My Flashcards',
+    deckModeDesigner: 'Lesson Builder',
+    guidedKicker: 'GUIDED MASTERY LOOP',
+    guidedHeading: 'Spot the mistake, fix it in 1 minute, check again.',
+    guidedBlurb: 'Answer a quick question, see why a wrong choice happened, read a short targeted lesson, and verify your understanding on a brand-new question.',
+    labelCorePreset: 'Subject module',
+    labelOutcomeSelect: 'Topic to practice',
+    stepLabels: ['1. Quick Check', '2. Short Lesson', '3. Fresh Question', '4. Before vs. After'],
     submitAnswer: 'Check answer ↗',
     chooseOptionNotice: 'Select an option before submitting.',
     correctBaselineTitle: 'Observed correct on baseline.',
-    correctBaselineDesc: 'You answered this baseline item accurately. Remember: one correct item is an observation, not proof of durable mastery. Pick another outcome or move on.',
-    nextOutcomeBtn: 'Next outcome →',
-    wrongBaselineTitle: 'Missed baseline — targeted lesson ready.',
+    correctBaselineDesc: 'You answered this baseline item accurately. Remember: one correct item is an observation, not proof of durable mastery. Pick another topic or move on.',
+    nextOutcomeBtn: 'Next topic →',
+    wrongBaselineTitle: 'Mistake spotted — 1-minute lesson ready.',
     misconceptionDetected: id => `Observed distractor tag: ${id}`,
-    prereqHint: list => `Prerequisite outcomes with observed difficulty: ${list}`,
+    prereqHint: list => `Prerequisite topics with observed difficulty: ${list}`,
     wrongIntuitionLabel: 'Common misconception',
     rightPrincipleLabel: 'Core principle',
     exampleLabel: 'Worked example',
-    completeLessonBtn: 'I reviewed this micro-lesson → Issue fresh check',
-    reassessKicker: 'ISSUED FOLLOW-UP CHECK (DISTINCT QUESTION)',
-    reassessHint: 'This question was explicitly issued after your lesson completion with a pinned revision and timestamp.',
-    submitReassessBtn: 'Verify issued answer ✓',
+    completeLessonBtn: 'I read the lesson → Try a fresh question',
+    reassessKicker: 'FRESH VERIFICATION QUESTION',
+    reassessHint: 'This new question was issued after your lesson so you can check whether the idea actually stuck.',
+    submitReassessBtn: 'Check my new answer ✓',
     comparisonVerified: 'Verified issued follow-up',
     comparisonCorrect: 'Correct on distinct follow-up question',
     comparisonIncorrect: 'Still missed on distinct follow-up question',
-    comparisonDisclaimer: 'Honest limit: Two answers cannot prove durable mastery or causal teaching impact. Use Spaced Review to consolidate over days.',
-    restartOutcomeBtn: 'Practice another outcome ↻',
-    saveCheckpointBtn: 'Save Session Checkpoint (JSON) ↗',
-    resumeCheckpointBtn: 'Resume Checkpoint ↑',
+    comparisonDisclaimer: 'Honest limit: Two answers cannot prove durable mastery or causal teaching impact. Use Flashcard Review to consolidate over days.',
+    restartOutcomeBtn: 'Practice another topic ↻',
+    saveCheckpointBtn: 'Save Progress File (JSON) ↗',
+    resumeCheckpointBtn: 'Load Progress File ↑',
     checkpointSaved: 'Portable learning-session checkpoint exported (fark-learning-session v1).',
     checkpointResumed: status => `Session checkpoint verified and resumed safely (status: ${status}).`,
     checkpointError: msg => `Checkpoint rejected: ${msg}`,
-    noUnansweredBaseline: 'All baseline questions for this outcome have been answered. Switch to another outcome or reset this module.',
+    noUnansweredBaseline: 'All baseline questions for this topic have been answered. Switch to another topic or reset this module.',
     resetModuleBtn: 'Reset module history ↻',
     resetModuleNotice: 'Closed-loop module history reset in memory.',
-    mapKicker: 'INTERACTIVE CONCEPT & PREREQUISITE MAP',
-    mapHeading: 'Knowledge graph & forgetting curve.',
-    mapBlurb: 'Click any outcome node to inspect its prerequisite chain, observed assessment evidence, and live DSR memory decay R(t) = (1 + t/(9S))^-1.',
-    inspectorSelectHint: 'Select an outcome on the map.',
-    inspectorPrereqs: 'Prerequisites',
-    inspectorNone: 'None (foundational outcome)',
+    mapKicker: 'CONCEPT MAP & MEMORY CURVE',
+    mapHeading: 'How topics connect & when you will forget.',
+    mapBlurb: 'Click any topic on the map to see what it depends on, your past attempts, and how fast recall fades over days.',
+    inspectorSelectHint: 'Select a topic on the map.',
+    inspectorPrereqs: 'Depends on',
+    inspectorNone: 'None (foundational topic)',
     inspectorEvidence: 'Observed evidence',
-    inspectorReadiness: 'Editorial readiness',
-    inspectorReady: 'Ready for closed loop',
-    inspectorBlocked: 'Missing content inventory',
-    inspectorPracticeBtn: 'Practice in Guided Loop →',
-    inspectorDesignBtn: 'Edit in Lesson Designer',
-    dsrCurveTitle: 'Live DSR forgetting curve',
+    inspectorReadiness: 'Lesson readiness',
+    inspectorReady: 'Ready for Mistake → Lesson → Check',
+    inspectorBlocked: 'Missing questions or lesson',
+    inspectorPracticeBtn: 'Practice this topic →',
+    inspectorDesignBtn: 'Edit in Lesson Builder',
+    dsrCurveTitle: 'Memory fade forecast',
     dsrDayLabel: d => `Forecast day: +${d}d`,
     dsrReadout: (r, s) => `Predicted recall R(t): ${Math.round(r * 100)}% · Stability S = ${s.toFixed(1)}d`,
-    designerKicker: 'LESSON & CURRICULUM DESIGNER',
-    designerHeading: 'Build verified closed-loop modules.',
-    designerBlurb: 'Author units, cycle-checked prerequisite outcomes, misconception-tagged questions, and targeted micro-lessons. Content Readiness checks every outcome live.',
-    designerPresetLabel: 'Active curriculum core',
-    designerBlankBtn: 'New blank core +',
-    designerTryBtn: 'Test in Guided Loop →',
-    designerExportBtn: 'Export Core JSON ↗',
-    designerImportBtn: 'Import Core JSON ↑',
-    readinessTitle: 'Live content readiness audit',
+    designerKicker: 'INTERACTIVE LESSON BUILDER',
+    designerHeading: 'Turn your notes into an interactive lesson.',
+    designerBlurb: 'Paste Markdown/CSV notes or add topics, misconception-tagged questions, and short lessons. Readiness checks every topic live.',
+    designerPresetLabel: 'Active lesson module',
+    designerBlankBtn: 'Start blank lesson +',
+    designerTryBtn: 'Try as Student →',
+    designerExportBtn: 'Export Lesson JSON ↗',
+    designerImportBtn: 'Import Lesson JSON ↑',
+    readinessTitle: 'Live lesson readiness check',
     readinessSummary: (ready, total) => `${ready} / ${total} outcomes ready for full closed loop`,
     problemLabels: {
       'no-assessment-questions': 'No assessment questions',
@@ -133,71 +157,116 @@ const COPY = {
     noticeCoreExported: 'Knowledge Core exported as fark-knowledge-core v1 JSON.',
     noticeCoreImported: count => `Imported validated Knowledge Core (${count} outcomes).`,
     noticeCoreError: msg => `Knowledge Core validation error: ${msg}`,
-    noticeBlankCreated: 'Created a fresh blank Knowledge Core ready for authoring.'
+    noticeBlankCreated: 'Created a fresh blank Knowledge Core ready for authoring.',
+    confidencePrompt: 'How confident are you before checking?',
+    confLow: 'Guess (30%)',
+    confMedium: 'Unsure (65%)',
+    confHigh: 'Sure (90%)',
+    hypercorrectionNotice: 'Hypercorrection signal: You felt highly confident on this missed item. Research shows correcting high-confidence misconceptions with a clear principle yields stronger retention than passive review.',
+    luckyGuessNotice: 'Fragile hit (low confidence): You selected the right option while guessing. Schedule spaced review rather than treating this as durable mastery.',
+    metacogKicker: 'CONFIDENCE CHECK',
+    metacogHeading: 'Are your "Sure" answers really right?',
+    metacogBlurb: 'Compares how confident you felt against what you actually got right. High-confidence mistakes highlight stubborn misconceptions; lucky guesses flag fragile facts.',
+    metacogEmpty: 'Answer at least one Mistake → Lesson → Check question with a confidence pick to see your chart.',
+    metacogSummary: (n, acc, ece, bias) => `${n} observations · Accuracy ${Math.round(acc * 100)}% · ECE ${(ece * 100).toFixed(1)}% · Signal: ${bias}`,
+    biasLabels: {
+      'insufficient-data': 'Collecting baseline (<3 items)',
+      overconfident: 'Overconfident (feels sure, misses more)',
+      underconfident: 'Underconfident (knows more than felt)',
+      'well-calibrated': 'Well-calibrated'
+    },
+    metacogHyperAlert: count => `▲ ${count} high-confidence error(s) detected (Hypercorrection priority).`,
+    metacogLuckyAlert: count => `◐ ${count} low-confidence correct answer(s) flagged as fragile guesses.`,
+    horizonKicker: '14-DAY MEMORY PLAN',
+    horizonHeading: 'What you are likely to forget in 14 days',
+    horizonBlurb: 'Shows how many topics drop below 90% recall over the next 2 weeks—and how studying the most urgent ones today flattens next week\'s load.',
+    horizonSliderLabel: n => `What-if study today: ${n} urgent outcome${n === 1 ? '' : 's'}`,
+    horizonSummary: (peak, peakDay, avoided7, riskDaysSaved, simN) =>
+      `Peak decay: ${peak} outcome(s) below 90% by +${peakDay}d` +
+      (simN > 0 ? ` · Studying ${simN} today shields ${avoided7} at Day +7 (${riskDaysSaved} risk-days saved over 14d).` : ' · Move slider to simulate today\'s study impact.'),
+    adapterKicker: 'PASTE NOTES TO LESSON',
+    adapterHeading: 'Convert Markdown or CSV notes',
+    adapterBlurb: 'Paste structured Markdown (# Unit, ## Outcome, Lesson:, Q:, * correct, - distractor) or CSV rows to build an interactive lesson instantly.',
+    adapterFormatLabel: 'Source format',
+    adapterOptMd: 'Markdown Curriculum',
+    adapterOptCsv: 'CSV Table',
+    adapterSampleBtn: 'Load sample template',
+    adapterConvertBtn: 'Convert & Load ↗',
+    adapterPlaceholder: '# Unit: Web Security\n## Outcome: Input Validation\nLesson: Always validate inputs at trust boundaries.\nQ: Why is client-only validation unsafe?\n* Attackers can bypass browser checks\n- Browsers block form tags [misconception: client-trust]',
+    miscPlaceholder: 'e.g. since-vs-for',
+    designerManualSummary: 'Manual unit, outcome, question & lesson editor',
+    designerReadinessKicker: 'CONTENT READINESS AUDIT',
+    readinessCount: (q, r) => `${q} Q · ${r} R`,
+    intelSubMap: 'Concept Map & Memory',
+    intelSubHorizon: 'Confidence & 14-Day Plan',
+    intelSubLedger: 'Mistake Log & Impact',
+    adapterSampleLoaded: fmt => `Loaded original ${fmt.toUpperCase()} sample template. Click "Convert & Load" to audit and import.`,
+    adapterConverted: (s, warns) => `Loaded ${s.units} unit(s), ${s.outcomes} outcome(s), ${s.questions} question(s), ${s.resources} micro-lesson(s) · ${s.readyOutcomes}/${s.outcomes} ready` + (warns ? ` (${warns} warning(s))` : '.'),
+    adapterEmptyInput: 'Paste Markdown or CSV text (or click "Load sample template") first.'
   },
   tr: {
-    modeSpaced: 'Aralıklı Tekrar',
-    modeGuided: 'Rehberli Kapalı Döngü',
-    deckModeCards: 'Kart Destesi',
-    deckModeDesigner: 'Ders Tasarımcısı',
-    guidedKicker: 'REHBERLİ KAPALI DÖNGÜ OTURUMU',
-    guidedHeading: 'Ölç, tanıla, öğret ve yeniden doğrula.',
-    guidedBlurb: 'Ön değerlendirme sorusunu çöz; kavram yanılgısı veya ön koşul sinyallerini gör; hedefe yönelik mikro-dersi tamamla ve sistemin ürettiği yeni soruyu yanıtla.',
-    labelCorePreset: 'Öğrenme modülü',
-    labelOutcomeSelect: 'Hedef kazanım',
-    stepLabels: ['1. Ön Ölçme', '2. Mikro-Ders', '3. Yeniden Ölçme', '4. Gözlemlenen Karşılaştırma'],
+    modeSpaced: 'Kart Tekrarı',
+    modeGuided: 'Hata Analizli Çalışma',
+    deckModeCards: 'Soru Kartlarım',
+    deckModeDesigner: 'Kendi Dersini Hazırla',
+    guidedKicker: 'HATA ANALİZLİ ÇALIŞMA',
+    guidedHeading: 'Yanıldığını yakala, 1 dk dersle düzelt, yeni soruyla doğrula.',
+    guidedBlurb: 'Hızlı bir soruyu çöz; yanlış yaparsan neden yanıldığını ve kısa dersini gör, ardından farklı bir soruyla konunun oturduğunu doğrula.',
+    labelCorePreset: 'Konu modülü',
+    labelOutcomeSelect: 'Çalışılacak konu',
+    stepLabels: ['1. Hızlı Soru', '2. Kısa Ders', '3. Yeni Soruyla Kontrol', '4. Önce vs Sonra'],
     submitAnswer: 'Yanıtı kontrol et ↗',
     chooseOptionNotice: 'Göndermeden önce bir seçenek işaretle.',
-    correctBaselineTitle: 'Ön değerlendirmede doğru yanıt gözlemlendi.',
-    correctBaselineDesc: 'Bu soruyu doğru yanıtladın. Unutma: tek bir doğru yanıt yalnızca bir gözlemdir, kalıcı ustalık kanıtı değildir. Başka bir kazanıma geçebilirsin.',
-    nextOutcomeBtn: 'Sonraki kazanım →',
-    wrongBaselineTitle: 'Ön ölçmede hata — hedefe yönelik mikro-ders hazır.',
-    misconceptionDetected: id => `Gözlemlenen çeldirici etiketi: ${id}`,
-    prereqHint: list => `Zorlanılan ön koşul kazanımları: ${list}`,
+    correctBaselineTitle: 'İlk soruda doğru yanıt gözlemlendi.',
+    correctBaselineDesc: 'Bu soruyu doğru yanıtladın. Unutma: tek bir doğru yanıt yalnızca bir gözlemdir, kalıcı ustalık kanıtı değildir. Başka bir konuya geçebilirsin.',
+    nextOutcomeBtn: 'Sonraki konu →',
+    wrongBaselineTitle: 'Hata yakalandı — 1 dakikalık kısa ders hazır.',
+    misconceptionDetected: id => `Gözlemlenen kavram yanılgısı: ${id}`,
+    prereqHint: list => `Zorlanılan ön koşul konuları: ${list}`,
     wrongIntuitionLabel: 'Yaygın kavram yanılgısı',
     rightPrincipleLabel: 'Doğru temel ilke',
     exampleLabel: 'Çözümlü örnek',
-    completeLessonBtn: 'Mikro-dersi tamamladım → Yeni soru çıkar',
-    reassessKicker: 'DENETİMLİ YENİDEN ÖLÇME (FARKLI SORU)',
-    reassessHint: 'Bu soru, öğretim tamamlama olayından sonra sürüm ve zaman damgasıyla özel olarak çıkarıldı.',
-    submitReassessBtn: 'Yeniden ölçme yanıtını doğrula ✓',
-    comparisonVerified: 'Doğrulanan yeniden ölçme',
+    completeLessonBtn: 'Kısa dersi okudum → Yeni soruyla kontrol et',
+    reassessKicker: 'YENİ KONTROL SORUSU (FARKLI SORU)',
+    reassessHint: 'Bu yeni soru, kısa dersten sonra konunun gerçekten oturup oturmadığını ölçmek için üretildi.',
+    submitReassessBtn: 'Yeni yanıtı kontrol et ✓',
+    comparisonVerified: 'Doğrulanan takip kontrolü',
     comparisonCorrect: 'Farklı takip sorusunda doğru yanıt',
     comparisonIncorrect: 'Farklı takip sorusunda hâlâ hata var',
-    comparisonDisclaimer: 'Dürüst sınır: İki yanıt kalıcı ustalığı veya öğretimin nedensel etkisini tek başına kanıtlamaz. Pekiştirmek için Aralıklı Tekrar kullan.',
-    restartOutcomeBtn: 'Başka kazanım çalış ↻',
-    saveCheckpointBtn: 'Oturum Kaydı İndir (JSON) ↗',
-    resumeCheckpointBtn: 'Oturum Yükle ↑',
+    comparisonDisclaimer: 'Dürüst sınır: İki yanıt kalıcı ustalığı tek başına kanıtlamaz. Konuyu pekiştirmek için Kart Tekrarı ile günlere yay.',
+    restartOutcomeBtn: 'Başka konu çalış ↻',
+    saveCheckpointBtn: 'İlerleme Dosyası İndir (JSON) ↗',
+    resumeCheckpointBtn: 'İlerleme Dosyası Yükle ↑',
     checkpointSaved: 'Taşınabilir oturum kaydı indirildi (fark-learning-session v1).',
     checkpointResumed: status => `Oturum kaydı çakışma kontrolünden geçerek yüklendi (durum: ${status}).`,
     checkpointError: msg => `Oturum kaydı reddedildi: ${msg}`,
-    noUnansweredBaseline: 'Bu kazanımdaki tüm ön değerlendirme soruları çözüldü. Başka bir kazanım seçebilir veya modül geçmişini sıfırlayabilirsin.',
+    noUnansweredBaseline: 'Bu konudaki tüm başlangıç soruları çözüldü. Başka bir konu seçebilir veya modül geçmişini sıfırlayabilirsin.',
     resetModuleBtn: 'Modül geçmişini sıfırla ↻',
-    resetModuleNotice: 'Kapalı döngü modül geçmişi sıfırlandı.',
-    mapKicker: 'ETKİLEŞİMLİ KAVRAM VE ÖN KOŞUL HARİTASI',
-    mapHeading: 'Bilgi grafiği ve unutma eğrisi.',
-    mapBlurb: 'Herhangi bir kazanım düğümüne tıklayarak ön koşul zincirini, gözlemlenen kanıtları ve canlı DSR unutma eğrisini R(t) = (1 + t/(9S))^-1 incele.',
-    inspectorSelectHint: 'Haritadan bir kazanım seç.',
+    resetModuleNotice: 'Modül çalışma geçmişi sıfırlandı.',
+    mapKicker: 'KONU HARİTASI VE UNUTMA EĞRİSİ',
+    mapHeading: 'Hangi konu hangisine bağlı? Ne zaman unutursun?',
+    mapBlurb: 'Haritadaki herhangi bir konuya tıkla; hangi ön koşula dayandığını, geçmiş denemelerini ve günlere göre unutma hızını gör.',
+    inspectorSelectHint: 'Haritadan bir konu seç.',
     inspectorPrereqs: 'Ön koşullar',
-    inspectorNone: 'Yok (temel kazanım)',
+    inspectorNone: 'Yok (temel konu)',
     inspectorEvidence: 'Gözlemlenen kanıt',
-    inspectorReadiness: 'İçerik hazırlık durumu',
-    inspectorReady: 'Kapalı döngüye hazır',
-    inspectorBlocked: 'Eksik içerik envanteri',
-    inspectorPracticeBtn: 'Kapalı Döngüde Çalış →',
-    inspectorDesignBtn: 'Ders Tasarımcısında Düzenle',
-    dsrCurveTitle: 'Canlı DSR unutma eğrisi',
+    inspectorReadiness: 'Ders hazırlık durumu',
+    inspectorReady: 'Hata analizli çalışmaya hazır',
+    inspectorBlocked: 'Eksik soru veya ders var',
+    inspectorPracticeBtn: 'Bu Konuyu Çalış →',
+    inspectorDesignBtn: 'Dersi Düzenle',
+    dsrCurveTitle: 'Unutma hızı tahmini',
     dsrDayLabel: d => `Tahmin günü: +${d}g`,
     dsrReadout: (r, s) => `Tahmini hatırlama R(t): %${Math.round(r * 100)} · Kararlılık S = ${s.toFixed(1)}g`,
-    designerKicker: 'DERS VE MÜFREDAT TASARIMCISI',
-    designerHeading: 'Doğrulanmış kapalı döngü dersleri oluştur.',
-    designerBlurb: 'Üniteler, döngü korumalı ön koşul kazanımları, kavram yanılgısı etiketli sorular ve hedefe yönelik mikro-dersler oluştur. İçerik Hazırlık Denetimi anlık çalışır.',
-    designerPresetLabel: 'Aktif müfredat çekirdeği',
-    designerBlankBtn: 'Boş çekirdek oluştur +',
-    designerTryBtn: 'Öğrenci Modunda Dene →',
-    designerExportBtn: 'Çekirdeği İndir (JSON) ↗',
-    designerImportBtn: 'Çekirdek Yükle (JSON) ↑',
-    readinessTitle: 'Canlı içerik hazırlık denetimi',
+    designerKicker: 'ETKİLEŞİMLİ DERS HAZIRLAMA',
+    designerHeading: 'Kendi notlarını etkileşimli derse çevir.',
+    designerBlurb: 'Markdown/CSV notlarını yapıştır veya konu, kavram yanılgılı soru ve kısa ders ekle. Hazırlık kontrolü eksikleri anlık gösterir.',
+    designerPresetLabel: 'Aktif ders modülü',
+    designerBlankBtn: 'Boş ders oluştur +',
+    designerTryBtn: 'Öğrenci Gibi Dene →',
+    designerExportBtn: 'Dersi İndir (JSON) ↗',
+    designerImportBtn: 'Ders Yükle (JSON) ↑',
+    readinessTitle: 'Canlı ders hazırlık kontrolü',
     readinessSummary: (ready, total) => `${ready} / ${total} kazanım tam kapalı döngü için hazır`,
     problemLabels: {
       'no-assessment-questions': 'Değerlendirme sorusu yok',
@@ -237,7 +306,52 @@ const COPY = {
     noticeCoreExported: 'Öğrenme Çekirdeği fark-knowledge-core v1 JSON olarak indirildi.',
     noticeCoreImported: count => `Doğrulanmış Öğrenme Çekirdeği yüklendi (${count} kazanım).`,
     noticeCoreError: msg => `Öğrenme Çekirdeği doğrulama hatası: ${msg}`,
-    noticeBlankCreated: 'Yeni boş Öğrenme Çekirdeği oluşturuldu.'
+    noticeBlankCreated: 'Yeni boş Öğrenme Çekirdeği oluşturuldu.',
+    confidencePrompt: 'Kontrol etmeden önce yanıtından ne kadar eminsin?',
+    confLow: 'Tahmin (%30)',
+    confMedium: 'Kararsızım (%65)',
+    confHigh: 'Eminim (%90)',
+    hypercorrectionNotice: 'Aşırı güven düzeltme sinyali (Hypercorrection): Bu soruda emin olarak hata yaptın. Öğrenme bilimleri, yüksek güvenle yapılan yanılgıların doğru ilkeyle düzeltildiğinde çok daha kalıcı iz bıraktığını gösterir.',
+    luckyGuessNotice: 'Kırılgan doğru (düşük güven): Tahmin ederek doğru seçeneği buldun. Bunu kalıcı ustalık saymak yerine aralıklı tekrarla pekiştir.',
+    metacogKicker: 'KENDİNE GÜVEN KONTROLÜ',
+    metacogHeading: '"Eminim" dediklerin gerçekten doğru mu?',
+    metacogBlurb: 'Soruları çözerken hissettiğin güven ile gerçek doğruluk oranını karşılaştırır. Emin olup yanıldığın yerleri ve şans eseri doğru tahminleri ayrı gösterir.',
+    metacogEmpty: 'Grafiği görmek için Hata Analizli Çalışma sekmesinde güven seçerek en az bir soru yanıtla.',
+    metacogSummary: (n, acc, ece, bias) => `${n} gözlem · Doğruluk %${Math.round(acc * 100)} · Kalibrasyon hatası (ECE) %${(ece * 100).toFixed(1)} · Sinyal: ${bias}`,
+    biasLabels: {
+      'insufficient-data': 'Örneklem toplanıyor (<3 gözlem)',
+      overconfident: 'Aşırı güvenli (bildiğini sandığından daha çok hata)',
+      underconfident: 'Çekingen (hissettiğinden daha iyi biliyor)',
+      'well-calibrated': 'Dengeli kalibrasyon'
+    },
+    metacogHyperAlert: count => `▲ ${count} adet yüksek güvenle yapılmış hata (öncelikli yanılgı düzeltme).`,
+    metacogLuckyAlert: count => `◐ ${count} adet düşük güvenle doğru yanıt (kırılgan tahmin).`,
+    horizonKicker: '14 GÜNLÜK UNUTMA PLANI',
+    horizonHeading: 'Önümüzdeki 14 günde hangi konuları unutabilirsin?',
+    horizonBlurb: 'Gelecek 2 haftada kaç konunun %90 hatırlama eşiğinin altına düşeceğini ve bugün en acil konuları çalışmanın haftalık yükünü nasıl rahatlattığını gösterir.',
+    horizonSliderLabel: n => `Bugün çalışsam simülasyonu: ${n} acil konu`,
+    horizonSummary: (peak, peakDay, avoided7, riskDaysSaved, simN) =>
+      `Tepe risk: +${peakDay}. günde ${peak} konu %90 altında` +
+      (simN > 0 ? ` · Bugün ${simN} çalışma 7. günde ${avoided7} konuyu korur (14 günde ${riskDaysSaved} risk-günü azalır).` : ' · Bugünkü çalışmanın etkisini görmek için sürgüyü kaydır.'),
+    adapterKicker: 'NOTLARDAN DERS ÜRET',
+    adapterHeading: 'Markdown veya CSV notlarını derse çevir',
+    adapterBlurb: 'Yapılandırılmış Markdown (# Ünite, ## Kazanım, Ders:, S:, * doğru, - çeldirici) veya CSV satırlarını yapıştırıp anında etkileşimli ders üret.',
+    adapterFormatLabel: 'Kaynak biçimi',
+    adapterOptMd: 'Markdown Müfredatı',
+    adapterOptCsv: 'CSV Tablosu',
+    adapterSampleBtn: 'Örnek şablonu yükle',
+    adapterConvertBtn: 'Dönüştür ve Yükle ↗',
+    adapterPlaceholder: '# Ünite: Veri Okuryazarlığı\n## Kazanım: Ortalama ve Ortanca\nDers: Aşırı uç değerlerde ortanca daha kararlıdır.\nS: Uç değerlerden en az etkilenen ölçü hangisidir?\n* Ortanca (Medyan)\n- Aritmetik ortalama [misconception: uc-deger]',
+    miscPlaceholder: 'örn. zaman-karisikligi',
+    designerManualSummary: 'Manuel ünite, kazanım, soru ve mikro-ders ekle',
+    designerReadinessKicker: 'DERS HAZIRLIK KONTROLÜ',
+    readinessCount: (q, r) => `${q} Soru · ${r} Ders`,
+    intelSubMap: 'Konu Haritam & Unutma',
+    intelSubHorizon: 'Kendine Güven & 14 Günlük Plan',
+    intelSubLedger: 'Hata Geçmişi & Etki',
+    adapterSampleLoaded: fmt => `Özgün ${fmt.toUpperCase()} şablonu yüklendi. Denetlemek için "Dönüştür ve Yükle" düğmesine tıkla.`,
+    adapterConverted: (s, warns) => `${s.units} ünite, ${s.outcomes} kazanım, ${s.questions} soru, ${s.resources} mikro-ders yüklendi · ${s.readyOutcomes}/${s.outcomes} hazır` + (warns ? ` (${warns} uyarı)` : '.'),
+    adapterEmptyInput: 'Önce Markdown veya CSV metni yapıştır (veya "Örnek şablonu yükle"ye tıkla).'
   }
 };
 
@@ -256,7 +370,10 @@ export function initClosedLoopStudio(host) {
 
   let studySubMode = 'spaced'; // 'spaced' | 'guided'
   let deckSubMode = 'cards'; // 'cards' | 'designer'
+  let intelSubMode = 'map'; // 'map' | 'horizon' | 'ledger'
   let activePresetId = 'english-grammar';
+  let customCourseLabel = '';
+  const courseHistories = new Map();
   let core = cloneKnowledgeCorePreset(activePresetId);
   let assessments = createAssessmentHistory();
   let teaching = createTeachingHistory();
@@ -268,10 +385,53 @@ export function initClosedLoopStudio(host) {
   let activeIssueId = null;
   let lastVerifiedResult = null;
   let lastBaselineCorrectAttempt = null;
+  let confidenceLog = [];
+  let lastConfidenceByAttemptId = new Map();
   let dsrForecastDay = 4;
   let dsrInspectStability = 4.0;
+  let horizonSimulateToday = 2;
   let eventClockMs = Date.now();
   let seqCounter = 1;
+
+  function saveCurrentCourseHistory() {
+    if (!activePresetId) return;
+    courseHistories.set(activePresetId, {
+      assessments,
+      teaching,
+      reassessmentLedger,
+      selectedOutcomeId,
+      mapSelectedOutcomeId,
+      activeBaselineAttemptId,
+      activeIssueId,
+      lastVerifiedResult,
+      lastBaselineCorrectAttempt,
+      confidenceLog,
+      lastConfidenceByAttemptId
+    });
+  }
+
+  function computeCompletedOutcomeCount(targetCore, targetAssessments, targetLedger) {
+    if (!targetCore || !Array.isArray(targetCore.outcomes)) return { totalOutcomes: 0, completedOutcomes: 0, observedOutcomes: 0 };
+    const verified = new Set();
+    for (const issue of targetLedger?.issues ?? []) {
+      const followup = (targetAssessments?.attempts ?? []).find(
+        a => a.questionId === issue.questionId && Date.parse(a.at) > Date.parse(issue.issuedAt)
+      );
+      if (followup && followup.correct) verified.add(issue.outcomeId);
+    }
+    const observed = new Set();
+    for (const attempt of targetAssessments?.attempts ?? []) {
+      for (const oid of attempt.outcomeIds ?? []) {
+        observed.add(oid);
+        if (attempt.correct) verified.add(oid);
+      }
+    }
+    return {
+      totalOutcomes: targetCore.outcomes.length,
+      completedOutcomes: verified.size,
+      observedOutcomes: observed.size
+    };
+  }
 
   function nextIso() {
     const now = Date.now();
@@ -295,7 +455,8 @@ export function initClosedLoopStudio(host) {
           core,
           assessments,
           teaching,
-          reassessmentLedger
+          reassessmentLedger,
+          confidenceLog
         })
       );
     } catch {}
@@ -319,6 +480,7 @@ export function initClosedLoopStudio(host) {
       assessments = saved.assessments?.format === 'fark-assessment-history' ? saved.assessments : createAssessmentHistory();
       teaching = saved.teaching?.format === 'fark-teaching-history' ? saved.teaching : createTeachingHistory();
       reassessmentLedger = saved.reassessmentLedger?.format === 'fark-reassessment-ledger' ? saved.reassessmentLedger : createReassessmentLedger();
+      confidenceLog = Array.isArray(saved.confidenceLog) ? saved.confidenceLog : [];
       selectedOutcomeId = core.outcomes[0]?.id ?? '';
       mapSelectedOutcomeId = selectedOutcomeId;
     } catch {
@@ -375,6 +537,23 @@ export function initClosedLoopStudio(host) {
     if (isDesigner) renderDesigner();
   }
 
+  function setIntelSubMode(mode) {
+    intelSubMode = mode;
+    const views = [
+      ['map', 'intel-submode-map', 'intel-view-map'],
+      ['horizon', 'intel-submode-horizon', 'intel-view-horizon'],
+      ['ledger', 'intel-submode-ledger', 'intel-view-ledger']
+    ];
+    for (const [key, btnId, viewId] of views) {
+      const active = key === intelSubMode;
+      const viewEl = $(viewId);
+      if (viewEl) viewEl.hidden = !active;
+      $(btnId)?.classList.toggle('active', active);
+      $(btnId)?.setAttribute('aria-pressed', String(active));
+    }
+    if (intelSubMode === 'map' || intelSubMode === 'horizon') renderMapAndCurve();
+  }
+
   function populateSelectOptions(selectEl, items, currentVal) {
     if (!selectEl) return;
     selectEl.replaceChildren();
@@ -393,8 +572,11 @@ export function initClosedLoopStudio(host) {
       value: p.id,
       label: localizedText(p.title, lang)
     }));
-    if (activePresetId === 'custom') {
-      presetItems.push({ value: 'custom', label: lang === 'tr' ? 'Özel Müfredat Çekirdeği' : 'Custom Knowledge Core' });
+    if (!KNOWLEDGE_CORE_PRESETS[activePresetId]) {
+      presetItems.push({
+        value: activePresetId,
+        label: customCourseLabel || (lang === 'tr' ? 'Özel Müfredat Çekirdeği' : 'Custom Knowledge Core')
+      });
     }
     populateSelectOptions($('guided-preset-select'), presetItems, activePresetId);
     populateSelectOptions($('designer-preset-select'), presetItems, activePresetId);
@@ -441,6 +623,7 @@ export function initClosedLoopStudio(host) {
     const stage = $('guided-stage');
     if (!stage) return;
     syncCoreSelectors();
+    host.onProgressChange?.();
     const c = copy();
     const lang = host.getLang();
     const now = nextIso();
@@ -462,9 +645,13 @@ export function initClosedLoopStudio(host) {
       const box = document.createElement('div');
       box.className = 'cl-panel';
 
+      const statusLabel = lang === 'tr'
+        ? (lastVerifiedResult.status === 'verified-issued-answer' ? 'doğrulanan takip yanıtı' : lastVerifiedResult.status)
+        : lastVerifiedResult.status;
+
       const statusLine = document.createElement('div');
       statusLine.className = 'cl-meta-line';
-      statusLine.textContent = `${c.comparisonVerified} · ${lastVerifiedResult.status}`;
+      statusLine.textContent = `${c.comparisonVerified} · ${statusLabel}`;
 
       const h3 = document.createElement('h3');
       h3.className = 'cl-title';
@@ -476,8 +663,8 @@ export function initClosedLoopStudio(host) {
       summary.className = 'cl-body';
       const elapsedSec = Math.max(1, Math.round((lastVerifiedResult.comparison?.elapsedMs ?? 0) / 1000));
       summary.textContent = lang === 'tr'
-        ? `Ön ölçme: Yanlış → Takip sorusu: ${lastVerifiedResult.comparison?.followupCorrect ? 'Doğru' : 'Yanlış'} · Geçen süre: ${elapsedSec}sn · Durum: ${lastVerifiedResult.status}`
-        : `Baseline: Incorrect → Distinct follow-up: ${lastVerifiedResult.comparison?.followupCorrect ? 'Correct' : 'Incorrect'} · Elapsed: ${elapsedSec}s · Status: ${lastVerifiedResult.status}`;
+        ? `Ön ölçme: Yanlış → Takip sorusu: ${lastVerifiedResult.comparison?.followupCorrect ? 'Doğru' : 'Yanlış'} · Geçen süre: ${elapsedSec}sn · Durum: ${statusLabel}`
+        : `Baseline: Incorrect → Distinct follow-up: ${lastVerifiedResult.comparison?.followupCorrect ? 'Correct' : 'Incorrect'} · Elapsed: ${elapsedSec}s · Status: ${statusLabel}`;
 
       const disclaimer = document.createElement('p');
       disclaimer.className = 'insight-footnote';
@@ -517,6 +704,14 @@ export function initClosedLoopStudio(host) {
       const p = document.createElement('p');
       p.className = 'cl-body';
       p.textContent = c.correctBaselineDesc;
+      box.append(h3, p);
+      const pickedConf = lastConfidenceByAttemptId.get(lastBaselineCorrectAttempt.attemptId);
+      if (pickedConf && classifyConfidenceOutcome(pickedConf, true) === 'lucky-guess') {
+        const lucky = document.createElement('p');
+        lucky.className = 'cl-callout-lucky';
+        lucky.textContent = c.luckyGuessNotice;
+        box.append(lucky);
+      }
       const actions = document.createElement('div');
       actions.className = 'cl-actions';
       const btn = document.createElement('button');
@@ -530,7 +725,7 @@ export function initClosedLoopStudio(host) {
         renderGuidedFlow();
       });
       actions.append(btn);
-      box.append(h3, p, actions);
+      box.append(actions);
       stage.append(box);
       return;
     }
@@ -574,6 +769,14 @@ export function initClosedLoopStudio(host) {
           summary.textContent = localizedText(resource?.summary, lang, '');
 
           box.append(meta, h3, summary);
+
+          const baseConf = lastConfidenceByAttemptId.get(activeBaselineAttemptId);
+          if (baseConf && classifyConfidenceOutcome(baseConf, false) === 'hypercorrection-alert') {
+            const hyper = document.createElement('p');
+            hyper.className = 'cl-callout-hyper';
+            hyper.textContent = c.hypercorrectionNotice;
+            box.append(hyper);
+          }
 
           if (weakPrereqs.length) {
             const prereqNote = document.createElement('p');
@@ -667,7 +870,7 @@ export function initClosedLoopStudio(host) {
               hint: c.reassessHint,
               question: q,
               submitLabel: c.submitReassessBtn,
-              onSubmit: selectedChoiceId => {
+              onSubmit: (selectedChoiceId, confidence) => {
                 const tFollow = nextIso();
                 const res = recordAssessment(core, assessments, {
                   attemptId: nextId('att'),
@@ -676,6 +879,14 @@ export function initClosedLoopStudio(host) {
                   at: tFollow
                 });
                 assessments = res.history;
+                lastConfidenceByAttemptId.set(res.attempt.id, confidence);
+                confidenceLog.push({
+                  confidence,
+                  correct: res.attempt.correct,
+                  outcomeId: selectedOutcomeId,
+                  at: tFollow,
+                  ...(res.attempt.misconceptionId ? { misconceptionId: res.attempt.misconceptionId } : {})
+                });
                 const verified = verifyIssuedReassessment(core, assessments, reassessmentLedger, {
                   issueId: issue.id,
                   followupAttemptId: res.attempt.id,
@@ -718,14 +929,23 @@ export function initClosedLoopStudio(host) {
       hint: `${lang === 'tr' ? 'Soru' : 'Question'} ${question.id} · ${lang === 'tr' ? 'Sürüm' : 'Rev'} ${question.revision}`,
       question,
       submitLabel: c.submitAnswer,
-      onSubmit: selectedChoiceId => {
+      onSubmit: (selectedChoiceId, confidence) => {
+        const atIso = nextIso();
         const res = recordAssessment(core, assessments, {
           attemptId: nextId('att'),
           questionId: question.id,
           selectedChoiceId,
-          at: nextIso()
+          at: atIso
         });
         assessments = res.history;
+        lastConfidenceByAttemptId.set(res.attempt.id, confidence);
+        confidenceLog.push({
+          confidence,
+          correct: res.attempt.correct,
+          outcomeId: selectedOutcomeId,
+          at: atIso,
+          ...(res.attempt.misconceptionId ? { misconceptionId: res.attempt.misconceptionId } : {})
+        });
         if (res.attempt.correct) {
           lastBaselineCorrectAttempt = { attemptId: res.attempt.id, outcomeId: selectedOutcomeId };
           activeBaselineAttemptId = null;
@@ -742,6 +962,7 @@ export function initClosedLoopStudio(host) {
 
   function renderMcqCard(container, { kicker, hint, question, submitLabel, onSubmit }) {
     const lang = host.getLang();
+    const c = copy();
     const box = document.createElement('div');
     box.className = 'cl-panel';
 
@@ -778,6 +999,45 @@ export function initClosedLoopStudio(host) {
       choicesWrap.append(btn);
     }
 
+    // Metacognitive confidence picker
+    let confidence = 'medium';
+    const confWrap = document.createElement('div');
+    confWrap.className = 'cl-confidence-wrap';
+    const confLabel = document.createElement('span');
+    confLabel.className = 'cl-confidence-label';
+    confLabel.textContent = c.confidencePrompt;
+    const confGroup = document.createElement('div');
+    confGroup.className = 'cl-confidence-group';
+    confGroup.setAttribute('role', 'radiogroup');
+    confGroup.setAttribute('aria-label', c.confidencePrompt);
+
+    const confOptions = [
+      { id: 'low', label: c.confLow },
+      { id: 'medium', label: c.confMedium },
+      { id: 'high', label: c.confHigh }
+    ];
+    const confBtns = [];
+    for (const opt of confOptions) {
+      const cb = document.createElement('button');
+      cb.type = 'button';
+      cb.className = 'cl-conf-btn' + (opt.id === confidence ? ' is-picked' : '');
+      cb.setAttribute('data-confidence', opt.id);
+      cb.setAttribute('role', 'radio');
+      cb.setAttribute('aria-checked', String(opt.id === confidence));
+      cb.textContent = opt.label;
+      cb.addEventListener('click', () => {
+        confidence = opt.id;
+        for (const other of confBtns) {
+          const active = other === cb;
+          other.classList.toggle('is-picked', active);
+          other.setAttribute('aria-checked', String(active));
+        }
+      });
+      confBtns.push(cb);
+      confGroup.append(cb);
+    }
+    confWrap.append(confLabel, confGroup);
+
     const actions = document.createElement('div');
     actions.className = 'cl-actions';
     const submitBtn = document.createElement('button');
@@ -789,11 +1049,11 @@ export function initClosedLoopStudio(host) {
         host.notify(copy().chooseOptionNotice);
         return;
       }
-      onSubmit(picked);
+      onSubmit(picked, confidence);
     });
     actions.append(submitBtn);
 
-    box.append(meta, h3, choicesWrap, actions);
+    box.append(meta, h3, choicesWrap, confWrap, actions);
     container.append(box);
   }
 
@@ -902,6 +1162,78 @@ export function initClosedLoopStudio(host) {
     if ($('dsr-curve-readout') && curveResult) {
       $('dsr-curve-readout').textContent = c.dsrReadout(curveResult.predictedR, curveResult.stability);
     }
+
+    // Metacognitive Calibration Reliability Lab
+    const calSvgHost = $('intel-calibration-svg');
+    const calSummary = $('intel-calibration-summary');
+    const calAlerts = $('intel-calibration-alerts');
+    if (calSvgHost) {
+      const calReport = analyzeMetacognitiveCalibration(confidenceLog);
+      renderCalibrationDiagramSvg(calSvgHost, { report: calReport, lang, isDark });
+      if (calSummary) {
+        calSummary.textContent = calReport.totalRecords > 0
+          ? c.metacogSummary(
+              calReport.totalRecords,
+              calReport.overallAccuracy ?? 0,
+              calReport.ece ?? 0,
+              c.biasLabels[calReport.biasLabel] ?? calReport.biasLabel
+            )
+          : c.metacogEmpty;
+      }
+      if (calAlerts) {
+        calAlerts.replaceChildren();
+        if (calReport.hypercorrectionCount > 0) {
+          const el = document.createElement('p');
+          el.className = 'cl-callout-hyper';
+          el.textContent = c.metacogHyperAlert(calReport.hypercorrectionCount);
+          calAlerts.append(el);
+        }
+        if (calReport.luckyGuessCount > 0) {
+          const el = document.createElement('p');
+          el.className = 'cl-callout-lucky';
+          el.textContent = c.metacogLuckyAlert(calReport.luckyGuessCount);
+          calAlerts.append(el);
+        }
+      }
+    }
+
+    // 14-Day Forgetting Horizon & What-If Simulator
+    const horizonHost = $('intel-horizon-svg');
+    const horizonLabel = $('horizon-practice-label');
+    const horizonSummary = $('intel-horizon-summary');
+    if (horizonHost) {
+      const forecastItems = core.outcomes.map((o, idx) => {
+        const ev = dash.evidence.outcomes.find(row => row.outcomeId === o.id);
+        const stabilityDays = ev && ev.attempts > 0
+          ? Math.max(0.8, 1.5 + ev.correct * 2.5 - ev.incorrect * 0.7)
+          : (2.2 + (idx % 3) * 1.4);
+        const elapsedDays = ev && ev.attempts > 0 ? 0.5 : (1 + (idx % 4));
+        return {
+          id: o.id,
+          label: outcomeDisplayLabel(o),
+          stabilityDays,
+          elapsedDays
+        };
+      });
+      const clampedSim = Math.min(horizonSimulateToday, forecastItems.length);
+      const forecast = forecastForgettingHorizon(forecastItems, {
+        horizonDays: 14,
+        retentionThreshold: 0.90,
+        simulateTodayReviews: clampedSim,
+        at: now
+      });
+      renderForgettingHorizonSvg(horizonHost, { forecast, lang, isDark });
+      if (horizonLabel) horizonLabel.textContent = c.horizonSliderLabel(horizonSimulateToday);
+      if (horizonSummary) {
+        horizonSummary.textContent = c.horizonSummary(
+          forecast.peakAtRiskCount,
+          forecast.peakAtRiskDay,
+          forecast.avoidedAtRiskAtDay7,
+          forecast.totalRiskDaysAvoided,
+          clampedSim
+        );
+      }
+    }
   }
 
   function renderDesigner() {
@@ -926,7 +1258,7 @@ export function initClosedLoopStudio(host) {
       title.textContent = `${row.ready ? '✓' : '▲'} ${outcomeDisplayLabel(outcome)}`;
       const counts = document.createElement('span');
       counts.className = 'tabular-nums';
-      counts.textContent = `${row.gradableQuestionCount} Q · ${row.teachingResourceCount} R`;
+      counts.textContent = c.readinessCount(row.gradableQuestionCount, row.teachingResourceCount);
       head.append(title, counts);
 
       item.append(head);
@@ -996,6 +1328,34 @@ export function initClosedLoopStudio(host) {
     set('label-designer-r-right', c.formLessonRight);
     set('label-designer-r-misc', c.formLessonMisconception);
     set('designer-lesson-btn', c.formLessonBtn);
+    set('kicker-metacog', c.metacogKicker);
+    set('intel-cal-lab-heading', c.metacogHeading);
+    set('intel-cal-lab-blurb', c.metacogBlurb);
+    set('kicker-horizon', c.horizonKicker);
+    set('intel-horizon-heading', c.horizonHeading);
+    set('intel-horizon-blurb', c.horizonBlurb);
+    set('kicker-adapter', c.adapterKicker);
+    set('designer-adapter-heading', c.adapterHeading);
+    set('designer-adapter-blurb', c.adapterBlurb);
+    set('label-adapter-format', c.adapterFormatLabel);
+    set('opt-adapter-md', c.adapterOptMd);
+    set('opt-adapter-csv', c.adapterOptCsv);
+    set('designer-adapter-sample', c.adapterSampleBtn);
+    set('designer-adapter-convert', c.adapterConvertBtn);
+    set('designer-manual-summary', c.designerManualSummary);
+    set('kicker-designer-readiness', c.designerReadinessKicker);
+    set('intel-submode-map', c.intelSubMap);
+    set('intel-submode-horizon', c.intelSubHorizon);
+    set('intel-submode-ledger', c.intelSubLedger);
+
+    const adapterInput = $('designer-adapter-input');
+    if (adapterInput) adapterInput.placeholder = c.adapterPlaceholder;
+    const qMisc = $('designer-q-misc');
+    if (qMisc) qMisc.placeholder = c.miscPlaceholder;
+    const rMisc = $('designer-r-misc');
+    if (rMisc) rMisc.placeholder = c.miscPlaceholder;
+    const adapterStatus = $('designer-adapter-status');
+    if (adapterStatus && adapterStatus.textContent) adapterStatus.textContent = '';
 
     syncCoreSelectors();
     if (studySubMode === 'guided') renderGuidedFlow();
@@ -1004,22 +1364,87 @@ export function initClosedLoopStudio(host) {
   }
 
   function loadCorePreset(presetId) {
+    saveCurrentCourseHistory();
     activePresetId = presetId;
+    customCourseLabel = '';
     core = cloneKnowledgeCorePreset(presetId);
-    assessments = createAssessmentHistory();
-    teaching = createTeachingHistory();
-    reassessmentLedger = createReassessmentLedger();
-    selectedOutcomeId = core.outcomes[0]?.id ?? '';
-    mapSelectedOutcomeId = selectedOutcomeId;
-    activeBaselineAttemptId = null;
-    activeIssueId = null;
-    lastVerifiedResult = null;
-    lastBaselineCorrectAttempt = null;
+    const saved = courseHistories.get(presetId);
+    if (saved) {
+      assessments = saved.assessments;
+      teaching = saved.teaching;
+      reassessmentLedger = saved.reassessmentLedger;
+      selectedOutcomeId = core.outcomes.some(o => o.id === saved.selectedOutcomeId) ? saved.selectedOutcomeId : (core.outcomes[0]?.id ?? '');
+      mapSelectedOutcomeId = core.outcomes.some(o => o.id === saved.mapSelectedOutcomeId) ? saved.mapSelectedOutcomeId : selectedOutcomeId;
+      activeBaselineAttemptId = saved.activeBaselineAttemptId;
+      activeIssueId = saved.activeIssueId;
+      lastVerifiedResult = saved.lastVerifiedResult;
+      lastBaselineCorrectAttempt = saved.lastBaselineCorrectAttempt;
+      confidenceLog = saved.confidenceLog;
+      lastConfidenceByAttemptId = saved.lastConfidenceByAttemptId;
+    } else {
+      assessments = createAssessmentHistory();
+      teaching = createTeachingHistory();
+      reassessmentLedger = createReassessmentLedger();
+      selectedOutcomeId = core.outcomes[0]?.id ?? '';
+      mapSelectedOutcomeId = selectedOutcomeId;
+      activeBaselineAttemptId = null;
+      activeIssueId = null;
+      lastVerifiedResult = null;
+      lastBaselineCorrectAttempt = null;
+      confidenceLog = [];
+      lastConfidenceByAttemptId = new Map();
+    }
     persistIfEnabled();
     syncCoreSelectors();
     renderGuidedFlow();
     renderDesigner();
     renderMapAndCurve();
+    host.onProgressChange?.();
+  }
+
+  function loadCourseCore(courseId, coreObj, label = '') {
+    if (KNOWLEDGE_CORE_PRESETS[courseId]) {
+      loadCorePreset(courseId);
+      setStudySubMode('guided');
+      return;
+    }
+    validateKnowledgeCore(coreObj);
+    saveCurrentCourseHistory();
+    activePresetId = courseId || 'custom';
+    customCourseLabel = label || '';
+    core = structuredClone(coreObj);
+    const saved = courseHistories.get(activePresetId);
+    if (saved) {
+      assessments = saved.assessments;
+      teaching = saved.teaching;
+      reassessmentLedger = saved.reassessmentLedger;
+      selectedOutcomeId = core.outcomes.some(o => o.id === saved.selectedOutcomeId) ? saved.selectedOutcomeId : (core.outcomes[0]?.id ?? '');
+      mapSelectedOutcomeId = core.outcomes.some(o => o.id === saved.mapSelectedOutcomeId) ? saved.mapSelectedOutcomeId : selectedOutcomeId;
+      activeBaselineAttemptId = saved.activeBaselineAttemptId;
+      activeIssueId = saved.activeIssueId;
+      lastVerifiedResult = saved.lastVerifiedResult;
+      lastBaselineCorrectAttempt = saved.lastBaselineCorrectAttempt;
+      confidenceLog = saved.confidenceLog;
+      lastConfidenceByAttemptId = saved.lastConfidenceByAttemptId;
+    } else {
+      assessments = createAssessmentHistory();
+      teaching = createTeachingHistory();
+      reassessmentLedger = createReassessmentLedger();
+      selectedOutcomeId = core.outcomes[0]?.id ?? '';
+      mapSelectedOutcomeId = selectedOutcomeId;
+      activeBaselineAttemptId = null;
+      activeIssueId = null;
+      lastVerifiedResult = null;
+      lastBaselineCorrectAttempt = null;
+      confidenceLog = [];
+      lastConfidenceByAttemptId = new Map();
+    }
+    persistIfEnabled();
+    syncCoreSelectors();
+    setStudySubMode('guided');
+    renderDesigner();
+    renderMapAndCurve();
+    host.onProgressChange?.();
   }
 
   // Wire UI Events
@@ -1027,6 +1452,9 @@ export function initClosedLoopStudio(host) {
   $('submode-guided')?.addEventListener('click', () => setStudySubMode('guided'));
   $('deck-submode-cards')?.addEventListener('click', () => setDeckSubMode('cards'));
   $('deck-submode-designer')?.addEventListener('click', () => setDeckSubMode('designer'));
+  $('intel-submode-map')?.addEventListener('click', () => setIntelSubMode('map'));
+  $('intel-submode-horizon')?.addEventListener('click', () => setIntelSubMode('horizon'));
+  $('intel-submode-ledger')?.addEventListener('click', () => setIntelSubMode('ledger'));
 
   $('guided-preset-select')?.addEventListener('change', () => {
     const val = $('guided-preset-select').value;
@@ -1052,6 +1480,8 @@ export function initClosedLoopStudio(host) {
     activeIssueId = null;
     lastVerifiedResult = null;
     lastBaselineCorrectAttempt = null;
+    confidenceLog = [];
+    lastConfidenceByAttemptId = new Map();
     persistIfEnabled();
     renderGuidedFlow();
     renderMapAndCurve();
@@ -1109,6 +1539,68 @@ export function initClosedLoopStudio(host) {
   $('dsr-day-slider')?.addEventListener('input', () => {
     dsrForecastDay = Number($('dsr-day-slider').value) || 0;
     renderMapAndCurve();
+  });
+
+  $('horizon-practice-slider')?.addEventListener('input', () => {
+    horizonSimulateToday = Math.max(0, Number($('horizon-practice-slider').value) || 0);
+    renderMapAndCurve();
+  });
+
+  $('designer-adapter-sample')?.addEventListener('click', () => {
+    const fmt = $('designer-adapter-format')?.value || 'markdown';
+    const lang = host.getLang();
+    const area = $('designer-adapter-input');
+    if (area) {
+      area.value = fmt === 'csv'
+        ? (SAMPLE_CORE_CSV[lang] ?? SAMPLE_CORE_CSV.en)
+        : (SAMPLE_CORE_MARKDOWN[lang] ?? SAMPLE_CORE_MARKDOWN.en);
+    }
+    const status = $('designer-adapter-status');
+    if (status) status.textContent = copy().adapterSampleLoaded(fmt);
+  });
+
+  $('designer-adapter-convert')?.addEventListener('click', () => {
+    const fmt = $('designer-adapter-format')?.value || 'markdown';
+    const raw = ($('designer-adapter-input')?.value || '').trim();
+    const status = $('designer-adapter-status');
+    if (!raw) {
+      const msg = copy().adapterEmptyInput;
+      if (status) status.textContent = msg;
+      host.notify(msg);
+      return;
+    }
+    try {
+      const parsed = fmt === 'csv'
+        ? parseCsvToKnowledgeCore(raw)
+        : parseMarkdownToKnowledgeCore(raw);
+      core = parsed.core;
+      activePresetId = 'custom';
+      assessments = createAssessmentHistory();
+      teaching = createTeachingHistory();
+      reassessmentLedger = createReassessmentLedger();
+      confidenceLog = [];
+      lastConfidenceByAttemptId = new Map();
+      activeBaselineAttemptId = null;
+      activeIssueId = null;
+      lastVerifiedResult = null;
+      lastBaselineCorrectAttempt = null;
+      selectedOutcomeId = core.outcomes[0]?.id ?? '';
+      mapSelectedOutcomeId = selectedOutcomeId;
+      persistIfEnabled();
+      renderDesigner();
+      renderMapAndCurve();
+      const summaryMsg = copy().adapterConverted(parsed.stats, parsed.warnings.length);
+      if (status) {
+        status.textContent = parsed.warnings.length
+          ? `${summaryMsg} ${parsed.warnings.slice(0, 2).join(' ')}`
+          : summaryMsg;
+      }
+      host.notify(summaryMsg);
+    } catch (err) {
+      const errMsg = copy().noticeCoreError(err.message);
+      if (status) status.textContent = errMsg;
+      host.notify(errMsg);
+    }
   });
 
   // Designer actions
@@ -1320,7 +1812,36 @@ export function initClosedLoopStudio(host) {
       else clearPersisted();
     },
     onReset() {
+      courseHistories.clear();
       loadCorePreset('english-grammar');
+    },
+    loadCourseCore,
+    setStudyMode: setStudySubMode,
+    getCourseProgress(courseId, fallbackCore) {
+      if (courseId === activePresetId) {
+        return computeCompletedOutcomeCount(core, assessments, reassessmentLedger);
+      }
+      const saved = courseHistories.get(courseId);
+      const targetCore = KNOWLEDGE_CORE_PRESETS[courseId]?.core ?? fallbackCore;
+      if (!saved) {
+        return {
+          totalOutcomes: targetCore?.outcomes?.length ?? 0,
+          completedOutcomes: 0,
+          observedOutcomes: 0
+        };
+      }
+      return computeCompletedOutcomeCount(targetCore, saved.assessments, saved.reassessmentLedger);
+    },
+    getActiveCourseSummary() {
+      const idx = core.outcomes.findIndex(o => o.id === selectedOutcomeId);
+      const activeOutcome = idx >= 0 ? core.outcomes[idx] : core.outcomes[0];
+      return {
+        courseId: activePresetId,
+        selectedOutcomeIndex: idx >= 0 ? idx + 1 : 1,
+        totalOutcomes: core.outcomes.length,
+        selectedOutcomeLabel: outcomeDisplayLabel(activeOutcome),
+        completedOutcomes: computeCompletedOutcomeCount(core, assessments, reassessmentLedger).completedOutcomes
+      };
     }
   };
 }

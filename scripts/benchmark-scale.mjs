@@ -5,7 +5,7 @@
  */
 import { performance } from 'node:perf_hooks';
 import { createCard } from '../src/index.js';
-import { createLedger, recordLedgerReview } from '../src/ledger.js';
+import { createLedger, recordLedgerReview, recordLedgerReviewsBatch } from '../src/ledger.js';
 import { diagnoseLearner } from '../src/diagnosis.js';
 import { replayReviewStream } from '../src/calibrate.js';
 import { createMemoryState, updateDsrMemory } from '../src/memory.js';
@@ -90,52 +90,30 @@ function measureScale(eventCount) {
   }
   const dsrCoreMs = performance.now() - dsrStart;
 
-  let ledgerAppendMs = null;
+  let ledgerSeqAppendMs = null;
+  let ledgerBatchAppendMs = null;
   let diagnoseMs = null;
-  if (eventCount <= 1_000) {
-    let ledger = createLedger({ cards, createdAt: '2026-01-01T00:00:00.000Z' });
+
+  if (eventCount <= 10_000) {
+    let seqLedger = createLedger({ cards, createdAt: '2026-01-01T00:00:00.000Z' });
     const l0 = performance.now();
     for (const ev of events) {
-      ledger = recordLedgerReview(ledger, ev.cardId, ev.rating, ev.at, ev.reason ? { reason: ev.reason } : {}).ledger;
+      seqLedger = recordLedgerReview(seqLedger, ev.cardId, ev.rating, ev.at, ev.reason ? { reason: ev.reason } : {}).ledger;
     }
-    ledgerAppendMs = performance.now() - l0;
-    const d0 = performance.now();
-    diagnoseLearner(ledger, events[events.length - 1].at);
-    diagnoseMs = performance.now() - d0;
-  } else if (eventCount <= 10_000) {
-    // Immutable per-event structuredClone in recordLedgerReview is O(N^2) above ~1k sequential appends;
-    // benchmark diagnoseLearner directly on a structurally valid 10k-event ledger and document the O(N^2) append bound.
-    const ledger = createLedger({ cards, createdAt: '2026-01-01T00:00:00.000Z' });
-    const cardState = new Map();
-    for (let i = 0; i < events.length; i++) {
-      const ev = events[i];
-      const prevReps = (cardState.get(ev.cardId) ?? 0) + 1;
-      cardState.set(ev.cardId, prevReps);
-      ledger.events.push({
-        id: `rev-${i + 1}-${ev.cardId}`,
-        type: 'review',
-        at: ev.at,
-        cardId: ev.cardId,
-        topic: ev.topic,
-        concepts: [ev.topic],
-        rating: ev.rating,
-        ...(ev.reason ? { reason: ev.reason } : {}),
-        elapsedDays: 1,
-        predictedR: 0.85,
-        intervalDays: 3,
-        memoryAfter: {
-          stabilityDays: 4.5,
-          difficulty: 5.0,
-          lastReviewedAt: ev.at,
-          dueAt: new Date(Date.parse(ev.at) + 3 * 86_400_000).toISOString(),
-          reps: prevReps,
-          lapses: ev.rating === 'again' ? 1 : 0
-        }
-      });
+    ledgerSeqAppendMs = performance.now() - l0;
+  }
+
+  if (eventCount <= 50_000) {
+    const baseLedger = createLedger({ cards, createdAt: '2026-01-01T00:00:00.000Z' });
+    const b0 = performance.now();
+    const batched = recordLedgerReviewsBatch(baseLedger, events);
+    ledgerBatchAppendMs = performance.now() - b0;
+
+    if (eventCount <= 10_000) {
+      const d0 = performance.now();
+      diagnoseLearner(batched.ledger, events[events.length - 1].at);
+      diagnoseMs = performance.now() - d0;
     }
-    const d0 = performance.now();
-    diagnoseLearner(ledger, events[events.length - 1].at);
-    diagnoseMs = performance.now() - d0;
   }
 
   const heapAfter = process.memoryUsage().heapUsed;
@@ -145,7 +123,8 @@ function measureScale(eventCount) {
     replayMs: Number(replayMs.toFixed(2)),
     dsrCoreMs: Number(dsrCoreMs.toFixed(2)),
     scoredPredictions,
-    ledgerAppendMs: ledgerAppendMs === null ? 'skipped (O(N^2) structuredClone above 1k)' : Number(ledgerAppendMs.toFixed(2)),
+    ledgerSeqAppendMs: ledgerSeqAppendMs === null ? 'skipped (>10k)' : Number(ledgerSeqAppendMs.toFixed(2)),
+    ledgerBatchAppendMs: ledgerBatchAppendMs === null ? 'skipped (>50k MAX_EVENTS)' : Number(ledgerBatchAppendMs.toFixed(2)),
     diagnoseMs: diagnoseMs === null ? 'skipped (>10k ledger scope)' : Number(diagnoseMs.toFixed(2)),
     heapDeltaMB: Number(((heapAfter - heapBefore) / (1024 * 1024)).toFixed(2))
   };

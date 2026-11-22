@@ -75,6 +75,40 @@ function checkNoPrerequisiteCycle(conceptsMap) {
   }
 }
 
+const TRUSTED_LEDGER_META = new WeakMap();
+
+function freezeEvent(ev) {
+  if (ev && typeof ev === 'object') {
+    if (Array.isArray(ev.concepts)) Object.freeze(ev.concepts);
+    if (ev.memoryAfter && typeof ev.memoryAfter === 'object') Object.freeze(ev.memoryAfter);
+    Object.freeze(ev);
+  }
+  return ev;
+}
+
+function freezeLedgerAndRegister(ledger, meta) {
+  Object.freeze(ledger.concepts);
+  Object.freeze(ledger.cards);
+  Object.freeze(ledger.events);
+  Object.freeze(ledger);
+  if (meta) {
+    TRUSTED_LEDGER_META.set(ledger, meta);
+  }
+  return ledger;
+}
+
+function buildMetaFromValidatedLedger(ledger) {
+  const eventIds = new Set();
+  const lastMemoryByCard = new Map();
+  for (const ev of ledger.events) {
+    eventIds.add(ev.id);
+    if (ev.type === 'review') {
+      lastMemoryByCard.set(ev.cardId, ev.memoryAfter);
+    }
+  }
+  return { eventIds, lastMemoryByCard, owned: true };
+}
+
 function cloneLedger(ledger) {
   return structuredClone(ledger);
 }
@@ -206,7 +240,7 @@ export function createLedger(options = {}) {
   }
 
   checkNoPrerequisiteCycle(ledger.concepts);
-  return ledger;
+  return freezeLedgerAndRegister(ledger, buildMetaFromValidatedLedger(ledger));
 }
 
 /** Link a concept to zero or more prerequisite concepts (acyclic DAG enforced). */
@@ -288,30 +322,99 @@ export function getCardMemoryState(ledger, cardId) {
   return getCardMemoryStateUnchecked(ledger, cardId);
 }
 
+function resolveCardBaselineMemory(card) {
+  if (card.importedSnapshot && card.importedSnapshot.reviews > 0) {
+    const snap = card.importedSnapshot;
+    return {
+      stabilityDays: boxToApproxStability(snap.box),
+      difficulty: Math.min(9.5, Math.max(2.5, 4.8 + snap.lapses * 0.45 - Math.max(0, snap.box - 2) * 0.25)),
+      lastReviewedAt: snap.lastReviewedAt,
+      dueAt: snap.dueAt,
+      reps: snap.reviews,
+      lapses: snap.lapses
+    };
+  }
+  return createMemoryState();
+}
+
+function prepareLedgerForAppend(ledger) {
+  const meta = TRUSTED_LEDGER_META.get(ledger);
+  if (meta && Object.isFrozen(ledger) && Object.isFrozen(ledger.events)) {
+    let eventIds;
+    if (meta.owned) {
+      meta.owned = false;
+      eventIds = meta.eventIds;
+    } else {
+      eventIds = new Set(ledger.events.map((e) => e.id));
+    }
+    return {
+      baseConcepts: ledger.concepts,
+      baseCards: ledger.cards,
+      baseEvents: ledger.events,
+      eventIds,
+      lastMemoryByCard: new Map(meta.lastMemoryByCard)
+    };
+  }
+  validateLedger(ledger);
+  const cloned = cloneLedger(ledger);
+  const eventIds = new Set();
+  const lastMemoryByCard = new Map();
+  for (const ev of cloned.events) {
+    freezeEvent(ev);
+    eventIds.add(ev.id);
+    if (ev.type === 'review') {
+      lastMemoryByCard.set(ev.cardId, ev.memoryAfter);
+    }
+  }
+  Object.freeze(cloned.concepts);
+  Object.freeze(cloned.cards);
+  return {
+    baseConcepts: cloned.concepts,
+    baseCards: cloned.cards,
+    baseEvents: cloned.events,
+    eventIds,
+    lastMemoryByCard
+  };
+}
+
 /**
  * Append one immutable study review event, recording pre-review predictedR for calibration
  * and post-review DSR state (`dueAt`, `stabilityDays`, `difficulty`).
+ * Uses structural sharing over frozen concept/card/event nodes for O(1) append cost.
  */
 export function recordLedgerReview(ledger, cardId, rating, at = new Date(), options = {}) {
-  validateLedger(ledger);
-  if (!Object.hasOwn(ledger.cards, cardId)) {
-    throw new RangeError('unknown ledger card: ' + cardId);
-  }
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
     throw new TypeError('options must be an object');
   }
+  const prep = prepareLedgerForAppend(ledger);
+  if (!Object.hasOwn(prep.baseCards, cardId)) {
+    throw new RangeError('unknown ledger card: ' + cardId);
+  }
+  if (prep.baseEvents.length + 1 > MAX_EVENTS) {
+    throw new RangeError(`ledger exceeds maximum of ${MAX_EVENTS} events`);
+  }
   const atIso = parseIso(at, 'at');
-  const prevMemory = getCardMemoryStateUnchecked(ledger, cardId);
+  if (options.reason !== undefined && !REASONS.has(options.reason)) {
+    throw new RangeError('unknown event mistake reason: ' + options.reason);
+  }
+  const eventId = options.eventId !== undefined
+    ? nonEmptyText(options.eventId, 'event.id')
+    : `rev-${prep.baseEvents.length + 1}-${cardId}`;
+  if (prep.eventIds.has(eventId)) {
+    throw new RangeError('duplicate event id: ' + eventId);
+  }
+
+  const card = prep.baseCards[cardId];
+  const prevMemory = prep.lastMemoryByCard.get(cardId) ?? resolveCardBaselineMemory(card);
   const dsrOpts = {};
   if (options.reason !== undefined) dsrOpts.reason = options.reason;
   if (options.targetRetention !== undefined) dsrOpts.targetRetention = options.targetRetention;
   if (options.params !== undefined) dsrOpts.params = options.params;
 
   const updated = updateDsrMemory(prevMemory, rating, atIso, dsrOpts);
-  const card = ledger.cards[cardId];
 
-  const event = {
-    id: options.eventId ?? `rev-${ledger.events.length + 1}-${cardId}`,
+  const event = freezeEvent({
+    id: eventId,
     type: 'review',
     at: atIso,
     cardId,
@@ -323,14 +426,122 @@ export function recordLedgerReview(ledger, cardId, rating, at = new Date(), opti
     predictedR: updated.predictedR,
     intervalDays: updated.intervalDays,
     memoryAfter: updated.state
-  };
+  });
 
-  const next = cloneLedger(ledger);
-  next.events.push(event);
+  const nextEvents = prep.baseEvents.slice();
+  nextEvents.push(event);
+  prep.eventIds.add(eventId);
+  prep.lastMemoryByCard.set(cardId, event.memoryAfter);
+
+  const nextLedger = freezeLedgerAndRegister(
+    {
+      format: ledger.format,
+      version: ledger.version,
+      createdAt: ledger.createdAt,
+      concepts: prep.baseConcepts,
+      cards: prep.baseCards,
+      events: nextEvents
+    },
+    {
+      eventIds: prep.eventIds,
+      lastMemoryByCard: prep.lastMemoryByCard,
+      owned: true
+    }
+  );
+
   return {
-    ledger: next,
+    ledger: nextLedger,
     event,
     memory: updated.state
+  };
+}
+
+/**
+ * Atomically append a batch of review events in a single O(M) pass without mutating
+ * the input ledger. Rejects the entire batch if any entry is invalid or exceeds MAX_EVENTS.
+ */
+export function recordLedgerReviewsBatch(ledger, reviews) {
+  if (!Array.isArray(reviews)) {
+    throw new TypeError('reviews must be an array');
+  }
+  const prep = prepareLedgerForAppend(ledger);
+  if (prep.baseEvents.length + reviews.length > MAX_EVENTS) {
+    throw new RangeError(`ledger exceeds maximum of ${MAX_EVENTS} events`);
+  }
+
+  const batchEventIds = new Set(prep.eventIds);
+  const batchMemory = new Map(prep.lastMemoryByCard);
+  const addedEvents = [];
+  let seq = prep.baseEvents.length;
+
+  for (const item of reviews) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw new TypeError('each review item must be an object');
+    }
+    const { cardId, rating } = item;
+    if (!Object.hasOwn(prep.baseCards, cardId)) {
+      throw new RangeError('unknown ledger card: ' + cardId);
+    }
+    const atIso = parseIso(item.at ?? new Date(), 'at');
+    if (item.reason !== undefined && !REASONS.has(item.reason)) {
+      throw new RangeError('unknown event mistake reason: ' + item.reason);
+    }
+    seq += 1;
+    const eventId = item.eventId !== undefined
+      ? nonEmptyText(item.eventId, 'event.id')
+      : `rev-${seq}-${cardId}`;
+    if (batchEventIds.has(eventId)) {
+      throw new RangeError('duplicate event id: ' + eventId);
+    }
+
+    const card = prep.baseCards[cardId];
+    const prevMemory = batchMemory.get(cardId) ?? resolveCardBaselineMemory(card);
+    const dsrOpts = {};
+    if (item.reason !== undefined) dsrOpts.reason = item.reason;
+    if (item.targetRetention !== undefined) dsrOpts.targetRetention = item.targetRetention;
+    if (item.params !== undefined) dsrOpts.params = item.params;
+
+    const updated = updateDsrMemory(prevMemory, rating, atIso, dsrOpts);
+    const event = freezeEvent({
+      id: eventId,
+      type: 'review',
+      at: atIso,
+      cardId,
+      topic: card.topic,
+      concepts: [...card.concepts],
+      rating,
+      ...(item.reason !== undefined ? { reason: item.reason } : {}),
+      elapsedDays: updated.elapsedDays,
+      predictedR: updated.predictedR,
+      intervalDays: updated.intervalDays,
+      memoryAfter: updated.state
+    });
+
+    batchEventIds.add(eventId);
+    batchMemory.set(cardId, event.memoryAfter);
+    addedEvents.push(event);
+  }
+
+  const nextEvents = prep.baseEvents.concat(addedEvents);
+  const nextLedger = freezeLedgerAndRegister(
+    {
+      format: ledger.format,
+      version: ledger.version,
+      createdAt: ledger.createdAt,
+      concepts: prep.baseConcepts,
+      cards: prep.baseCards,
+      events: nextEvents
+    },
+    {
+      eventIds: batchEventIds,
+      lastMemoryByCard: batchMemory,
+      owned: true
+    }
+  );
+
+  return {
+    ledger: nextLedger,
+    events: addedEvents
   };
 }
 

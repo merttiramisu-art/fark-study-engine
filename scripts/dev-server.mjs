@@ -18,6 +18,7 @@ const ROUTES = new Map([
   ['/examples/web/knowledge-presets.js', ['examples/web/knowledge-presets.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/visual-labs.js', ['examples/web/visual-labs.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/closed-loop-controller.js', ['examples/web/closed-loop-controller.js', 'text/javascript; charset=utf-8']],
+  ['/examples/web/student-shell.js', ['examples/web/student-shell.js', 'text/javascript; charset=utf-8']],
   ['/examples/widget-demo.html', ['examples/widget-demo.html', 'text/html; charset=utf-8']],
   ['/src/index.js', ['src/index.js', 'text/javascript; charset=utf-8']],
   ['/src/planner.js', ['src/planner.js', 'text/javascript; charset=utf-8']],
@@ -41,6 +42,9 @@ const ROUTES = new Map([
   ['/src/content-readiness.js', ['src/content-readiness.js', 'text/javascript; charset=utf-8']],
   ['/src/evidence-integrity.js', ['src/evidence-integrity.js', 'text/javascript; charset=utf-8']],
   ['/src/reassessment-ledger.js', ['src/reassessment-ledger.js', 'text/javascript; charset=utf-8']],
+  ['/src/metacognition.js', ['src/metacognition.js', 'text/javascript; charset=utf-8']],
+  ['/src/core-adapter.js', ['src/core-adapter.js', 'text/javascript; charset=utf-8']],
+  ['/src/course-pack.js', ['src/course-pack.js', 'text/javascript; charset=utf-8']],
   ['/README.md', ['README.md', 'text/plain; charset=utf-8']]
 ]);
 

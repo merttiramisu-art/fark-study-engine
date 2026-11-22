@@ -40,21 +40,78 @@ import {
 } from '../../src/diagnosis.js';
 import { fitLearnerParameters } from '../../src/calibrate.js';
 import { initClosedLoopStudio } from './closed-loop-controller.js';
+import { initStudentShell } from './student-shell.js';
 
 const $ = id => document.getElementById(id);
 
+const TR_TOPIC_LABELS = Object.freeze({
+  Mathematics: 'Matematik',
+  Science: 'Fen Bilimleri',
+  Language: 'Dil',
+  Geography: 'Coğrafya',
+  History: 'Tarih',
+  Algorithms: 'Algoritmalar',
+  Systems: 'Sistemler',
+  'Data Structures': 'Veri Yapıları',
+  Concurrency: 'Eşzamanlılık',
+  Databases: 'Veritabanları',
+  'Cell Biology': 'Hücre Biyolojisi',
+  Genetics: 'Genetik',
+  Physiology: 'Fizyoloji',
+  Ecology: 'Ekoloji',
+  Vocabulary: 'Kelime Bilgisi',
+  'Academic Verbs': 'Akademik Fiiller',
+  Connectors: 'Bağlaçlar',
+  'English: Core Verbs': 'İngilizce: Temel Fiiller',
+  'English: Tenses': 'İngilizce: Zamanlar',
+  'English: Conditionals & Passive': 'İngilizce: Koşul ve Edilgen',
+  'English: Phrasal Verbs & Reading': 'İngilizce: Deyimsel Fiiller'
+});
+
+const TR_CARD_COPY = Object.freeze({
+  'math-01': { question: "250'nin %18'i kaçtır?", answer: '45' },
+  'math-02': { question: '3x − 7 = 11 denklemini çöz.', answer: 'x = 6' },
+  'math-03': { question: "7'nin karesi kaçtır?", answer: '49' },
+  'science-01': { question: 'Bitkiler fotosentez sırasında hangi gazı soğurur?', answer: 'Karbondioksit (CO₂)' },
+  'science-02': { question: 'Deniz seviyesinde suyun yaklaşık kaynama noktası nedir?', answer: '100 °C' },
+  'language-01': { question: '“Özlü” sözcüğüne yakın anlamlı bir sözcük ver.', answer: 'Kısa, veciz veya yalın' },
+  'geography-01': { question: 'Dünya üzerindeki en büyük okyanus hangisidir?', answer: 'Büyük Okyanus (Pasifik)' },
+  'history-01': { question: '1492 yılı hangi yüzyıla aittir?', answer: '15. yüzyıl' },
+  'history-02': { question: 'Antik Kartaca hangi kıtada yer alır?', answer: 'Afrika' },
+  'cs-01': { question: 'İkili arama {{sıralı}} bir dizi gerektirir ve {{O(log n)}} sürede çalışır.', answer: 'sıralı; O(log n)' },
+  'cs-02': { question: 'Ağırlıksız en kısa yollar için {{FIFO kuyruğu}} kullanan çizge gezintisi hangisidir?', answer: 'Genişlik Öncelikli Arama (BFS)' },
+  'cs-03': { question: 'RFC 9110 standardına göre hangi HTTP yöntemleri eşgüçlü (idempotent) kabul edilir?', answer: 'GET, HEAD, PUT, DELETE, OPTIONS, TRACE' },
+  'cs-04': { question: 'TCP bağlantısında {{3 yönlü el sıkışma}} SYN, {{SYN-ACK}} ve ACK paketleriyle kurulur.', answer: '3 yönlü el sıkışma; SYN-ACK' },
+  'cs-05': { question: 'İki katına büyüyen dinamik diziye eleman eklemenin amorti süresi {{O(1)}} düzeyindedir.', answer: 'O(1)' },
+  'cs-06': { question: 'Min-heap yapısını ikili arama ağacından (BST) ayıran temel kural nedir?', answer: 'Min-heap yalnızca ebeveyn <= çocuk sırasını korur; BST tüm ağaçta sol < kök < sağ kuralını sağlar.' },
+  'cs-07': { question: 'Kaynak kilitlenmesine (deadlock) yol açan dört Coffman koşulu nelerdir?', answer: 'Karşılıklı dışlama, tut-ve-bekle, kesintisiz kaynak, döngüsel bekleme.' },
+  'cs-08': { question: '{{ACID}} işlemi Atomiklik, Tutarlılık, Yalıtım ve {{Kalıcılık}} garantisi verir.', answer: 'ACID; Kalıcılık' },
+  'bio-01': { question: '{{Mitokondri}}, oksidatif fosforilasyon yoluyla {{ATP}} üretir.', answer: 'Mitokondri; ATP' },
+  'bio-02': { question: 'Granüllü endoplazmik retikulumun yüzeyinde neden ribozomlar bulunur?', answer: 'Zara, organellere veya hücre dışına gidecek proteinleri sentezlemek için.' },
+  'bio-03': { question: '{{Transkripsiyon}} sırasında RNA polimeraz, {{3\'→5\'}} DNA kalıbından mRNA sentezler.', answer: 'Transkripsiyon; 3\'→5\'' },
+  'bio-04': { question: 'Mayoz bölünme kromozom sayısı bakımından mitozdan nasıl ayrılır?', answer: 'Mayoz haploit (n) gametler üretir; mitoz diploit (2n) yapıyı korur.' },
+  'bio-05': { question: 'Sol kulakçık ile sol karıncığı ayıran kalp kapakçığı hangisidir?', answer: 'Mitral (ikili) kapakçık' },
+  'bio-06': { question: 'Hücrelere glikoz alımını artırarak kan şekerini düşüren hormon hangisidir?', answer: 'İnsülin (pankreas beta hücrelerinden salgılanır)' },
+  'bio-07': { question: 'Bir beslenme basamağından sonrakine enerjinin yaklaşık ne kadarı aktarılır?', answer: 'Yaklaşık %10 (kalanı ısı ve metabolizma ile kaybolur).' }
+});
+
 const I18N = {
   en: {
+    docTitle: 'FARK Study Engine — Interactive Studio',
+    skipLink: 'Skip to main content',
+    brandSubtitle: 'STUDY ENGINE',
+    footerCopy: 'FARK STUDY ENGINE © 2026',
+    footerMeta: 'OPEN SOURCE · MIT LICENSE · NO TRACKING',
     privacyText: 'Local-only studio',
     eyebrowText: 'OPEN-SOURCE STUDY STUDIO',
     pageTitleHtml: 'Deterministic scheduling.<br><em>Honest</em> learning signals.',
     introLead: 'Compare DSR, SM-2 & Leitner scheduling, log an append-only Learning Ledger, seal closed-loop interventions, practice {{cloze}} or Anki TSV decks, and run a local MCP server—zero cloud, zero tracking.',
-    tabStudy: 'Study Studio',
-    tabSimulator: 'Strategy Simulator',
-    tabDecks: 'Deck Studio & Packs',
-    tabIntelligence: 'Learning Intelligence',
-    kickerActive: 'ACTIVE LEARNING',
-    sessionHeading: "Today's session",
+    tabStudy: 'Study',
+    tabSimulator: 'Spacing Lab',
+    tabDecks: 'Decks & Lessons',
+    tabIntelligence: 'Map & Progress',
+    kickerActive: 'FLASHCARD REVIEW',
+    sessionHeading: "Today's review cards",
     labelQuestions: 'Questions',
     labelPerTopic: 'Per topic',
     labelNewCards: 'New cards',
@@ -84,6 +141,10 @@ const I18N = {
     labelSimLimit: 'Daily cap',
     labelSimProfile: 'Profile',
     runSimBtn: 'Run simulation ↻',
+    simReviewsCount: n => `${n} reviews`,
+    simDisclaimer: null,
+    seqRowTitle: (label, days, box) => `${label} — span ${days}d (final box ${box})`,
+    seqStep: (rating, days) => `${rating}:${days}d`,
     kickerSeq: 'STEP-BY-STEP TRACE',
     seqHeading: 'Exact interval sequence',
     seqBlurb: 'Sequence: Good → Good → Again (misconception) → Good → Easy starting from day 0.',
@@ -95,12 +156,23 @@ const I18N = {
     packCs: 'CS & Algorithms (Cloze)',
     packBiology: 'Cell Biology',
     packLanguage: 'EN ↔ TR Vocab',
+    packDisplayNames: {
+      starter: 'General Mix',
+      english: 'English Mastery (A2→B2)',
+      'computer-science': 'CS & Algorithms',
+      biology: 'Cell Biology',
+      language: 'EN ↔ TR Vocab'
+    },
     kickerAuthor: 'CUSTOM STUDY DECK',
     addCardHeading: 'Add your own card',
     addCardBlurb: 'Create single cards (supports {{cloze}} blanks!) or paste Markdown Q :: A, CSV, or Anki/Quizlet tab-separated TSV.',
     labelCardTopic: 'Topic',
     labelCardQuestion: 'Question',
     labelCardAnswer: 'Answer',
+    cardTopicPlaceholder: 'e.g. Physics',
+    cardQuestionPlaceholder: 'e.g. SI unit of force is {{Newton}}.',
+    cardAnswerPlaceholder: 'e.g. Newton (N)',
+    bulkPlaceholder: '## Physics\n- SI unit of force? :: Newton (N)\n\nOr Anki TSV: Front[TAB]Back',
     addCardSubmit: 'Add card to deck +',
     bulkPasteSummary: 'Bulk paste Markdown Q :: A or Anki TSV',
     bulkImportBtn: 'Append pasted cards +',
@@ -110,6 +182,8 @@ const I18N = {
     deckSearchPlaceholder: 'Search question or topic...',
     labelDeckTopic: 'Topic',
     allTopicsOption: 'All topics',
+    deckItemMeta: (status, box, reviews, clozeTag) => `${status} · box ${box} · ${reviews}r${clozeTag}`,
+    focusDueTag: (topic, due, total) => `${topic} · ${due}/${total} due`,
     kickerSnapshot: 'LIVE SNAPSHOT',
     liveIndicator: '● IN MEMORY',
     insightsHeading: 'The bigger picture.',
@@ -246,14 +320,14 @@ const I18N = {
     noticeFileTooLarge: 'File too large. Choose a smaller deck.',
     noticeImported: (count, fmt) => `Imported ${count} card(s) from ${fmt} locally. Nothing was uploaded.`,
     noticeImportFail: msg => `Import failed: ${msg}`,
-    kickerIntelDiag: 'DIAGNOSIS & INTERVENTION LOOP',
-    intelDiagHeading: 'Evidence & closed-loop tracking',
-    intelDiagBlurb: 'Each recommendation carries numeric evidence. Seal an intervention into the append-only ledger to measure real post-study recall & stability gains.',
-    intelIntvTitle: 'Sealed interventions',
-    intelIntvSub: 'Pre vs post evaluation',
-    exportLedgerBtn: 'Export Learning Ledger (MCP JSON) ↗',
-    kickerIntelDsr: 'EVENT-SOURCED DSR MEMORY',
-    intelDsrHeading: 'Stability, recall & calibration',
+    kickerIntelDiag: 'MISTAKE LOG & IMPACT',
+    intelDiagHeading: 'Where you get stuck & whether practice helped',
+    intelDiagBlurb: 'Every suggestion shows the numbers behind it. Track a topic before and after extra practice to see whether recall actually improved.',
+    intelIntvTitle: 'Tracked study actions',
+    intelIntvSub: 'Before vs after comparison',
+    exportLedgerBtn: 'Export Learning Log (JSON) ↗',
+    kickerIntelDsr: 'MEMORY STABILITY & CALIBRATION',
+    intelDsrHeading: 'How fast you forget & topic health',
     intelLabelEvents: 'Logged events',
     intelSubEvents: 'Immutable ledger',
     intelLabelBrier: 'Brier score',
@@ -292,8 +366,11 @@ const I18N = {
     intelTrendNames: {
       improving: 'Improving',
       worsening: 'Worsening',
+      declining: 'Declining',
       steady: 'Steady',
-      'insufficient-data': 'Gathering history'
+      stable: 'Stable',
+      'insufficient-data': 'Gathering history',
+      'insufficient-history': 'Gathering history'
     },
     noticeInterventionSealed: topic => `Intervention sealed for "${topic}". Rate follow-up cards in Study Studio to evaluate uplift.`,
     noticeExportLedger: 'Append-only Learning Ledger exported (v0.7 MCP JSON). Keep it private.',
@@ -305,16 +382,21 @@ const I18N = {
     noticeCalInsufficient: (have, need) => `Logged ${have}/${need} repeat reviews so far — keep studying or import a ledger to calibrate.`
   },
   tr: {
+    docTitle: 'FARK Çalışma Motoru — Etkileşimli Stüdyo',
+    skipLink: 'Ana içeriğe atla',
+    brandSubtitle: 'ÇALIŞMA MOTORU',
+    footerCopy: 'FARK ÇALIŞMA MOTORU © 2026',
+    footerMeta: 'AÇIK KAYNAK · MIT LİSANSI · TAKİP YOK',
     privacyText: 'Yalnızca yerel stüdyo',
     eyebrowText: 'AÇIK KAYNAK ÇALIŞMA STÜDYOSU',
     pageTitleHtml: 'Deterministik tekrar.<br><em>Dürüst</em> öğrenme sinyalleri.',
-    introLead: 'DSR, SM-2 ve Leitner planlayıcılarını karşılaştır; eklemeli Öğrenme Defteri (Ledger) ve kapalı döngü müdahale takibi kullan; {{boşluklu}} ya da Anki TSV destelerle çalış—sıfır bulut, sıfır takip.',
-    tabStudy: 'Çalışma Stüdyosu',
-    tabSimulator: 'Strateji Simülatörü',
-    tabDecks: 'Deste & Paketler',
-    tabIntelligence: 'Öğrenme Analitiği',
-    kickerActive: 'AKTİF ÇALIŞMA',
-    sessionHeading: 'Bugünkü oturum',
+    introLead: 'DSR, SM-2 ve Leitner planlayıcılarını karşılaştır; eklemeli Öğrenme Defteri ve kapalı döngü müdahale takibi kullan; {{boşluklu}} ya da Anki TSV destelerle çalış—sıfır bulut, sıfır takip.',
+    tabStudy: 'Çalış',
+    tabSimulator: 'Tekrar Laboratuvarı',
+    tabDecks: 'Desteler & Ders Hazırla',
+    tabIntelligence: 'Haritam & İlerlemem',
+    kickerActive: 'KART TEKRARI',
+    sessionHeading: 'Bugünkü tekrar kartların',
     labelQuestions: 'Soru sayısı',
     labelPerTopic: 'Konu başı',
     labelNewCards: 'Yeni kart',
@@ -338,31 +420,46 @@ const I18N = {
     nextPlanBtn: 'Yeni oturum planla ↗',
     kickerSim: 'KOHORT KARŞILAŞTIRMA LABI',
     simHeading: 'Stratejileri deneysel olarak karşılaştır.',
-    simBlurb: 'Balanced, Gentle, Intensive, SM-2 Adaptive ve DSR Bellek stratejilerini aynı unutma eğrisi ve tohumlu simülasyonda kıyaslayarak günlük yük ve birikme farklarını gör.',
+    simBlurb: 'Dengeli, Yumuşak, Yoğun, SM-2 Uyarlanabilir ve DSR Bellek stratejilerini aynı unutma eğrisi ve tohumlu simülasyonda kıyaslayarak günlük yük ve birikme farklarını gör.',
     labelSimCards: 'Kart',
     labelSimDays: 'Gün',
     labelSimLimit: 'Günlük sınır',
     labelSimProfile: 'Profil',
     runSimBtn: 'Simülasyonu çalıştır ↻',
+    simReviewsCount: n => `${n} tekrar`,
+    simDisclaimer: 'Bu simülasyon sentetik ve deterministiktir; gerçek öğrenci verisi yerine stratejilerin göreli çalışma yükü davranışını karşılaştırır.',
+    seqRowTitle: (label, days, box) => `${label} — toplam ${days} gün (son kutu ${box})`,
+    seqStep: (rating, days) => `${rating}:${days}g`,
     kickerSeq: 'ADIM ADIM İZLEME',
     seqHeading: 'Bire bir aralık dizisi',
-    seqBlurb: 'Sıra: Good → Good → Again (kavram karışıklığı) → Good → Easy.',
+    seqBlurb: 'Sıra: İyi → İyi → Tekrar (kavram karışıklığı) → İyi → Kolay (0. günden başlayarak).',
     kickerPacks: 'HAZIR ÖRNEK PAKETLER',
     packsHeading: 'Konu paketi seç',
-    packsBlurb: 'CS {{boşluk doldurma}}, Biyoloji hata analizi veya çift yönlü İngilizce-Türkçe kelime paketlerini tek tıkla dene.',
+    packsBlurb: 'Algoritmalar {{boşluk doldurma}}, Biyoloji yanılgı takibi veya çift yönlü İngilizce-Türkçe kelime paketlerini tek tıkla dene.',
     packStarter: 'Genel Karışım (9)',
     packEnglish: 'İngilizce Ustalık (A2→B2)',
-    packCs: 'Algoritmalar (Cloze)',
+    packCs: 'Algoritmalar (Boşluklu)',
     packBiology: 'Hücre Biyolojisi',
     packLanguage: 'EN ↔ TR Kelime',
+    packDisplayNames: {
+      starter: 'Genel Karışım',
+      english: 'İngilizce Ustalık (A2→B2)',
+      'computer-science': 'Algoritmalar',
+      biology: 'Hücre Biyolojisi',
+      language: 'EN ↔ TR Kelime'
+    },
     kickerAuthor: 'KİŞİSEL KART DESTESİ',
     addCardHeading: 'Kendi kartını ekle',
-    addCardBlurb: 'Tekil kart ekle ({{boşluk}} destekli!) veya toplu Markdown Q :: A, CSV ya da Anki/Quizlet TSV yapıştır.',
+    addCardBlurb: 'Tekil kart ekle ({{boşluk}} destekli!) veya toplu Markdown Soru :: Yanıt, CSV ya da Anki/Quizlet TSV yapıştır.',
     labelCardTopic: 'Konu',
     labelCardQuestion: 'Soru',
     labelCardAnswer: 'Yanıt',
+    cardTopicPlaceholder: 'örn. Fizik',
+    cardQuestionPlaceholder: 'örn. Kuvvetin SI birimi {{Newton}} olarak adlandırılır.',
+    cardAnswerPlaceholder: 'örn. Newton (N)',
+    bulkPlaceholder: '## Fizik\n- Kuvvetin SI birimi nedir? :: Newton (N)\n\nVeya Anki TSV: ÖnYüz[SEKME]ArkaYüz',
     addCardSubmit: 'Desteye kart ekle +',
-    bulkPasteSummary: 'Toplu Markdown Q :: A veya Anki TSV yapıştır',
+    bulkPasteSummary: 'Toplu Markdown veya Anki TSV yapıştır',
     bulkImportBtn: 'Yapıştırılan kartları ekle +',
     kickerExplorer: 'DESTE GEZGİNİ',
     deckManagerHeading: 'Kartları ara ve yönet',
@@ -370,6 +467,8 @@ const I18N = {
     deckSearchPlaceholder: 'Soru veya konu ara...',
     labelDeckTopic: 'Konu',
     allTopicsOption: 'Tüm konular',
+    deckItemMeta: (status, box, reviews, clozeTag) => `${status} · kutu ${box} · ${reviews} tekrar${clozeTag}`,
+    focusDueTag: (topic, due, total) => `${topic} · ${due}/${total} bekliyor`,
     kickerSnapshot: 'CANLI ÖZET',
     liveIndicator: '● BELLEKTE',
     insightsHeading: 'Genel görünüm.',
@@ -506,14 +605,14 @@ const I18N = {
     noticeFileTooLarge: 'Dosya çok büyük. Daha küçük bir deste seçin.',
     noticeImported: (count, fmt) => `${fmt} dosyasından ${count} kart yerel olarak içe aktarıldı. Sunucuya yükleme yapılmadı.`,
     noticeImportFail: msg => `İçe aktarma başarısız: ${msg}`,
-    kickerIntelDiag: 'TANI VE MÜDAHALE DÖNGÜSÜ',
-    intelDiagHeading: 'Kanıtlı tanı ve sonuç takibi',
-    intelDiagBlurb: 'Her öneri sayısal kanıt taşır. Bir müdahaleyi eklemeli deftere mühürleyerek çalışma sonrası gerçek hatırlama ve kararlılık artışını ölç.',
-    intelIntvTitle: 'Mühürlenmiş müdahaleler',
-    intelIntvSub: 'Öncesi vs sonrası değerlendirme',
-    exportLedgerBtn: 'Öğrenme Defterini İndir (MCP JSON) ↗',
-    kickerIntelDsr: 'OLAY TABANLI DSR BELLEĞİ',
-    intelDsrHeading: 'Kararlılık, hatırlama & kalibrasyon',
+    kickerIntelDiag: 'HATA GEÇMİŞİ VE ETKİ',
+    intelDiagHeading: 'Nerede takılıyorsun ve çalışman işe yaradı mı?',
+    intelDiagBlurb: 'Her öneri sayısal kanıtıyla gelir. Bir konuyu takibe alarak yaptığın çalışmanın hatırlamayı gerçekten artırıp artırmadığını gör.',
+    intelIntvTitle: 'Takibe alınan çalışmalar',
+    intelIntvSub: 'Öncesi ve sonrası karşılaştırma',
+    exportLedgerBtn: 'Öğrenme Kaydını İndir (JSON) ↗',
+    kickerIntelDsr: 'BELLEK KARARLILIĞI VE KALİBRASYON',
+    intelDsrHeading: 'Unutma hızın ve konu sağlığı',
     intelLabelEvents: 'Kayıtlı olay',
     intelSubEvents: 'Değişmez defter',
     intelLabelBrier: 'Brier skoru',
@@ -528,7 +627,7 @@ const I18N = {
     labelPrereqChild: 'Hedef konu',
     labelPrereqParent: 'Önkoşul konusu',
     prereqAddBtn: 'Önkoşul bağla +',
-    calIdleNote: 'Bu sekmedeki tekrar aralıklarını yerelde inceleyerek kişisel DSR bellek eğrini (initialStabilityScale, stabilityGainScale) kalibre eder.',
+    calIdleNote: 'Bu sekmedeki tekrar aralıklarını yerelde inceleyerek kişisel DSR bellek hızını (başlangıç kararlılığı ve kazanç ölçeği) kalibre eder.',
     calInsufficientNote: (have, need) => `Aşırı uyumu önlemek için bu defterde en az ${need} tekrar tahmini gerekir (şu an ${have}). Çalışmaya devam et veya defter içe aktar.`,
     calFittedNote: fit =>
       `Aktif kişisel DSR uyumu (${fit.sampleCount} puanlı tahmin): s0=${fit.params.initialStabilityScale}, g=${fit.params.stabilityGainScale} · Brier ${fit.baseline.brierScore.toFixed(3)} → ${fit.fittedResult.brierScore.toFixed(3)} (${fit.brierDelta >= 0 ? '+' : ''}${fit.brierDelta.toFixed(4)}).`,
@@ -552,8 +651,11 @@ const I18N = {
     intelTrendNames: {
       improving: 'İyileşiyor',
       worsening: 'Kötüleşiyor',
+      declining: 'Düşüyor',
       steady: 'Durağan',
-      'insufficient-data': 'Geçmiş birikiyor'
+      stable: 'Durağan',
+      'insufficient-data': 'Geçmiş birikiyor',
+      'insufficient-history': 'Geçmiş birikiyor'
     },
     noticeInterventionSealed: topic => `${topic} için müdahale mühürlendi. Etkiyi ölçmek için Çalışma Stüdyosunda takip tekrarları yap.`,
     noticeExportLedger: 'Eklemeli Öğrenme Defteri (v0.7 MCP JSON) indirildi. Gizli tutun.',
@@ -568,6 +670,29 @@ const I18N = {
 
 const STORAGE_ENABLE_KEY = 'fark-study-studio-persist-v07';
 const STORAGE_STATE_KEY = 'fark-study-studio-state-v07';
+const LANG_PREF_KEY = 'fark-ui-lang-v1';
+
+function getLocalStorageSafe() {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
+  } catch {}
+  return null;
+}
+
+function detectInitialLanguage() {
+  const store = getLocalStorageSafe();
+  try {
+    const saved = store?.getItem(LANG_PREF_KEY);
+    if (saved === 'en' || saved === 'tr') return saved;
+  } catch {}
+  try {
+    if (typeof navigator !== 'undefined') {
+      const browserLang = navigator.language || navigator.languages?.[0] || '';
+      if (/^tr\b/i.test(browserLang)) return 'tr';
+    }
+  } catch {}
+  return 'en';
+}
 
 function buildLedgerForDeck(deck, at = new Date()) {
   return createLedger({
@@ -577,7 +702,7 @@ function buildLedgerForDeck(deck, at = new Date()) {
   });
 }
 
-let lang = 'en';
+let lang = detectInitialLanguage();
 let activeTab = 'study';
 let cards = buildSamplePack('starter');
 let ledger = buildLedgerForDeck(cards);
@@ -593,19 +718,13 @@ let fittedParams = null;
 let lastCalibration = null;
 let messageTimer;
 
-function getLocalStorageSafe() {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;
-  } catch {}
-  return null;
-}
-
 function clearLocalState() {
   const store = getLocalStorageSafe();
   if (!store) return;
   try {
     store.removeItem(STORAGE_ENABLE_KEY);
     store.removeItem(STORAGE_STATE_KEY);
+    store.removeItem(LANG_PREF_KEY);
   } catch {}
 }
 
@@ -670,9 +789,24 @@ function nextEventDate() {
 }
 
 const t = () => I18N[lang];
+const displayTopic = topic => (lang === 'tr' ? (TR_TOPIC_LABELS[topic] ?? topic) : topic);
+function displayCardFields(card) {
+  if (!card || lang !== 'tr') return card;
+  const tr = TR_CARD_COPY[card.id];
+  return tr
+    ? { ...card, topic: displayTopic(card.topic), question: tr.question, answer: tr.answer }
+    : { ...card, topic: displayTopic(card.topic) };
+}
 const activeStrategyId = () => $('strategy-select').value || 'balanced';
 const isReversedMode = () => Boolean($('reverse-toggle').checked);
 const isReasonAware = () => ($('reason-aware-toggle').checked ?? true) !== false;
+
+function clearNotice() {
+  const note = $('notice');
+  if (!note) return;
+  note.classList.remove('visible');
+  clearTimeout(messageTimer);
+}
 
 function notify(message) {
   const note = $('notice');
@@ -718,6 +852,7 @@ function switchTab(nextTab) {
 }
 
 let closedLoopStudio = null;
+let studentShell = null;
 let darkMode = false;
 function updateThemeButton() {
   const btn = $('theme-toggle');
@@ -736,6 +871,7 @@ function applyTheme() {
 let focusMode = true;
 function updateFocusMode() {
   document.body.classList.toggle('focus-mode', focusMode);
+  if (focusMode && activeTab === 'simulator') switchTab('study');
   const button = $('view-mode-toggle');
   button.setAttribute('aria-pressed', String(focusMode));
   button.textContent = lang === 'tr'
@@ -751,12 +887,12 @@ function updateStudentWelcome() {
   $('home-eyebrow').textContent = isTurkish ? 'ÇALIŞMA ALANIN' : 'YOUR STUDY SPACE';
   $('home-privacy').textContent = isTurkish ? '● Çevrimdışı öncelikli · Takip yok' : '● Offline-first · No tracking';
   $('home-guidance').textContent = isTurkish ? 'Keşfetmek istediğin alanı seç' : 'Choose a space to explore';
-  $('home-library-button').textContent = isTurkish ? 'Kütüphaneyi keşfet' : 'Explore library';
+  $('home-library-button').textContent = isTurkish ? 'Deste & ders hazırla' : 'Decks & lesson builder';
   $('welcome-heading').textContent = isTurkish ? 'Bugün bir adım at.' : 'Make today count.';
   $('welcome-description').textContent = isTurkish
     ? 'Bugünkü çalışmanla başla. Hazır olduğunda ilerlemeni keşfet.'
     : "Start with today's practice. Explore your progress when you're ready.";
-  $('start-learning-button').textContent = (isTurkish ? 'Çalışmaya başla ' : 'Start studying ') + '→';
+  $('start-learning-button').textContent = (isTurkish ? 'Hata → Ders → Test dene ' : 'Try Mistake → Lesson → Check ') + '→';
 }
 function applyLanguage() {
   const copy = t();
@@ -764,10 +900,19 @@ function applyLanguage() {
   updateFocusMode();
   updateThemeButton();
   document.documentElement?.setAttribute('lang', lang);
+  if (typeof document.title === 'string') document.title = copy.docTitle;
+  $('skip-link').textContent = copy.skipLink;
+  $('brand-subtitle').textContent = copy.brandSubtitle;
+  $('footer-copy').textContent = copy.footerCopy;
+  $('footer-meta').textContent = copy.footerMeta;
   $('lang-toggle').textContent = lang === 'en' ? 'TR' : 'EN';
   $('privacy-text').textContent = copy.privacyText;
-  $('page-title').innerHTML = lang === 'tr' ? 'Bir soru.<br><em>Bir adım ileri.</em>' : 'One question.<br><em>One step forward.</em>';
-  $('intro-lead').textContent = lang === 'tr' ? 'Sıradaki çalışma oturumun hazır. Kendi hızında öğren, tekrar gerektiren konuları gör.' : 'Your next study session is ready. Learn at your own pace, and see what needs practice.';
+  $('page-title').innerHTML = lang === 'tr'
+    ? 'Neden yanıldığını bul.<br><em>Kalıcı düzelt.</em>'
+    : 'Find why you missed.<br><em>Fix it for good.</em>';
+  $('intro-lead').textContent = lang === 'tr'
+    ? 'Sıradan soru kartı değil: hatanın nedenini yakala, 1 dk dersle düzelt, yeni soruyla doğrula ve unutmadan tekrar et.'
+    : 'Beyond flashcards: spot why you missed, fix it with a 1-min micro-lesson, prove it on a new question, and review before you forget.';
   $('tab-study').textContent = copy.tabStudy;
   $('tab-simulator').textContent = copy.tabSimulator;
   $('tab-decks').textContent = copy.tabDecks;
@@ -820,6 +965,10 @@ function applyLanguage() {
   $('label-card-topic').textContent = copy.labelCardTopic;
   $('label-card-question').textContent = copy.labelCardQuestion;
   $('label-card-answer').textContent = copy.labelCardAnswer;
+  $('card-topic').placeholder = copy.cardTopicPlaceholder;
+  $('card-question').placeholder = copy.cardQuestionPlaceholder;
+  $('card-answer').placeholder = copy.cardAnswerPlaceholder;
+  $('bulk-input').placeholder = copy.bulkPlaceholder;
   $('add-card-submit').textContent = copy.addCardSubmit;
   $('bulk-paste-summary').textContent = copy.bulkPasteSummary;
   $('bulk-import-btn').textContent = copy.bulkImportBtn;
@@ -916,6 +1065,7 @@ function applyLanguage() {
   }
   updateStrategyNote();
   closedLoopStudio?.applyLanguage();
+  studentShell?.applyLanguage();
 }
 
 function planOptions() {
@@ -975,13 +1125,13 @@ function renderCard() {
     return;
   }
 
-  const rawCard = cards.find(c => c.id === item.id);
+  const rawCard = displayCardFields(cards.find(c => c.id === item.id));
   const rawCloze = parseClozePrompt(rawCard.question, rawCard.answer);
   const useReversed = isReversedMode() && !rawCloze.isCloze;
   const displayCard = useReversed ? reverseCardPrompt(rawCard) : rawCard;
   const cloze = parseClozePrompt(displayCard.question, displayCard.answer);
 
-  $('question-topic').textContent = item.topic;
+  $('question-topic').textContent = displayTopic(item.topic);
   const baseBadge = item.status === 'new' ? copy.newCardBadge : copy.dueReviewBadge;
   const extras = [];
   if (cloze.isCloze) extras.push(copy.clozeBadge);
@@ -1001,6 +1151,23 @@ function renderCard() {
   }
 }
 
+function localizeFocusMessage(rec) {
+  if (lang !== 'tr') return rec.message;
+  if (rec.action === 'review-concepts') {
+    return 'Son hatalar kavram karışıklığına işaret ediyor; hızlı tekrardan önce temel ilkeyi gözden geçir.';
+  }
+  if (rec.action === 'fill-knowledge-gap') {
+    return 'Son hatalar bilgi eksiğine işaret ediyor; yeni kart eklemeden önce bu konunun temellerini pekiştir.';
+  }
+  if (rec.action === 'slow-down-reading') {
+    return 'Son hatalar dikkatsizlik kaynaklı; yanıtı açmadan önce soruyu yavaşça okumaya odaklan.';
+  }
+  if (rec.action === 'clear-due-queue') {
+    return `${rec.total} karttan ${rec.due} tanesi tekrar bekliyor; birikenleri eritmek için yeni kart sınırını geçici olarak düşük tut.`;
+  }
+  return `${rec.total} karttan ${rec.due} tanesi tekrar için hazır.`;
+}
+
 function renderFocusSignals(now) {
   const copy = t();
   const recs = getStudyRecommendations(cards, now);
@@ -1017,9 +1184,9 @@ function renderFocusSignals(now) {
     const box = document.createElement('div');
     box.className = 'focus-item';
     const title = document.createElement('strong');
-    title.textContent = `${rec.topic} · ${rec.due}/${rec.total} due`;
+    title.textContent = copy.focusDueTag(displayTopic(rec.topic), rec.due, rec.total);
     const msg = document.createElement('span');
-    msg.textContent = rec.message;
+    msg.textContent = localizeFocusMessage(rec);
     box.append(title, msg);
     container.append(box);
   }
@@ -1097,7 +1264,7 @@ function renderInsights() {
     const header = document.createElement('div');
     header.className = 'topic-row-header';
     const name = document.createElement('span');
-    name.textContent = topic.topic;
+    name.textContent = displayTopic(topic.topic);
     const count = document.createElement('span');
     count.textContent = copy.topicDueOfTotal(topic.due, topic.total);
     header.append(name, count);
@@ -1131,7 +1298,7 @@ function renderDeckManager() {
   const opts = [allOpt, ...uniqueTopics.map(topic => {
     const opt = document.createElement('option');
     opt.value = topic;
-    opt.textContent = topic;
+    opt.textContent = displayTopic(topic);
     return opt;
   })];
   topicSelect.replaceChildren(...opts);
@@ -1142,10 +1309,11 @@ function renderDeckManager() {
   const filtered = cards.filter(card => {
     if (topicFilter && card.topic !== topicFilter) return false;
     if (!query) return true;
+    const shown = displayCardFields(card);
     return (
-      card.question.toLowerCase().includes(query) ||
-      card.answer.toLowerCase().includes(query) ||
-      card.topic.toLowerCase().includes(query)
+      shown.question.toLowerCase().includes(query) ||
+      shown.answer.toLowerCase().includes(query) ||
+      shown.topic.toLowerCase().includes(query)
     );
   });
 
@@ -1161,6 +1329,7 @@ function renderDeckManager() {
   }
 
   for (const card of filtered) {
+    const shown = displayCardFields(card);
     const item = document.createElement('div');
     item.className = 'deck-item';
     const main = document.createElement('div');
@@ -1168,22 +1337,22 @@ function renderDeckManager() {
     const meta = document.createElement('div');
     meta.className = 'deck-item-meta';
     const topicSpan = document.createElement('span');
-    topicSpan.textContent = card.topic;
+    topicSpan.textContent = shown.topic;
     const statusSpan = document.createElement('span');
     statusSpan.className = 'deck-item-status';
-    const clozeTag = parseClozePrompt(card.question).isCloze ? ` · ${copy.clozeBadge}` : '';
-    statusSpan.textContent = `${cardStatusLabel(card, nowMs, copy)} · box ${card.box} · ${card.reviews}r${clozeTag}`;
+    const clozeTag = parseClozePrompt(shown.question).isCloze ? ` · ${copy.clozeBadge}` : '';
+    statusSpan.textContent = copy.deckItemMeta(cardStatusLabel(card, nowMs, copy), card.box, card.reviews, clozeTag);
     meta.append(topicSpan, statusSpan);
     const q = document.createElement('div');
     q.className = 'deck-item-q';
-    q.textContent = card.question;
+    q.textContent = shown.question;
     main.append(meta, q);
 
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'deck-delete-btn';
     del.textContent = copy.deckRemoveLabel;
-    del.setAttribute('aria-label', `${copy.deckRemoveLabel}: ${card.question}`);
+    del.setAttribute('aria-label', `${copy.deckRemoveLabel}: ${shown.question}`);
     del.addEventListener('click', () => removeCardById(card.id));
 
     item.append(main, del);
@@ -1210,9 +1379,9 @@ function renderSimulator() {
     const head = document.createElement('div');
     head.className = 'sim-row-head';
     const title = document.createElement('span');
-    title.textContent = row.label;
+    title.textContent = copy.strategyNames[row.strategy] ?? row.label;
     const total = document.createElement('span');
-    total.textContent = `${row.totalReviews} reviews`;
+    total.textContent = copy.simReviewsCount(row.totalReviews);
     head.append(title, total);
 
     const track = document.createElement('div');
@@ -1235,7 +1404,7 @@ function renderSimulator() {
     el.append(head, track, metrics);
     simBox.append(el);
   }
-  $('sim-disclaimer').textContent = sim.disclaimer;
+  $('sim-disclaimer').textContent = copy.simDisclaimer ?? sim.disclaimer;
 
   const cmp = compareStrategies(
     ['good', 'good', { rating: 'again', reason: 'misconception' }, 'good', 'easy'],
@@ -1247,32 +1416,102 @@ function renderSimulator() {
     const el = document.createElement('div');
     el.className = 'seq-row';
     const strong = document.createElement('strong');
-    strong.textContent = `${row.label} — span ${row.totalSpanDays}d (final box ${row.finalBox})`;
+    const stratLabel = copy.strategyNames[row.strategy] ?? row.label;
+    strong.textContent = copy.seqRowTitle(stratLabel, row.totalSpanDays, row.finalBox);
     const seq = document.createElement('span');
-    seq.textContent = row.timeline.map(s => `${s.rating}:${s.intervalDays}d`).join(' → ');
+    seq.textContent = row.timeline
+      .map(s => copy.seqStep(lang === 'tr' ? (copy.ratings[s.rating]?.[0] ?? s.rating) : s.rating, s.intervalDays))
+      .join(' → ');
     el.append(strong, seq);
     seqBox.append(el);
   }
 }
 
+const TR_EVIDENCE_KEYS = Object.freeze({
+  dueCount: 'bekleyen',
+  cardCount: 'toplam kart',
+  totalCards: 'toplam kart',
+  dueRatio: 'bekleyen oranı',
+  targetRecallRate: 'hedef hatırlama',
+  targetMisconceptions: 'hedef yanılgı',
+  prerequisiteRecallRate: 'ön koşul hatırlama',
+  prerequisiteRetrievability: 'ön koşul R(şimdi)',
+  prerequisiteReviews: 'ön koşul tekrar',
+  recentRecallRate: 'son hatırlama',
+  recentLapseRate: 'son hata oranı',
+  recentMisconceptions: 'son yanılgı',
+  meanDifficulty: 'ort. zorluk',
+  trend: 'eğilim',
+  fadingCards: 'zayıflayan kartlar',
+  meanRetrievability: 'ort. R(şimdi)',
+  meanStabilityDays: 'ort. kararlılık (g)',
+  misconceptionCount: 'yanılgı sayısı',
+  misconceptions: 'yanılgı',
+  attentionSlips: 'dikkatsizlik',
+  attentionCount: 'dikkatsizlik',
+  knowledgeGapCount: 'bilgi eksiği',
+  weakPrerequisites: 'zayıf ön koşullar',
+  overdueCards: 'geciken kart'
+});
+
+const TR_CONFIDENCE_LABELS = Object.freeze({
+  high: 'yüksek güven',
+  medium: 'orta güven',
+  low: 'düşük güven'
+});
+
 function formatEvidenceSummary(evidence) {
+  const trends = t().intelTrendNames;
   return Object.entries(evidence ?? {})
     .filter(([, value]) => value != null)
     .map(([key, value]) => {
-      const rendered = Array.isArray(value)
-        ? value.join(', ')
-        : typeof value === 'number' && !Number.isInteger(value)
-          ? value.toFixed(2)
-          : String(value);
-      return `${key}: ${rendered}`;
+      const label = lang === 'tr' ? (TR_EVIDENCE_KEYS[key] ?? key) : key;
+      const rendered = key === 'trend' && trends[String(value)]
+        ? trends[String(value)]
+        : Array.isArray(value)
+          ? value.map(v => displayTopic(String(v))).join(', ')
+          : typeof value === 'number' && !Number.isInteger(value)
+            ? value.toFixed(2)
+            : String(value);
+      return `${label}: ${rendered}`;
     })
     .join(' · ');
+}
+
+function localizeDiagnosisCopy(rec, copy) {
+  if (lang !== 'tr') {
+    return {
+      headline: rec.headline,
+      confidence: rec.confidence,
+      actionText: `${rec.recommendedAction} — ${rec.hypothesis}`
+    };
+  }
+  const topic = displayTopic(rec.targetTopic);
+  const sigLabel = copy.intelSignalNames[rec.signal] ?? rec.signal;
+  const conf = TR_CONFIDENCE_LABELS[rec.confidence] ?? rec.confidence;
+  let actionText = `${topic} konusunda hedefli tekrar yap.`;
+  if (rec.signal === 'fix-prerequisite') {
+    actionText = `${topic} konusuna dönmeden önce ön koşul kavramlarını pekiştir — zayıf temel üst konudaki hatırlamayı aşağı çekiyor.`;
+  } else if (rec.signal === 'resolve-misconception') {
+    actionText = `${topic} içindeki kavram yanılgılarını doğru temel ilkeyle karşılaştırarak düzelt — tekrarlayan yanlışlar kavramsal karışıklığa işaret ediyor.`;
+  } else if (rec.signal === 'rescue-fading-memory') {
+    actionText = `${topic} kartlarını bugün kısa bir oturumla tazele — tahmini hatırlama olasılığı düşüyor.`;
+  } else if (rec.signal === 'slow-down-reading') {
+    actionText = `${topic} sorularını yanıtlamadan önce dikkatli oku — son hatalar bilgi eksiğinden çok dikkatsizlik kaynaklı.`;
+  } else if (rec.signal === 'consolidate-backlog') {
+    actionText = `${topic} birikimini azaltmak için yeni kart sınırını geçici olarak düşür ve bekleyen tekrarları erit.`;
+  }
+  return {
+    headline: `${topic}: ${sigLabel}`,
+    confidence: conf,
+    actionText
+  };
 }
 
 function formatDeltaPp(value) {
   if (value == null) return '—';
   const pp = Math.round(value * 100);
-  return `${pp >= 0 ? '+' : ''}${pp}pp`;
+  return `${pp >= 0 ? '+' : ''}${pp}${lang === 'tr' ? 'p' : 'pp'}`;
 }
 
 function sealIntervention(rec) {
@@ -1280,7 +1519,7 @@ function sealIntervention(rec) {
   ledger = sealed.ledger;
   saveLocalState();
   renderIntelligence();
-  notify(t().noticeInterventionSealed(rec.targetTopic));
+  notify(t().noticeInterventionSealed(displayTopic(rec.targetTopic)));
 }
 
 function populateTopicSelect(selectEl, topics, fallbackIdx = 0) {
@@ -1288,7 +1527,7 @@ function populateTopicSelect(selectEl, topics, fallbackIdx = 0) {
   const opts = topics.map(topic => {
     const opt = document.createElement('option');
     opt.value = topic;
-    opt.textContent = topic;
+    opt.textContent = displayTopic(topic);
     return opt;
   });
   selectEl.replaceChildren(...opts);
@@ -1361,20 +1600,21 @@ function renderIntelligence() {
     diagList.append(empty);
   } else {
     for (const rec of diag.recommendations) {
+      const localized = localizeDiagnosisCopy(rec, copy);
       const box = document.createElement('div');
       box.className = 'focus-item intel-diag-card';
       const head = document.createElement('div');
       head.className = 'intel-diag-head';
       const title = document.createElement('strong');
-      title.textContent = rec.headline;
+      title.textContent = localized.headline;
       const badge = document.createElement('span');
       badge.className = 'intel-badge';
-      badge.textContent = `${copy.intelSignalNames[rec.signal] ?? rec.signal} · ${rec.confidence}`;
+      badge.textContent = `${copy.intelSignalNames[rec.signal] ?? rec.signal} · ${localized.confidence}`;
       head.append(title, badge);
 
       const action = document.createElement('div');
       action.className = 'intel-diag-meta';
-      action.textContent = `${rec.recommendedAction} — ${rec.hypothesis}`;
+      action.textContent = localized.actionText;
 
       const evidence = document.createElement('div');
       evidence.className = 'intel-diag-meta';
@@ -1412,7 +1652,7 @@ function renderIntelligence() {
       const head = document.createElement('div');
       head.className = 'intel-diag-head';
       const title = document.createElement('strong');
-      title.textContent = `${ev.targetTopic} · ${copy.intelSignalNames[ev.signal] ?? ev.signal}`;
+      title.textContent = `${displayTopic(ev.targetTopic)} · ${copy.intelSignalNames[ev.signal] ?? ev.signal}`;
       const badge = document.createElement('span');
       badge.className = 'intel-badge';
       badge.textContent = copy.intelVerdictNames[ev.verdict] ?? ev.verdict;
@@ -1420,14 +1660,23 @@ function renderIntelligence() {
 
       const action = document.createElement('div');
       action.className = 'intel-diag-meta';
-      action.textContent = ev.action;
+      action.textContent = lang === 'tr'
+        ? localizeDiagnosisCopy({ targetTopic: ev.targetTopic, signal: ev.signal, confidence: 'medium' }, copy).actionText
+        : ev.action;
 
       const deltaRow = document.createElement('div');
       deltaRow.className = 'intel-diag-meta';
-      const netTxt = ev.deltas.netUpliftVsControl == null ? '' : ` · net vs control ${formatDeltaPp(ev.deltas.netUpliftVsControl)}`;
-      deltaRow.textContent =
-        `Follow-up ${ev.followUpTargetReviews} rev · Δrecall ${formatDeltaPp(ev.deltas.recallDelta)} · ` +
-        `Δmisconception ${formatDeltaPp(ev.deltas.misconceptionDelta)} · Δstability ${ev.deltas.stabilityDeltaDays >= 0 ? '+' : ''}${ev.deltas.stabilityDeltaDays}d${netTxt}`;
+      if (lang === 'tr') {
+        const netTxt = ev.deltas.netUpliftVsControl == null ? '' : ` · kontrole göre net ${formatDeltaPp(ev.deltas.netUpliftVsControl)}`;
+        deltaRow.textContent =
+          `Takip: ${ev.followUpTargetReviews} tekrar · Δhatırlama ${formatDeltaPp(ev.deltas.recallDelta)} · ` +
+          `Δyanılgı ${formatDeltaPp(ev.deltas.misconceptionDelta)} · Δkararlılık ${ev.deltas.stabilityDeltaDays >= 0 ? '+' : ''}${ev.deltas.stabilityDeltaDays}g${netTxt}`;
+      } else {
+        const netTxt = ev.deltas.netUpliftVsControl == null ? '' : ` · net vs control ${formatDeltaPp(ev.deltas.netUpliftVsControl)}`;
+        deltaRow.textContent =
+          `Follow-up ${ev.followUpTargetReviews} rev · Δrecall ${formatDeltaPp(ev.deltas.recallDelta)} · ` +
+          `Δmisconception ${formatDeltaPp(ev.deltas.misconceptionDelta)} · Δstability ${ev.deltas.stabilityDeltaDays >= 0 ? '+' : ''}${ev.deltas.stabilityDeltaDays}d${netTxt}`;
+      }
 
       box.append(head, action, deltaRow);
       intvList.append(box);
@@ -1440,13 +1689,15 @@ function renderIntelligence() {
     const row = document.createElement('div');
     row.className = 'seq-row';
     const strong = document.createElement('strong');
-    const reqText = c.prerequisites.length ? ` (← ${c.prerequisites.join(', ')})` : '';
-    strong.textContent = `${c.label}${reqText} · ${copy.intelTrendNames[c.trend] ?? c.trend}`;
+    const reqText = c.prerequisites.length ? ` (← ${c.prerequisites.map(displayTopic).join(', ')})` : '';
+    strong.textContent = `${displayTopic(c.label)}${reqText} · ${copy.intelTrendNames[c.trend] ?? c.trend}`;
     const span = document.createElement('span');
-    const recStr = c.recentRecallRate == null ? '—' : Math.round(c.recentRecallRate * 100) + '%';
-    const rStr = c.meanRetrievability == null ? '—' : Math.round(c.meanRetrievability * 100) + '%';
-    const sStr = c.meanStabilityDays == null ? '—' : c.meanStabilityDays + 'd';
-    span.textContent = `${copy.deckCount(c.cardCount)} · ${c.combinedReviews} rev · recall ${recStr} · R(now) ${rStr} · S ${sStr}`;
+    const recStr = c.recentRecallRate == null ? '—' : (lang === 'tr' ? `%${Math.round(c.recentRecallRate * 100)}` : `${Math.round(c.recentRecallRate * 100)}%`);
+    const rStr = c.meanRetrievability == null ? '—' : (lang === 'tr' ? `%${Math.round(c.meanRetrievability * 100)}` : `${Math.round(c.meanRetrievability * 100)}%`);
+    const sStr = c.meanStabilityDays == null ? '—' : `${c.meanStabilityDays}${lang === 'tr' ? 'g' : 'd'}`;
+    span.textContent = lang === 'tr'
+      ? `${copy.deckCount(c.cardCount)} · ${c.combinedReviews} tekrar · hatırlama ${recStr} · R(şimdi) ${rStr} · S ${sStr}`
+      : `${copy.deckCount(c.cardCount)} · ${c.combinedReviews} rev · recall ${recStr} · R(now) ${rStr} · S ${sStr}`;
     row.append(strong, span);
     conceptList.append(row);
   }
@@ -1478,6 +1729,7 @@ function render() {
   renderDeckManager();
   renderSimulator();
   renderIntelligence();
+  studentShell?.refresh();
 }
 
 function revealAnswer() {
@@ -1513,7 +1765,8 @@ function rate(rating) {
   $('self-answer-input').value = '';
   saveLocalState();
   render();
-  notify(t().noticeSaved(rating, new Date(updated.dueAt).toLocaleString()));
+  const ratingLabel = lang === 'tr' ? (t().ratings[rating]?.[0] ?? rating) : rating;
+  notify(t().noticeSaved(ratingLabel, new Date(updated.dueAt).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')));
   focusAfterAdvance();
 }
 
@@ -1527,7 +1780,7 @@ function skipCurrentCard() {
   $('mistake-reason').value = '';
   $('self-answer-input').value = '';
   render();
-  notify(t().noticeSkip(item.topic));
+  notify(t().noticeSkip(displayTopic(item.topic)));
   focusAfterAdvance();
 }
 
@@ -1605,7 +1858,7 @@ function appendBulkNotes() {
   }
 }
 
-function loadSamplePack(packId) {
+function loadSamplePack(packId, { silent = false } = {}) {
   const at = nextEventDate();
   cards = buildSamplePack(packId, at);
   ledger = buildLedgerForDeck(cards, at);
@@ -1613,7 +1866,26 @@ function loadSamplePack(packId) {
   lastCalibration = null;
   saveLocalState();
   rebuildPlan();
-  notify(t().noticePackLoaded(packId, cards.length));
+  if (!silent) {
+    notify(t().noticePackLoaded(t().packDisplayNames?.[packId] ?? packId, cards.length));
+  }
+}
+
+function loadCustomFlashcardPack(rawCards, title) {
+  const at = nextEventDate();
+  cards = rawCards.map((c, idx) =>
+    createCard({
+      id: c.id || `pack-card-${idx + 1}`,
+      topic: c.topic || title || 'General',
+      question: c.question,
+      answer: c.answer
+    }, at)
+  );
+  ledger = buildLedgerForDeck(cards, at);
+  fittedParams = null;
+  lastCalibration = null;
+  saveLocalState();
+  rebuildPlan();
 }
 
 function downloadText(filename, content, mimeType) {
@@ -1777,8 +2049,12 @@ $('home-library-button').addEventListener('click', () => {
 });
 $('start-learning-button').addEventListener('click', () => {
   switchTab('study');
+  const guidedBtn = $('submode-guided');
+  if (guidedBtn) {
+    guidedBtn.click();
+    $('guided-study-view')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }
   const question = $('question-text');
-  question.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
   question.focus({ preventScroll: true });
 });
 $('view-mode-toggle').addEventListener('click', () => {
@@ -1791,6 +2067,10 @@ $('tab-decks').addEventListener('click', () => switchTab('decks'));
 $('tab-intelligence').addEventListener('click', () => switchTab('intelligence'));
 $('lang-toggle').addEventListener('click', () => {
   lang = lang === 'en' ? 'tr' : 'en';
+  try {
+    getLocalStorageSafe()?.setItem(LANG_PREF_KEY, lang);
+  } catch {}
+  clearNotice();
   saveLocalState();
   applyLanguage();
   render();
@@ -1873,7 +2153,21 @@ closedLoopStudio = initClosedLoopStudio({
   isPersistEnabled: () => persistEnabled,
   notify,
   downloadText,
-  switchTab
+  switchTab,
+  onProgressChange: () => studentShell?.refresh()
+});
+studentShell = initStudentShell({
+  getLang: () => lang,
+  notify,
+  downloadText,
+  switchTab,
+  closedLoopStudio,
+  openFlashcardPack: packId => loadSamplePack(packId, { silent: true }),
+  openCustomFlashcards: (packCards, title) => loadCustomFlashcardPack(packCards, title),
+  getFlashcardProgress: () => {
+    const summary = getStudySummary(cards, new Date());
+    return { total: summary.total, reviewed: summary.studied };
+  }
 });
 applyTheme();
 applyLanguage();

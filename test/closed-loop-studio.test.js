@@ -109,16 +109,21 @@ test('full end-to-end closed-loop studio flow: baseline miss -> micro-lesson -> 
     assert.equal(node('guided-study-view').hidden, false);
     assert.equal(node('spaced-study-view').hidden, true);
 
-    // 2. Select incorrect distractor choice A ("wrote") on baseline item q-eng-v2v3-1
-    const baselineChoices = findAll(node('guided-stage'), el => el.attributes.get('role') === 'radio');
+    // 2. Select incorrect distractor choice A ("wrote") + High confidence on baseline item q-eng-v2v3-1
+    const baselineChoices = findAll(node('guided-stage'), el => el.className?.includes('cl-choice-btn'));
+    const confButtons = findAll(node('guided-stage'), el => el.className?.includes('cl-conf-btn'));
     assert.equal(baselineChoices.length, 3);
+    assert.equal(confButtons.length, 3);
     baselineChoices[0].click(); // 'a' (misconception: v2-used-as-v3)
+    confButtons[2].click(); // 'high' confidence -> should trigger hypercorrection alert
     const submitBtn1 = findAll(node('guided-stage'), el => el.className?.includes('button-primary'))[0];
     submitBtn1.click();
 
-    // 3. Should transition to Step 2: Micro-Lesson with misconception contrast
+    // 3. Should transition to Step 2: Micro-Lesson with misconception contrast + hypercorrection signal
     const completeLessonBtn = findAll(node('guided-stage'), el => el.id === 'guided-complete-lesson-btn')[0];
     assert.ok(completeLessonBtn, 'missed baseline must present targeted micro-lesson');
+    const hyperCallout = findAll(node('guided-stage'), el => el.className?.includes('cl-callout-hyper'))[0];
+    assert.ok(hyperCallout, 'high-confidence error must trigger hypercorrection callout');
 
     // Save portable session checkpoint while in progress
     node('guided-save-checkpoint').click();
@@ -128,7 +133,7 @@ test('full end-to-end closed-loop studio flow: baseline miss -> micro-lesson -> 
 
     // 4. Complete micro-lesson -> automatically issues distinct reassessment question q-eng-v2v3-2
     completeLessonBtn.click();
-    const reassessChoices = findAll(node('guided-stage'), el => el.attributes.get('role') === 'radio');
+    const reassessChoices = findAll(node('guided-stage'), el => el.className?.includes('cl-choice-btn'));
     assert.equal(reassessChoices.length, 3, 'distinct reassessment question must be issued');
 
     // Select correct choice C ("been") on q-eng-v2v3-2
@@ -141,18 +146,31 @@ test('full end-to-end closed-loop studio flow: baseline miss -> micro-lesson -> 
     assert.match(stageText, /verified-issued-answer/);
     assert.match(stageText, /Correct on distinct follow-up question/);
 
-    // 6. Concept Map & DSR Curve in Learning Intelligence
+    // 6. Concept Map, DSR Curve, Metacognitive Calibration SVG & 14-Day Horizon SVG in Learning Intelligence
     controller.onTabChange('intelligence');
     const svgNodes = findAll(node('intel-concept-map'), el => el.attributes.get('role') === 'button');
     assert.equal(svgNodes.length, 4, 'English preset map must render 4 interactive outcome nodes');
+    assert.match(node('intel-calibration-summary').textContent, /2 observations/);
+    const calAlertsText = findAll(node('intel-calibration-alerts'), () => true).map(el => el.textContent).join(' ');
+    assert.match(calAlertsText, /Hypercorrection priority/);
+    assert.match(node('intel-horizon-summary').textContent, /Peak decay/);
 
     node('dsr-day-slider').value = '10';
     node('dsr-day-slider').input();
     assert.match(node('dsr-day-label').textContent, /\+10d/);
     assert.match(node('dsr-curve-readout').textContent, /Predicted recall R\(t\)/);
 
-    // 7. Lesson Designer (Ders Tasarımcısı): author a blank core from blocked -> ready
+    node('horizon-practice-slider').value = '3';
+    node('horizon-practice-slider').input();
+    assert.match(node('horizon-practice-label').textContent, /3 urgent outcome/);
+
+    // 7. Lesson Designer (Ders Tasarımcısı): test Markdown Open Content Adapter + blank authoring
     node('deck-submode-designer').click();
+    node('designer-adapter-format').value = 'markdown';
+    node('designer-adapter-sample').click();
+    node('designer-adapter-convert').click();
+    assert.match(node('designer-readiness-summary').textContent, /2 \/ 2 outcomes ready/);
+
     node('designer-blank-btn').click();
     assert.match(node('designer-readiness-summary').textContent, /0 \/ 1 outcomes ready/);
 
@@ -179,14 +197,37 @@ test('full end-to-end closed-loop studio flow: baseline miss -> micro-lesson -> 
 
     assert.match(node('designer-readiness-summary').textContent, /1 \/ 1 outcomes ready/);
 
-    // 8. Turkish language switch updates closed-loop studio copy cleanly
+    // 8. Intelligence 3-view submode switching keeps only one view active at a time
+    node('intel-submode-horizon').click();
+    assert.equal(node('intel-view-map').hidden, true);
+    assert.equal(node('intel-view-horizon').hidden, false);
+    assert.equal(node('intel-view-ledger').hidden, true);
+
+    node('intel-submode-ledger').click();
+    assert.equal(node('intel-view-map').hidden, true);
+    assert.equal(node('intel-view-horizon').hidden, true);
+    assert.equal(node('intel-view-ledger').hidden, false);
+
+    node('intel-submode-map').click();
+    assert.equal(node('intel-view-map').hidden, false);
+    assert.equal(node('intel-view-horizon').hidden, true);
+    assert.equal(node('intel-view-ledger').hidden, true);
+
+    // 9. Turkish language switch updates closed-loop studio copy cleanly without English leaks
     lang = 'tr';
     controller.applyLanguage();
-    assert.equal(node('submode-guided').textContent, 'Rehberli Kapalı Döngü');
-    assert.equal(node('deck-submode-designer').textContent, 'Ders Tasarımcısı');
+    assert.equal(node('submode-guided').textContent, 'Hata Analizli Çalışma');
+    assert.equal(node('deck-submode-designer').textContent, 'Kendi Dersini Hazırla');
+    assert.equal(node('intel-submode-map').textContent, 'Konu Haritam & Unutma');
+    assert.equal(node('intel-submode-horizon').textContent, 'Kendine Güven & 14 Günlük Plan');
+    assert.equal(node('intel-submode-ledger').textContent, 'Hata Geçmişi & Etki');
+    assert.equal(node('opt-adapter-md').textContent, 'Markdown Müfredatı');
+    assert.match(node('designer-manual-summary').textContent, /Manuel ünite, kazanım, soru ve mikro-ders ekle/);
     assert.match(node('designer-readiness-summary').textContent, /1 \/ 1 kazanım tam kapalı döngü için hazır/);
+    const readinessTextTr = findAll(node('designer-readiness-list'), () => true).map(el => el.textContent).join(' ');
+    assert.match(readinessTextTr, /2 Soru · 1 Ders/);
 
-    // 9. One-click "Test in Guided Loop" jumps to study tab
+    // 10. One-click "Test in Guided Loop" jumps to study tab
     node('designer-try-btn').click();
     assert.equal(activeTab, 'study');
   } finally {

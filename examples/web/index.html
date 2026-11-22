@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#eef0f7">
+  <meta name="theme-color" content="#faf9f6">
   <meta name="description" content="Explore FARK Study Engine: closed-loop assessment, prerequisite concept maps, lesson designer, DSR & SM-2 scheduling, and MCP-ready study planning.">
   <meta property="og:title" content="FARK Study Engine — Interactive Studio">
   <meta property="og:description" content="Offline-first open learning studio: guided closed-loop mastery, interactive prerequisite maps, lesson designer, and DSR memory calibration.">
@@ -11,23 +11,116 @@
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" type="module"></script>
 </head>
-<body>
-  <a class="skip-link" href="#studio-main">Skip to main content</a>
+<body class="student-experience" data-student-view="catalog">
+  <a id="skip-link" class="skip-link" href="#studio-main">Skip to main content</a>
   <div class="site-shell">
     <header class="site-header">
-      <a class="brand" href="../../README.md" aria-label="FARK Study Engine documentation">
+      <a id="brand-home-link" class="brand" href="../../README.md" aria-label="FARK Study Engine home">
         <span class="brand-mark" aria-hidden="true">F<span class="brand-period">.</span></span>
-        <span class="brand-words"><strong>FARK</strong><small>STUDY ENGINE</small></span>
+        <span class="brand-words"><strong>FARK</strong><small id="brand-subtitle">STUDY ENGINE</small></span>
       </a>
+      <nav id="student-nav" class="student-nav" aria-label="Primary navigation">
+        <button id="nav-courses" type="button" class="student-nav-link is-active" aria-current="page">Courses</button>
+        <button id="nav-progress" type="button" class="student-nav-link" aria-current="false">My Progress</button>
+        <button id="nav-add-course" type="button" class="student-nav-link" aria-current="false">Add Course</button>
+      </nav>
       <div class="header-right">
         <span class="privacy-label"><span class="privacy-dot" aria-hidden="true"></span><span id="privacy-text">Local-only studio</span></span>
-        <button id="theme-toggle" type="button" class="lang-toggle" aria-pressed="false" aria-label="Toggle dark reading mode">Dark</button>
         <button id="lang-toggle" type="button" class="lang-toggle" aria-label="Switch language between English and Turkish">TR</button>
+        <button id="theme-toggle" type="button" class="lang-toggle" aria-pressed="false" aria-label="Toggle dark reading mode">Dark</button>
+        <button id="studio-mode-switch" type="button" class="lang-toggle studio-switch-btn" aria-pressed="false">Studio</button>
         <a id="github-link" class="header-link" href="https://github.com/merttiramisu-art/fark-study-engine" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
       </div>
     </header>
 
     <main id="studio-main" tabindex="-1">
+      <section id="student-catalog-view" class="student-catalog" aria-labelledby="catalog-heading">
+        <header class="catalog-header">
+          <h1 id="catalog-heading">What do you want to learn today?</h1>
+          <p id="catalog-subtitle" class="catalog-subtitle">Pick a course. When you miss a question, we explain why in one minute and check again with a fresh question.</p>
+        </header>
+
+        <div id="catalog-resume-bar" class="catalog-resume-bar" hidden>
+          <div class="catalog-resume-copy">
+            <strong id="catalog-resume-title"></strong>
+            <span id="catalog-resume-meta"></span>
+          </div>
+          <button id="catalog-resume-btn" type="button" class="button button-primary">Continue →</button>
+        </div>
+
+        <div id="course-catalog-grid" class="course-catalog-grid" aria-live="polite"></div>
+
+        <section id="catalog-import-card" class="catalog-import-card" aria-labelledby="catalog-import-title">
+          <div class="catalog-import-copy">
+            <h2 id="catalog-import-title">Have your own notes or exam pack?</h2>
+            <p id="catalog-import-body">Upload a Markdown, CSV, or JSON course file to add it right into your catalog—everything stays locally in your browser.</p>
+          </div>
+          <div class="catalog-import-actions">
+            <button id="catalog-upload-btn" type="button" class="button button-primary">Upload course file ↑</button>
+            <button id="catalog-open-add-btn" type="button" class="button button-outline">Paste or build a course →</button>
+            <button id="catalog-template-btn" type="button" class="text-action-btn">Download .md template</button>
+          </div>
+        </section>
+        <input id="student-course-file" type="file" accept=".json,.md,.markdown,.csv,application/json,text/markdown,text/csv,text/plain" hidden>
+      </section>
+
+      <div id="student-lesson-bar" class="student-lesson-bar" hidden>
+        <div class="lesson-bar-top">
+          <button id="lesson-back-btn" type="button" class="lesson-back-btn">← Courses</button>
+          <div class="lesson-bar-meta">
+            <strong id="lesson-course-title"></strong>
+            <span id="lesson-course-progress" class="lesson-course-progress tabular-nums"></span>
+          </div>
+        </div>
+        <div id="lesson-flashcard-packs" class="lesson-flashcard-packs" hidden></div>
+      </div>
+
+      <section id="student-import-view" class="student-import-view" aria-labelledby="student-add-heading" hidden>
+        <header class="catalog-header">
+          <h1 id="student-add-heading">Add your own course</h1>
+          <p id="student-add-subtitle" class="catalog-subtitle">Plug in any subject—language prep, university notes, or a private exam pack—via file upload, pasted notes, or a 5-line JS call.</p>
+        </header>
+
+        <div class="student-import-grid">
+          <section class="student-panel-card" aria-labelledby="student-upload-title">
+            <h2 id="student-upload-title">1. Upload a course file</h2>
+            <p id="student-upload-body" class="student-panel-body">Supports CoursePack JSON, Knowledge Core JSON, Study Deck JSON, Markdown (.md), or CSV (.csv).</p>
+            <div class="student-panel-actions">
+              <button id="student-upload-btn" type="button" class="button button-primary">Choose file (.json, .md, .csv) ↑</button>
+              <button id="student-template-btn" type="button" class="button button-outline">Download sample .md template</button>
+            </div>
+          </section>
+
+          <section class="student-panel-card" aria-labelledby="student-paste-title-head">
+            <h2 id="student-paste-title-head">2. Or paste structured notes</h2>
+            <p id="student-paste-body" class="student-panel-body">Paste Markdown with # Unit / ## Outcome / Lesson: / Q: (or simple Q :: A flashcards) to validate and add instantly.</p>
+            <label for="student-paste-title" class="student-field">
+              <span id="label-student-paste-name">Course title (optional)</span>
+              <input id="student-paste-title" type="text" maxlength="120" placeholder="e.g. Constitutional Law Foundations">
+            </label>
+            <label for="student-paste-input" class="sr-only">Course Markdown, CSV, or JSON</label>
+            <textarea id="student-paste-input" class="student-paste-textarea" rows="8" maxlength="300000"></textarea>
+            <div class="student-panel-actions">
+              <button id="student-paste-sample-btn" type="button" class="button button-light">Load example notes</button>
+              <button id="student-paste-check-btn" type="button" class="button button-outline">Check &amp; preview</button>
+              <button id="student-paste-add-btn" type="button" class="button button-primary">Add to My Courses &amp; Start →</button>
+            </div>
+            <p id="student-paste-status" class="student-paste-status" aria-live="polite"></p>
+          </section>
+        </div>
+
+        <details class="student-dev-details">
+          <summary id="student-dev-summary">For developers &amp; private exam apps (JavaScript CourseRegistry API)</summary>
+          <div class="student-dev-body-wrap">
+            <p id="student-dev-body" class="student-panel-body">Reuse this exact FARK engine and student UI in your own app by registering a CoursePack object directly in code:</p>
+            <pre><code id="student-dev-code"></code></pre>
+          </div>
+        </details>
+
+        <div class="student-import-foot">
+          <button id="student-open-studio-designer" type="button" class="text-action-btn">Need fine-grained authoring? Open Lesson Designer in Studio →</button>
+        </div>
+      </section>
       <section class="intro compact-intro v2-home" aria-labelledby="page-title">
         <div class="v2-home-topline"><span class="v2-home-pill" id="home-eyebrow">YOUR STUDY SPACE</span><span class="v2-home-signal" id="home-privacy">● Offline-first · No tracking</span></div>
         <div class="v2-home-layout">
@@ -274,7 +367,29 @@
                 </div>
               </section>
 
-              <section class="work-card" aria-labelledby="designer-unit-title">
+              <section id="designer-adapter-card" class="work-card" aria-labelledby="designer-adapter-heading">
+                <div class="section-title-row">
+                  <div><span id="kicker-adapter" class="kicker">OPEN CONTENT ADAPTER (GATE H)</span><h3 id="designer-adapter-heading">Convert Markdown or CSV notes</h3></div>
+                  <span class="work-icon" aria-hidden="true">⇄</span>
+                </div>
+                <p id="designer-adapter-blurb" class="add-card-blurb">Paste structured Markdown (# Unit, ## Outcome, Lesson:, Q:, * correct, - distractor) or CSV rows to build a validated Knowledge Core instantly.</p>
+                <div class="designer-adapter-controls">
+                  <label for="designer-adapter-format"><span id="label-adapter-format">Source format</span>
+                    <select id="designer-adapter-format">
+                      <option id="opt-adapter-md" value="markdown" selected>Markdown Curriculum</option>
+                      <option id="opt-adapter-csv" value="csv">CSV Table</option>
+                    </select>
+                  </label>
+                  <button id="designer-adapter-sample" type="button" class="button button-light">Load sample template</button>
+                  <button id="designer-adapter-convert" type="button" class="button button-primary">Convert &amp; Load ↗</button>
+                </div>
+                <label class="sr-only" for="designer-adapter-input">Markdown or CSV curriculum source</label>
+                <textarea id="designer-adapter-input" class="adapter-textarea" rows="6" maxlength="200000" placeholder="# Unit: Web Security&#10;## Outcome: Input Validation&#10;Lesson: Always validate inputs at trust boundaries.&#10;Q: Why is client-only validation unsafe?&#10;* Attackers can bypass browser checks&#10;- Browsers block form tags [misconception: client-trust]"></textarea>
+                <p id="designer-adapter-status" class="insight-subnote" aria-live="polite"></p>
+              </section>
+
+              <details id="designer-manual-details" class="work-card designer-accordion">
+                <summary id="designer-manual-summary" class="designer-accordion-summary">Manual unit, outcome, question &amp; lesson editor</summary>
                 <div class="designer-forms-grid">
                   <form id="designer-unit-form" class="designer-form-block">
                     <h3 id="designer-unit-title">Add Unit</h3>
@@ -313,12 +428,12 @@
                     <button id="designer-lesson-btn" type="submit" class="button button-outline">Add micro-lesson +</button>
                   </form>
                 </div>
-              </section>
+              </details>
             </div>
 
             <aside class="work-card readiness-card" aria-labelledby="designer-readiness-title">
               <div class="section-title-row">
-                <div><span class="kicker">CONTENT READINESS AUDIT</span><h3 id="designer-readiness-title">Live content readiness audit</h3></div>
+                <div><span id="kicker-designer-readiness" class="kicker">CONTENT READINESS AUDIT</span><h3 id="designer-readiness-title">Live content readiness audit</h3></div>
               </div>
               <p id="designer-readiness-summary" class="insight-subnote tabular-nums"></p>
               <div id="designer-readiness-list" class="readiness-list" aria-live="polite"></div>
@@ -380,7 +495,13 @@
       </section>
 
       <section id="panel-intelligence" role="tabpanel" aria-labelledby="tab-intelligence" hidden>
-        <section class="work-card map-lab-card" aria-labelledby="map-heading">
+        <div class="submode-bar" role="group" aria-label="Learning intelligence views">
+          <button id="intel-submode-map" type="button" class="submode-btn active" aria-pressed="true">Concept Map &amp; Decay</button>
+          <button id="intel-submode-horizon" type="button" class="submode-btn" aria-pressed="false">Calibration &amp; 14-Day Horizon</button>
+          <button id="intel-submode-ledger" type="button" class="submode-btn" aria-pressed="false">Ledger &amp; Interventions</button>
+        </div>
+
+        <section id="intel-view-map" class="work-card map-lab-card" aria-labelledby="map-heading">
           <div class="section-title-row">
             <div><span id="kicker-map" class="kicker">INTERACTIVE CONCEPT &amp; PREREQUISITE MAP</span><h2 id="map-heading">Knowledge graph &amp; forgetting curve.</h2></div>
             <span class="work-icon" aria-hidden="true">◈</span>
@@ -405,7 +526,34 @@
           </div>
         </section>
 
-        <div class="sim-layout">
+        <div id="intel-view-horizon" class="sim-layout metacog-horizon-row" hidden>
+          <section class="work-card" aria-labelledby="intel-cal-lab-heading">
+            <div class="section-title-row">
+              <div><span id="kicker-metacog" class="kicker">METACOGNITIVE CALIBRATION</span><h2 id="intel-cal-lab-heading">Confidence vs. actual accuracy</h2></div>
+              <span class="work-icon" aria-hidden="true">◔</span>
+            </div>
+            <p id="intel-cal-lab-blurb" class="add-card-blurb">Tracks how well your confidence judgments in Guided Loop match observed accuracy. High-confidence errors trigger Hypercorrection alerts; low-confidence hits flag fragile guesses.</p>
+            <div id="intel-calibration-svg" class="svg-lab-host"></div>
+            <p id="intel-calibration-summary" class="insight-subnote tabular-nums" aria-live="polite"></p>
+            <div id="intel-calibration-alerts" class="cl-alert-stack" aria-live="polite"></div>
+          </section>
+
+          <section class="work-card" aria-labelledby="intel-horizon-heading">
+            <div class="section-title-row">
+              <div><span id="kicker-horizon" class="kicker">14-DAY FORGETTING HORIZON</span><h2 id="intel-horizon-heading">Upcoming decay &amp; what-if load</h2></div>
+              <span class="work-icon" aria-hidden="true">▤</span>
+            </div>
+            <p id="intel-horizon-blurb" class="add-card-blurb">Projects how many concepts fall below 90% predicted recall over the next 14 days—and how reviewing the most urgent items today flattens next week's workload.</p>
+            <div class="horizon-slider-row">
+              <label for="horizon-practice-slider" id="horizon-practice-label" class="tabular-nums">What-if study today: 2 outcomes</label>
+              <input id="horizon-practice-slider" type="range" min="0" max="6" step="1" value="2" class="dsr-slider">
+            </div>
+            <div id="intel-horizon-svg" class="svg-lab-host"></div>
+            <p id="intel-horizon-summary" class="insight-subnote tabular-nums" aria-live="polite"></p>
+          </section>
+        </div>
+
+        <div id="intel-view-ledger" class="sim-layout" hidden>
           <section class="work-card" aria-labelledby="intel-diag-heading">
             <div class="section-title-row">
               <div><span id="kicker-intel-diag" class="kicker">DIAGNOSIS &amp; INTERVENTION LOOP</span><h2 id="intel-diag-heading">Evidence &amp; closed-loop tracking</h2></div>
@@ -451,7 +599,7 @@
         <div class="principle"><span class="principle-num">03</span><h3 id="p3-title">MCP-ready &amp; local-first.</h3><p id="p3-body">Use via browser, Node CLI, Web Component, or stdio MCP server without letting AI agents fabricate progress.</p></div>
       </div>
     </main>
-    <footer class="footer"><span>FARK STUDY ENGINE © 2026</span><span>OPEN SOURCE · MIT LICENSE · NO TRACKING</span></footer>
+    <footer class="footer"><span id="footer-copy">FARK STUDY ENGINE © 2026</span><span id="footer-meta">OPEN SOURCE · MIT LICENSE · NO TRACKING</span></footer>
   </div>
   <div id="notice" class="notice" role="status" aria-live="polite"></div>
 </body>

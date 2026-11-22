@@ -107,6 +107,18 @@
     "./reassessment-ledger": {
       "types": "./types/reassessment-ledger.d.ts",
       "default": "./src/reassessment-ledger.js"
+    },
+    "./metacognition": {
+      "types": "./types/metacognition.d.ts",
+      "default": "./src/metacognition.js"
+    },
+    "./core-adapter": {
+      "types": "./types/core-adapter.d.ts",
+      "default": "./src/core-adapter.js"
+    },
+    "./course-pack": {
+      "types": "./types/course-pack.d.ts",
+      "default": "./src/course-pack.js"
     }
   },
   "engines": {

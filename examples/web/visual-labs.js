@@ -357,7 +357,8 @@ export function renderDsrCurveSvg(container, {
       'font-size': '9.5',
       fill: pct === 0.9 ? '#0f766e' : axisText
     });
-    lbl.textContent = `${Math.round(pct * 100)}%`;
+    const pctVal = Math.round(pct * 100);
+    lbl.textContent = lang === 'tr' ? `%${pctVal}` : `${pctVal}%`;
     svg.append(lbl);
   }
 
@@ -419,3 +420,359 @@ export function renderDsrCurveSvg(container, {
   container.replaceChildren(svg);
   return { predictedR: currentR, stability: safeS, day: safeDay };
 }
+
+/**
+ * Render an editorial SVG Metacognitive Calibration / Reliability Diagram:
+ * Expected confidence (30% / 65% / 90%) vs Observed accuracy with diagonal perfect-calibration guide.
+ */
+export function renderCalibrationDiagramSvg(container, {
+  report,
+  lang = 'en',
+  isDark = false
+}) {
+  if (!container) return;
+  const W = 400;
+  const H = 216;
+  const padL = 42;
+  const padR = 18;
+  const padT = 28;
+  const padB = 38;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const xOf = p => padL + p * plotW;
+  const yOf = p => padT + (1 - p) * plotH;
+
+  const svg = createSvgEl('svg', {
+    viewBox: `0 0 ${W} ${H}`,
+    class: 'calibration-svg',
+    role: 'img',
+    'aria-label': lang === 'tr'
+      ? 'Üstbilişsel güven ve doğruluk kalibrasyon diyagramı'
+      : 'Metacognitive confidence vs accuracy calibration diagram'
+  });
+
+  const gridColor = isDark ? '#2a3147' : '#e4e7f2';
+  const axisText = isDark ? '#94a3b8' : '#5f657d';
+  const diagColor = isDark ? '#64748b' : '#94a3b8';
+
+  // Subtle overconfidence triangle (below diagonal)
+  svg.append(createSvgEl('polygon', {
+    points: `${xOf(0)},${yOf(0)} ${xOf(1)},${yOf(1)} ${xOf(1)},${yOf(0)}`,
+    fill: isDark ? 'rgba(220, 38, 38, 0.06)' : 'rgba(185, 28, 28, 0.045)'
+  }));
+
+  // Horizontal grid lines
+  for (const pct of [0, 0.5, 1]) {
+    const y = yOf(pct);
+    svg.append(createSvgEl('line', {
+      x1: padL,
+      y1: y,
+      x2: W - padR,
+      y2: y,
+      stroke: gridColor,
+      'stroke-width': '1'
+    }));
+    const lbl = createSvgEl('text', {
+      x: padL - 7,
+      y: y + 3.5,
+      'text-anchor': 'end',
+      'font-size': '9.5',
+      fill: axisText
+    });
+    const pctVal = Math.round(pct * 100);
+    lbl.textContent = lang === 'tr' ? `%${pctVal}` : `${pctVal}%`;
+    svg.append(lbl);
+  }
+
+  // Diagonal perfect calibration line (y = x)
+  svg.append(createSvgEl('line', {
+    x1: xOf(0),
+    y1: yOf(0),
+    x2: xOf(1),
+    y2: yOf(1),
+    stroke: diagColor,
+    'stroke-width': '1.3',
+    'stroke-dasharray': '5 4'
+  }));
+
+  // Top-left legend strip (collision-free above plot area)
+  const diagLabel = createSvgEl('text', {
+    x: padL,
+    y: 13,
+    'font-size': '9',
+    'font-weight': '600',
+    fill: axisText
+  });
+  diagLabel.textContent = lang === 'tr' ? '- - Tam kalibrasyon (y = x)' : '- - Perfect calibration (y = x)';
+  svg.append(diagLabel);
+
+  const overLabel = createSvgEl('text', {
+    x: W - padR,
+    y: 13,
+    'text-anchor': 'end',
+    'font-size': '9',
+    'font-weight': '600',
+    fill: isDark ? '#f87171' : '#b91c1c'
+  });
+  overLabel.textContent = lang === 'tr' ? '■ Aşırı güven bölgesi (alt)' : '■ Overconfidence zone (below)';
+  svg.append(overLabel);
+
+  const buckets = report?.buckets ?? [];
+  const levelNames = {
+    low: lang === 'tr' ? 'Tahmin (%30)' : 'Guess (30%)',
+    medium: lang === 'tr' ? 'Kararsız (%65)' : 'Unsure (65%)',
+    high: lang === 'tr' ? 'Eminim (%90)' : 'Sure (90%)'
+  };
+
+  const observedPoints = [];
+
+  for (const b of buckets) {
+    const cx = xOf(b.expectedAccuracy);
+    const barW = 36;
+
+    // X-axis bucket label
+    const xLbl = createSvgEl('text', {
+      x: cx,
+      y: H - 18,
+      'text-anchor': 'middle',
+      'font-size': '9.5',
+      'font-weight': '700',
+      fill: axisText
+    });
+    xLbl.textContent = levelNames[b.level] ?? b.level;
+    svg.append(xLbl);
+
+    const nLbl = createSvgEl('text', {
+      x: cx,
+      y: H - 6,
+      'text-anchor': 'middle',
+      'font-size': '8.5',
+      fill: axisText
+    });
+    nLbl.textContent = `n=${b.count}`;
+    svg.append(nLbl);
+
+    if (b.count > 0 && b.observedAccuracy != null) {
+      const cy = yOf(b.observedAccuracy);
+      observedPoints.push(`${cx.toFixed(1)},${cy.toFixed(1)}`);
+
+      const isHyperAlert = b.level === 'high' && (report?.hypercorrectionCount ?? 0) > 0 && b.observedAccuracy < 0.85;
+      const barFill = isHyperAlert
+        ? (isDark ? 'rgba(248, 113, 113, 0.28)' : 'rgba(185, 28, 28, 0.16)')
+        : (isDark ? 'rgba(99, 102, 241, 0.30)' : 'rgba(79, 70, 181, 0.18)');
+      const barStroke = isHyperAlert ? '#b91c1c' : '#4f46b5';
+
+      svg.append(createSvgEl('rect', {
+        x: cx - barW / 2,
+        y: cy,
+        width: barW,
+        height: Math.max(2, yOf(0) - cy),
+        rx: '5',
+        fill: barFill,
+        stroke: barStroke,
+        'stroke-width': '1.4'
+      }));
+
+      // Position percentage cleanly above the dot without overlapping the dot or top legend
+      const labelY = b.observedAccuracy >= 0.92 ? cy + 16 : cy - 9;
+      const valLbl = createSvgEl('text', {
+        x: cx,
+        y: labelY,
+        'text-anchor': 'middle',
+        'font-size': '10',
+        'font-weight': '700',
+        fill: isDark ? '#f1f5f9' : '#1e2238'
+      });
+      const obsPct = Math.round(b.observedAccuracy * 100);
+      valLbl.textContent = lang === 'tr' ? `%${obsPct}` : `${obsPct}%`;
+      svg.append(valLbl);
+    } else {
+      // Unobserved dashed reference ring on diagonal
+      svg.append(createSvgEl('circle', {
+        cx,
+        cy: yOf(b.expectedAccuracy),
+        r: '4.5',
+        fill: 'none',
+        stroke: diagColor,
+        'stroke-width': '1.2',
+        'stroke-dasharray': '2 2'
+      }));
+    }
+  }
+
+  if (observedPoints.length >= 2) {
+    svg.append(createSvgEl('polyline', {
+      points: observedPoints.join(' '),
+      fill: 'none',
+      stroke: '#0f766e',
+      'stroke-width': '2'
+    }));
+  }
+
+  for (const b of buckets) {
+    if (b.count > 0 && b.observedAccuracy != null) {
+      svg.append(createSvgEl('circle', {
+        cx: xOf(b.expectedAccuracy),
+        cy: yOf(b.observedAccuracy),
+        r: '4.2',
+        fill: '#ffffff',
+        stroke: '#0f766e',
+        'stroke-width': '2.2'
+      }));
+    }
+  }
+
+  container.replaceChildren(svg);
+}
+
+/**
+ * Render an interactive 14-day Forgetting Horizon & Workload SVG chart
+ * comparing baseline at-risk concepts (<90% R) vs "What-if I review N today?".
+ */
+export function renderForgettingHorizonSvg(container, {
+  forecast,
+  lang = 'en',
+  isDark = false
+}) {
+  if (!container) return;
+  const days = forecast?.days ?? [];
+  const totalItems = Math.max(1, forecast?.itemCount ?? 1);
+
+  const W = 400;
+  const H = 205;
+  const padL = 34;
+  const padR = 14;
+  const padT = 22;
+  const padB = 34;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  const svg = createSvgEl('svg', {
+    viewBox: `0 0 ${W} ${H}`,
+    class: 'horizon-svg',
+    role: 'img',
+    'aria-label': lang === 'tr'
+      ? '14 günlük unutma ufku ve çalışma yükü tahmini'
+      : '14-day forgetting horizon and study workload forecast'
+  });
+
+  const gridColor = isDark ? '#2a3147' : '#e4e7f2';
+  const axisText = isDark ? '#94a3b8' : '#5f657d';
+
+  const yOf = count => padT + (1 - Math.min(totalItems, count) / totalItems) * plotH;
+
+  for (const frac of [0, 0.5, 1]) {
+    const val = Math.round(totalItems * frac);
+    const y = yOf(val);
+    svg.append(createSvgEl('line', {
+      x1: padL,
+      y1: y,
+      x2: W - padR,
+      y2: y,
+      stroke: gridColor,
+      'stroke-width': '1'
+    }));
+    const lbl = createSvgEl('text', {
+      x: padL - 6,
+      y: y + 3.5,
+      'text-anchor': 'end',
+      'font-size': '9.5',
+      fill: axisText
+    });
+    lbl.textContent = String(val);
+    svg.append(lbl);
+  }
+
+  const slotW = plotW / Math.max(1, days.length);
+  const barW = Math.max(6, Math.min(16, slotW - 5));
+  const simLinePoints = [];
+
+  days.forEach((entry, idx) => {
+    const cx = padL + idx * slotW + slotW / 2;
+    const baseY = yOf(entry.atRiskCount);
+    const baseH = Math.max(2, yOf(0) - baseY);
+    const riskRatio = entry.atRiskCount / totalItems;
+    const barFill = riskRatio >= 0.7
+      ? (isDark ? 'rgba(248, 113, 113, 0.45)' : 'rgba(185, 28, 28, 0.25)')
+      : (isDark ? 'rgba(129, 140, 248, 0.35)' : 'rgba(79, 70, 181, 0.22)');
+    const barStroke = riskRatio >= 0.7 ? '#b91c1c' : '#4f46b5';
+
+    svg.append(createSvgEl('rect', {
+      x: cx - barW / 2,
+      y: baseY,
+      width: barW,
+      height: baseH,
+      rx: '3',
+      fill: barFill,
+      stroke: barStroke,
+      'stroke-width': '1.1'
+    }));
+
+    const simY = yOf(entry.simulatedAtRiskCount);
+    simLinePoints.push(`${cx.toFixed(1)},${simY.toFixed(1)}`);
+
+    if (entry.dayOffset === 0 || entry.dayOffset === 3 || entry.dayOffset === 7 || entry.dayOffset === 10 || entry.dayOffset === 14) {
+      const tick = createSvgEl('text', {
+        x: cx,
+        y: H - 14,
+        'text-anchor': 'middle',
+        'font-size': '9.5',
+        fill: axisText
+      });
+      tick.textContent = lang === 'tr' ? `+${entry.dayOffset}g` : `D${entry.dayOffset}`;
+      svg.append(tick);
+    }
+  });
+
+  if (simLinePoints.length >= 2 && (forecast?.simulateTodayReviews ?? 0) > 0) {
+    svg.append(createSvgEl('polyline', {
+      points: simLinePoints.join(' '),
+      fill: 'none',
+      stroke: '#0f766e',
+      'stroke-width': '2.4'
+    }));
+    days.forEach((entry, idx) => {
+      if (entry.dayOffset === 0 || entry.dayOffset === 7 || entry.dayOffset === 14) {
+        const cx = padL + idx * slotW + slotW / 2;
+        svg.append(createSvgEl('circle', {
+          cx,
+          cy: yOf(entry.simulatedAtRiskCount),
+          r: '3.6',
+          fill: '#ffffff',
+          stroke: '#0f766e',
+          'stroke-width': '2'
+        }));
+      }
+    });
+  }
+
+  // Inline compact legend at top
+  const legendBase = createSvgEl('text', {
+    x: padL,
+    y: 12,
+    'font-size': '9',
+    'font-weight': '700',
+    fill: '#4f46b5'
+  });
+  legendBase.textContent = lang === 'tr' ? '■ Riskli (<%90 R)' : '■ At-risk (<90% R)';
+  svg.append(legendBase);
+
+  if ((forecast?.simulateTodayReviews ?? 0) > 0) {
+    const legendSim = createSvgEl('text', {
+      x: W - padR,
+      y: 12,
+      'text-anchor': 'end',
+      'font-size': '9',
+      'font-weight': '700',
+      fill: '#0f766e'
+    });
+    legendSim.textContent = lang === 'tr'
+      ? `— Bugün ${forecast.simulateTodayReviews} tekrar ile`
+      : `— With ${forecast.simulateTodayReviews} reviews today`;
+    svg.append(legendSim);
+  }
+
+  container.replaceChildren(svg);
+}
+

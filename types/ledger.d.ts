@@ -99,6 +99,12 @@ export function upsertLedgerCard(
 
 export function getCardMemoryState(ledger: LearningLedger, cardId: string): DsrMemoryState;
 
+export interface BatchReviewInput extends RecordLedgerReviewOptions {
+  cardId: string;
+  rating: Rating;
+  at?: TimestampInput;
+}
+
 export function recordLedgerReview(
   ledger: LearningLedger,
   cardId: string,
@@ -106,6 +112,11 @@ export function recordLedgerReview(
   at?: TimestampInput,
   options?: RecordLedgerReviewOptions
 ): { ledger: LearningLedger; event: LedgerReviewEvent; memory: DsrMemoryState };
+
+export function recordLedgerReviewsBatch(
+  ledger: LearningLedger,
+  reviews: readonly BatchReviewInput[]
+): { ledger: LearningLedger; events: LedgerReviewEvent[] };
 
 export function projectCardsFromLedger(ledger: LearningLedger, at?: TimestampInput): StudyCard[];
 

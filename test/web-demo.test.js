@@ -12,6 +12,7 @@ function nodeCheck(path) {
 
 test('browser app and demo server parse as valid modern JavaScript', () => {
   nodeCheck('examples/web/app.js');
+  nodeCheck('examples/web/student-shell.js');
   nodeCheck('examples/serve-web.js');
   nodeCheck('src/index.js');
   nodeCheck('src/planner.js');
@@ -21,12 +22,17 @@ test('browser app and demo server parse as valid modern JavaScript', () => {
   nodeCheck('src/diagnosis.js');
   nodeCheck('src/calibrate.js');
   nodeCheck('src/interchange.js');
+  nodeCheck('src/course-pack.js');
 });
 
 test('all browser app element references exist in the HTML', async () => {
   const html = await readFile('examples/web/index.html', 'utf8');
   const js = await readFile('examples/web/app.js', 'utf8');
-  const ids = [...js.matchAll(/\$\('([^']+)'\)/g)].map(match => match[1]);
+  const shellJs = await readFile('examples/web/student-shell.js', 'utf8');
+  const ids = [
+    ...[...js.matchAll(/\$\('([^']+)'\)/g)].map(match => match[1]),
+    ...[...shellJs.matchAll(/\$\('([^']+)'\)/g)].map(match => match[1])
+  ];
   assert.ok(ids.length >= 20, 'the UI should reference a meaningful number of controls');
   const missing = [...new Set(ids)].filter(id => !html.includes('id="' + id + '"'));
   assert.deepEqual(missing, [], 'all JS element references must exist');
@@ -80,6 +86,7 @@ test('local demo server routes only allowlisted assets with restrictive headers'
     ['/examples/web/', 'text/html', '<title>FARK Study Engine'],
     ['/examples/web/styles.css', 'text/css', '.site-shell'],
     ['/examples/web/app.js', 'text/javascript', 'planStudySession'],
+    ['/examples/web/student-shell.js', 'text/javascript', 'export function initStudentShell'],
     ['/examples/web/tab-navigation.js', 'text/javascript', 'export function nextTabIndex'],
     ['/src/index.js', 'text/javascript', 'export function reviewCard'],
     ['/src/planner.js', 'text/javascript', 'export function planStudySession'],
@@ -92,6 +99,7 @@ test('local demo server routes only allowlisted assets with restrictive headers'
     ['/src/ledger.js', 'text/javascript', 'export function createLedger'],
     ['/src/diagnosis.js', 'text/javascript', 'export function diagnoseLearner'],
     ['/src/calibrate.js', 'text/javascript', 'export function fitLearnerParameters'],
+    ['/src/course-pack.js', 'text/javascript', 'export function createCourseRegistry'],
     ['/src/widget.js', 'text/javascript', 'export class FarkStudyDeckElement']
   ];
   for (const [path, type, expected] of assets) {
