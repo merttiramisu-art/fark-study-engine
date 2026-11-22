@@ -14,6 +14,7 @@ test('Concept Map browser app is fully local, safe-text and CSP-restricted', asy
       ['/examples/web/concept-map.js','text/javascript'],
       ['/examples/web/concept-map.css','text/css'],
       ['/examples/web/concept-map-sample.js','text/javascript'],
+      ['/examples/web/concept-map-authoring-sample.js','text/javascript'],
       ['/src/concept-map.js','text/javascript'],
       ['/src/assessment.js','text/javascript'],
       ['/src/knowledge-core.js','text/javascript']
@@ -29,10 +30,18 @@ test('Concept Map browser app is fully local, safe-text and CSP-restricted', asy
     assert.match(html,/id="question-select"/);
     assert.match(html,/id="quiz-feedback"/);
     assert.match(html,/id="reset-evidence"/);
+    assert.match(html,/id="declared-links"/);
+    assert.match(html,/id="content-source"/);
+    assert.match(html,/id="import-content"/);
+    assert.match(html,/id="content-file"/);
+    assert.match(html,/id="import-error"/);
     assert.match(html,/aria-live="polite"/);
     const js=await(await fetch(origin+'/examples/web/concept-map.js')).text();
     assert.match(js,/recordAssessment/);
     assert.match(js,/buildConceptMap/);
+    assert.match(js,/importMarkdownContentPack/);
+    assert.match(js,/compileCurriculum/);
+    assert.match(js,/createAssessmentHistory/);
     assert.match(js,/textContent/);
     assert.doesNotMatch(js,/\b(?:fetch|XMLHttpRequest|localStorage|sessionStorage|indexedDB|sendBeacon)\s*\(/);
     assert.doesNotMatch(js,/\.innerHTML\s*=/);

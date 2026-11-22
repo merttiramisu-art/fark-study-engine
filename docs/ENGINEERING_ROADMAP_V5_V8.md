@@ -76,6 +76,7 @@
 - An optional `fraction-comparison` visual declaration now travels with author-owned JSON/Markdown lesson metadata, is numerically validated through the original Visual Math model and can be previewed from user-pasted text under the no-network CSP. Errors are atomic and text remains inert; educational impact, arbitrary Markdown, user data persistence and full authoring workflows are not claimed.
 - Visual Learning v1 adds bounded `number-line` and `timeline` content models using the same adapter and strict Markdown subset, with a responsive standalone local Studio and deterministic original/fictional content. This demonstrates ordering and representation, **not** verified historical facts, student learning effectiveness, arbitrary diagram support or full CommonMark compatibility.
 - The **Concept Map** proof-of-concept renders only editorial outcome prerequisite edges from Knowledge Core, overlays recorded *answer-key observations* via the existing assessment API and explicitly reports stale/orphan observations. Node depth is layout, not readiness or mastery. CI covers responsive interaction, reset, invalid evidence and isolated offline package installation. Real learner validation and physical-device/screen-reader acceptance remain open.
+- **Educator-owned Content-to-Concept Map:** bounded attributed FARK Markdown/JSON from local editor/file picker; candidate map validated before state swap, old answer observations reset on success, graph/answers preserved on failure, exact prerequisite edges listed as text.
 
 ### Gate G — Scale
 

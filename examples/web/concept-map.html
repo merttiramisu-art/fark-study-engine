@@ -36,7 +36,11 @@
         <div id="map-levels" class="map-levels" aria-label="Curriculum dependency levels">
           <p>Loading original fraction concept map.</p>
         </div>
-        <p class="graph-footnote">Select a concept to inspect its exact links and evidence. Shared outcomes may use the same answer record, so counts must not be treated as independent proofs.</p>
+        <div class="exact-links" aria-labelledby="declared-links-heading">
+          <h3 id="declared-links-heading">Exact declared connections</h3>
+          <ul id="declared-links" aria-label="Prerequisite links"></ul>
+        </div>
+        <p class="graph-footnote">Layers indicate prerequisite depth for layout only; the exact arrows are listed above. Select a concept to inspect its links and evidence. Shared outcomes may use the same answer record, not independent proofs.</p>
       </section>
       <aside class="details-card" aria-labelledby="details-heading">
         <p class="eyebrow">02 / WHY THIS CONNECTION?</p>
@@ -54,7 +58,7 @@
         </div>
         <div class="quiz">
           <p class="eyebrow">03 / MAKE A REAL OBSERVATION</p>
-          <label for="question-select">Choose one original example question</label>
+          <label for="question-select">Choose a question from the current content pack</label>
           <select id="question-select"></select>
           <p id="quiz-prompt" class="question">Which fraction is larger?</p>
           <div id="quiz-choices" class="choices" role="group" aria-label="Answer options"></div>
@@ -63,11 +67,42 @@
         </div>
       </aside>
     </div>
+    <section class="content-import" aria-labelledby="content-import-heading">
+      <div>
+        <p class="eyebrow">04 / YOUR OWN CURRICULUM</p>
+        <h2 id="content-import-heading">Bring your own connections.</h2>
+        <p>Paste a restricted FARK Markdown pack or a FARK Open Content Pack JSON document. FARK validates every prerequisite, question and content link before replacing this map. Importing a new pack clears the previous fictional answer history.</p>
+      </div>
+      <div class="content-import-grid">
+        <div>
+          <label for="content-source">Original curriculum (Markdown or JSON)</label>
+          <textarea id="content-source" rows="14" spellcheck="false" maxlength="1048576" aria-describedby="import-notice"></textarea>
+          <div class="import-actions">
+            <button type="button" id="import-content">Validate and build concept map</button>
+            <button type="button" id="restore-sample">Restore original example</button>
+          </div>
+          <label for="content-file" class="file-label">Or select a local .md / .json file (max. 1 MiB)</label>
+          <input id="content-file" type="file" accept=".md,.markdown,.json,text/markdown,application/json">
+          <p id="import-notice" class="import-notice">Only content authored or licensed for your use should be imported. File content is read locally, never uploaded.</p>
+          <p id="import-status" class="import-status" role="status" aria-live="polite">Showing FARK's original fictional sample. No imported curriculum yet.</p>
+          <p id="import-error" class="import-error" role="alert" hidden></p>
+        </div>
+        <aside class="source-summary" aria-labelledby="source-heading">
+          <h3 id="source-heading">Current content source</h3>
+          <p id="source-title">Original Fraction Concept Path</p>
+          <p id="source-author">FARK Study Engine contributors · MIT (author-declared)</p>
+          <div class="import-proof">
+            <strong>Evidence integrity</strong>
+            <p>Each import creates a new in-memory assessment history. No prior learner answers are transferred between curricula, even if question IDs happen to match.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
     <section class="limits" aria-labelledby="limitations-heading">
       <h2 id="limitations-heading">What FARK can—and cannot—say</h2>
       <p id="excluded-report">All observations are tied to current question revisions.</p>
       <p>The content links are editorial declarations, not discovered causal relations. The colored evidence markers represent answer-key observations only. No persistent profile, mastery probability, diagnosis or teaching-effectiveness claim is produced.</p>
-      <p class="privacy-note">This is original fictional arithmetic content. Runs only in browser memory; refresh or reset clears answers. No accounts, remote assets, paid services or analytics.</p>
+      <p class="privacy-note">The built-in example uses original fictional arithmetic content. Author-pasted content is not independently fact-checked or license-verified. All processing stays in browser memory; refresh or reset clears answers. No accounts, remote assets, paid services or analytics.</p>
     </section>
     <footer>FARK Study Engine · Curriculum links and answer evidence are intentionally separate.</footer>
   </main>

@@ -42,3 +42,15 @@ Node 20/22 tests verify graph structure, stale/orphan rejection, exact answer co
 ## Türkçe
 
 Bu sürüm eğitimcinin **Bilgi Çekirdeği'nde açıkça tanımladığı kazanım ön koşullarını** bir haritada gösterir. Öğrenci örnek soruya cevap verdikçe yalnızca gerçekten kaydedilen doğru/yanlış gözlemleri renkle işaretlenir. Boş olanlar başarısız değildir; yanlış cevap ön koşulun yanlış olduğunu kanıtlamaz. Tek doğru cevap öğrenmenin kalıcı olduğunu göstermez. Bu proje hâlâ açık kaynak MIT, çevrimdışı ve sıfır ücretli API prensiplerini korur.
+
+## Import an educator-authored curriculum (V1.1)
+
+The Concept Map page now offers a **local-only Markdown / JSON editor** and a file selector for explicit `.md`, `.markdown` or `.json` files up to **1 MiB**. A second original fictional Markdown sample contains three shape concepts, two declared prerequisite links and two example questions. Select **Validate and build concept map** to replace the five-concept default graph with the authored graph.
+
+The same `importMarkdownContentPack` and `importOpenContentPack` APIs are used as in FARK's other demos; `buildConceptMap` then enforces the stricter visual graph bounds (150 outcomes / 600 declared edges). Unknown prerequisites, cycles, duplicate IDs, malformed questions and unsupported formats are rejected. **Failures preserve the existing graph and in-memory answer history**; successful imports reset that history, selected concept, active question and observed status. This prevents mixing evidence from different curricula, including those reusing question IDs.
+
+Below the concept layers, an exact, accessible text list shows each `from → to` *declared outcome prerequisite*. Layer connectors represent depth only, not inferred links. Course names, labels, questions and author-supplied provenance are inert text, not HTML. License declarations are self-reported, not verified. The browser has a no-network `connect-src 'none'` CSP. The file picker reads locally through `File.text()` with no upload or persistent storage.
+
+This is still **not a general Markdown parser**, unrestricted graphing engine, learner account, or history synchronizer. Real educator tests, physical file-chooser usability and screen-reader acceptance remain pending.
+
+**Türkçe:** Eğitimci kendi FARK Markdown veya JSON ders paketinden kavram haritası oluşturabilir. Dosya cihazda okunur, sunucuya gönderilmez. Yeni müfredat kabul edilince eski örnek cevap kayıtları temizlenir. Hatalı içerik sağlam haritayı ve kayıtları değiştirmez.

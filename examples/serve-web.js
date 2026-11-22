@@ -25,6 +25,7 @@ const ROUTES = new Map([
   ['/examples/web/concept-map.js', ['examples/web/concept-map.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/concept-map.css', ['examples/web/concept-map.css', 'text/css; charset=utf-8']],
   ['/examples/web/concept-map-sample.js', ['examples/web/concept-map-sample.js', 'text/javascript; charset=utf-8']],
+  ['/examples/web/concept-map-authoring-sample.js', ['examples/web/concept-map-authoring-sample.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/styles.css', ['examples/web/styles.css', 'text/css; charset=utf-8']],
   ['/examples/web/app.js', ['examples/web/app.js', 'text/javascript; charset=utf-8']],
   ['/examples/web/tab-navigation.js', ['examples/web/tab-navigation.js', 'text/javascript; charset=utf-8']],

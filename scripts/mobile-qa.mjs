@@ -514,6 +514,90 @@ async function run() {
       const mapShot=await devtools.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
       await writeFile('artifacts/screenshots/fark-concept-map-'+viewport.label+'.png',Buffer.from(mapShot.data,'base64'));
       console.log(viewport.label+' passed: declared concept links, observed statuses, mixed/reset, no invented prerequisite failure');
+
+      // Author-owned content replaces the initial graph atomically, using the
+      // SAME public Markdown/JSON importer and concept-map model.
+      const authorMap = await devtools.eval(`(() => {
+        const $=id=>document.getElementById(id);
+        const field=$('content-source');
+        const original=field.value;
+        const load=()=>$('import-content').click();
+        const seeded=original.includes('# FARK Content Pack') &&
+          $('declared-links').children.length===4;
+        load();
+        const markdown=$('graph-count').textContent.includes('3 concepts') &&
+          $('graph-count').textContent.includes('2 declared links') &&
+          $('declared-links').children.length===2 &&
+          $('source-title').textContent==='Original Shape Connections' &&
+          $('import-error').hidden &&
+          $('quiz-choices').children.length===2;
+        $('quiz-choices').querySelector('[data-choice="b"]').click();
+        const wrong=document.querySelector('[data-concept="recognize-shape"]')
+          .querySelector('.concept-observation').textContent==='Incorrect answer observed';
+        field.value=original.replace('## Outcome: compare-shapes','## Outcome: recognize-shape');
+        load();
+        const atomic=wrong &&
+          $('graph-count').textContent.includes('3 concepts') &&
+          document.querySelector('[data-concept="recognize-shape"]')
+          .querySelector('.concept-observation').textContent==='Incorrect answer observed' &&
+          !$('import-error').hidden &&
+          $('import-status').textContent.includes('unchanged');
+        field.value=original.replace('label: Compare two shapes','label: <img src=x onerror=alert(1)>');
+        load();
+        const inert=$('graph-count').textContent.includes('3 concepts') &&
+          document.querySelector('[data-concept="compare-shapes"] .concept-label')
+          .textContent.includes('<img src=x') &&
+          !document.querySelector('.concept-node img') &&
+          document.querySelector('[data-concept="recognize-shape"]')
+          .querySelector('.concept-observation').textContent==='No answer yet';
+        field.value=JSON.stringify({
+          format:'fark-open-content-pack',version:1,
+          attribution:{title:'Custom JSON Course',creator:'Demo editor',license:'MIT'},
+          units:[{id:'u',label:'Original course'}],
+          outcomes:[{id:'first',unitId:'u',label:'First idea'},
+            {id:'second',unitId:'u',label:'Second idea',prerequisiteIds:['first']}],
+          lessons:[],
+          questions:[{id:'q',revision:'1',outcomeIds:['second'],
+            prompt:'Which answer is correct?',correctChoiceId:'a',
+            choices:[{id:'a',text:'Alpha'},{id:'b',text:'Beta'}]}]
+        });
+        load();
+        const json=$('graph-count').textContent.includes('2 concepts') &&
+          $('graph-count').textContent.includes('1 declared links') &&
+          $('source-title').textContent==='Custom JSON Course' &&
+          $('declared-links').textContent.includes('First idea → Second idea') &&
+          $('selected-evidence').textContent.includes('0 observed') &&
+          $('import-error').hidden;
+        $('restore-sample').click();
+        const restored=$('graph-count').textContent.includes('5 concepts') &&
+          $('graph-count').textContent.includes('4 declared links') &&
+          $('source-title').textContent==='Original Fraction Concept Path' &&
+          $('selected-evidence').textContent.includes('0 observed') &&
+          field.value.includes('# FARK Content Pack');
+        return {seeded,markdown,wrong,atomic,inert,json,restored,
+          width:document.documentElement.scrollWidth,viewport:innerWidth};
+      })()`);
+      if (!authorMap.seeded || !authorMap.markdown || !authorMap.wrong ||
+          !authorMap.atomic || !authorMap.inert || !authorMap.json ||
+          !authorMap.restored || authorMap.width>authorMap.viewport+1) {
+        throw new Error(viewport.label+' imported Concept Map QA failed: '+JSON.stringify(authorMap));
+      }
+
+      // Verify the browser can read an explicitly selected local Markdown file.
+      await devtools.eval(`(() => {
+        const selector=document.getElementById('content-file');
+        const text=document.getElementById('content-source').value;
+        const transfer=new DataTransfer();
+        transfer.items.add(new File([text], 'original-local.md', {type:'text/markdown'}));
+        selector.files=transfer.files;
+        selector.dispatchEvent(new Event('change',{bubbles:true}));
+      })()`);
+      await retry(async()=>await devtools.eval(`document.getElementById('graph-count').textContent.includes('3 concepts') &&
+        document.getElementById('source-title').textContent==='Original Shape Connections' &&
+        document.getElementById('import-error').hidden`));
+      await devtools.eval(`document.getElementById('restore-sample').click()`);
+      console.log(viewport.label+' passed: author Markdown/JSON, atomic invalid import, inert labels, local .md selection and answer isolation');
+
     }
     if (devtools.exceptions.length) {
       throw new Error('Browser JavaScript exceptions: ' + devtools.exceptions.join('; '));
