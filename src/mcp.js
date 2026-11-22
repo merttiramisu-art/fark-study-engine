@@ -31,7 +31,8 @@ const PACKAGE_JSON = JSON.parse(
 );
 const SERVER_VERSION = PACKAGE_JSON.version;
 const PROTOCOL_VERSION = '2024-11-05';
-// Limit untrusted stdio messages before parsing to prevent unbounded memory growth.
+// Reject oversized complete lines before parsing. readline buffers the entire
+// line first; this is not a hard streaming-memory limit.
 export const MAX_MCP_MESSAGE_BYTES = 1024 * 1024;
 
 export const MCP_TOOLS = Object.freeze([
@@ -533,12 +534,13 @@ export async function startMcpServer({ input = process.stdin, output = process.s
   errorOutput.write(`FARK Study Engine MCP v${SERVER_VERSION} listening on stdio\n`);
 
   for await (const rawLine of rl) {
-    const line = rawLine.trim();
-    if (!line) continue;
+    // Enforce the wire-size limit on the raw UTF-8 line, even if it is all whitespace.
     if (Buffer.byteLength(rawLine, 'utf8') > MAX_MCP_MESSAGE_BYTES) {
       output.write(JSON.stringify({jsonrpc:'2.0',id:null,error:{code:-32600,message:'MCP message exceeds 1 MiB limit'}}) + '\n');
       continue;
     }
+    const line = rawLine.trim();
+    if (!line) continue;
     let reply;
     try {
       const msg = JSON.parse(line);

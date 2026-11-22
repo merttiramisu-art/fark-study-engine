@@ -27,6 +27,9 @@ export interface McpServerIo {
   errorOutput?: NodeJS.WritableStream;
 }
 
+/** Maximum size of a complete MCP stdio request line, in UTF-8 bytes (1 MiB). */
+export declare const MAX_MCP_MESSAGE_BYTES: number;
+
 export declare const MCP_TOOLS: readonly McpToolDefinition[];
 
 export function handleMcpRequest(message: JsonRpcMessage): JsonRpcResponse | null;

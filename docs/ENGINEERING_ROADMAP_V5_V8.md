@@ -17,7 +17,7 @@
 | A | V4.5 Ledger and evidence integrity | Invalid, duplicate, stale, replayed and reordered evidence regression tests; nonmutation; bounded import | In progress |
 | B | V4.6 API and TypeScript contracts | Export/import smoke tests, TS compile fixture, Node 20/22 CI, compatibility matrix | In progress |
 | C | V5.0 Contributor experience | Quick start, bilingual API docs, issue templates, security policy, ADRs | In progress |
-| D | V5.1 MCP hardening | Protocol errors, schema validation, size limits, client integration proof | Not started |
+| D | V5.1 MCP hardening | Protocol errors, schema validation, size limits, client integration proof | In progress |
 | E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | Not started |
 | F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | Not started |
 | G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | Not started |
@@ -46,6 +46,9 @@
 - Add one minimal original external-consumer example; verify instructions in CI.
 
 ### Gate D — MCP
+
+- PR #33 adds basic JSON-RPC argument-shape checks and a complete-line 1 MiB rejection guard. Acceptance remains pending passing Node 20/22 CI and real-client integration evidence.
+- The stdio implementation uses `readline`: an oversized line is buffered before rejection. This is **not** a hard streaming memory cap; a bounded streaming parser requires separate engineering and verification.
 
 - Protocol-level integration for initialize, tool discovery, valid and invalid calls.
 - Negative tests for malformed JSON-RPC, oversized payloads, unsafe paths and unexpected writes.
