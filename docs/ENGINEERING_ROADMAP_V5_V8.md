@@ -18,7 +18,7 @@
 | B | V4.6 API and TypeScript contracts | Export/import smoke tests, TS compile fixture, Node 20/22 CI, compatibility matrix | In progress |
 | C | V5.0 Contributor experience | Quick start, bilingual API docs, issue templates, security policy, ADRs | In progress |
 | D | V5.1 MCP hardening | Protocol errors, schema validation, size limits, client integration proof | In progress |
-| E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | Not started |
+| E | V5.2 Learning quality | Deterministic comparisons, calibration tests, explicit epistemic limits | In progress |
 | F | V6.0 Interactive Studio | Real end-to-end scenario, mobile accessibility and privacy QA | Not started |
 | G | V6.1 Performance | Repeatable 1k/10k/100k-event benchmarks with environment metadata | Not started |
 | H | V7.0 Modular learning infrastructure | Working external content adapter without private curriculum | Not started |
