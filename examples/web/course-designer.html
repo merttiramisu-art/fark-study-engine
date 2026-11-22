@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="FARK Ders Tasarımcısı V1.2: birden fazla ünite, kazanım, özgün ders ve soru oluştur.">
+  <title>Çoklu Ders Tasarımcısı — FARK Study Engine</title>
+  <link rel="stylesheet" href="./course-designer.css">
+  <script type="module" src="./course-designer.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">İçeriğe geç</a>
+  <header class="topbar">
+    <a class="brand" href="./"><span class="brandmark">F.</span><span>FARK <small>STUDY ENGINE</small></span></a>
+    <nav aria-label="Sayfalar"><a href="./study-desk.html">Ders Deneyimi</a><span class="local">● ÇEVRİMDIŞI</span></nav>
+  </header>
+  <main id="main" class="shell">
+    <div class="hero">
+      <div><p class="eyebrow">EĞİTİMCİ ALANI · V1.2</p><h1>Tek çekirdek. <em>Birçok ders.</em></h1>
+        <p>Üniteler, kazanımlar, görselli dersler ve sorular aynı içerik paketinde. Kimlikler ve bağlantılar korunur; öğrenme başarısı uydurulmaz.</p></div>
+      <div class="numbers" id="stats" aria-live="polite">2 ünite · 3 kazanım · 2 ders · 3 soru</div>
+    </div>
+    <section class="metadata" aria-labelledby="metadata-heading">
+      <div><h2 id="metadata-heading">Paket kimliği</h2><p class="help">Telif ve kaynak beyanı üreticiye aittir; sistem bunları doğrulayamaz.</p></div>
+      <div id="meta-fields" class="meta-fields"></div>
+    </section>
+    <div class="workspace">
+      <aside class="sidebar" aria-labelledby="outline-heading">
+        <h2 id="outline-heading">İçerik yapısı</h2><p class="help">Kayıt seç, düzenle veya yeni kayıt ekle.</p>
+        <div id="entity-navigation"></div>
+      </aside>
+      <section class="editor" aria-labelledby="editor-heading">
+        <div class="editor-top"><div><p class="eyebrow">İÇERİK DÜZENLEYİCİ</p><h2 id="editor-heading">Bir kayıt seç</h2></div><button type="button" id="remove-record" class="danger">Kaydı sil</button></div>
+        <div id="editor-fields"></div>
+        <p class="help">Kayıt kimlikleri sabittir. Bağlı bir ünite veya kazanımı silmek için önce ilgili bağlantıları kaldır.</p>
+      </section>
+      <aside class="preview" aria-labelledby="preview-heading">
+        <div class="preview-top"><div><p class="eyebrow">DOĞRULANMIŞ ÖNİZLEME</p><h2 id="preview-heading">Öğrenciye görünen</h2></div><span id="preview-badge">Doğrulanmadı</span></div>
+        <div id="preview-content" class="preview-content"><p class="placeholder">Önizleme ve dosya indirme için içeriği doğrula.</p></div>
+      </aside>
+    </div>
+    <section class="finish" aria-labelledby="finish-heading">
+      <div><h2 id="finish-heading">Doğrula ve dışa aktar</h2><p class="help">Önce mevcut FARK içerik adaptörü tüm ilişkileri, soruları ve görselleri kontrol eder. Dersler sadece bu cihazdaki bellekte tutulur.</p>
+        <p id="editor-status" class="status" role="status" aria-live="polite">Henüz doğrulanmadı.</p>
+        <p id="editor-error" class="error" role="alert" hidden></p></div>
+      <div class="actions"><button type="button" id="validate-course" class="primary">Tüm paketi doğrula</button><button type="button" id="download-course" disabled>JSON paketini indir</button>
+        <label class="file-control">JSON paketini yeniden aç<input id="import-course" type="file" accept=".json,application/json"></label>
+      </div>
+    </section>
+    <footer>Ücretsiz · Dış ağ isteği yok · Yerel geçici taslak · Gerçek öğretmen/öğrenci testi bekleniyor · Özel KPSS materyali ekleme</footer>
+  </main>
+</body>
+</html>
