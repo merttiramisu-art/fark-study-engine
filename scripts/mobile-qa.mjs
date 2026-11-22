@@ -308,6 +308,36 @@ async function run() {
           !journey.evidence.includes('Mastery: unknown') || journey.explanationCount < 4 || !journey.errorHidden) {
         throw new Error(viewport.label + ' guided learning journey failed: ' + JSON.stringify(journey));
       }
+      // Validate the alternative paths: a correct baseline must not invent remediation,
+      // and an incorrect issued follow-up must never be presented as success.
+      const alternateJourney = await devtools.eval(`(() => {
+        document.getElementById('restart-journey').click();
+        const reset = document.getElementById('progress-baseline').classList.contains('active') &&
+          document.querySelectorAll('#evidence-list li').length === 1;
+        document.getElementById('choice-a').click();
+        const correctBaseline = document.getElementById('stage-heading').textContent.includes('correctly') &&
+          document.getElementById('lesson-block').hidden &&
+          document.getElementById('lesson-reviewed').hidden;
+        document.getElementById('restart-journey').click();
+        document.getElementById('choice-b').click();
+        document.getElementById('lesson-reviewed').click();
+        document.getElementById('choice-b').click();
+        const wrongFollowup = document.getElementById('journey-status').textContent.includes('Different follow-up: incorrect') &&
+          document.getElementById('journey-status').textContent.includes('Mastery: unknown') &&
+          document.getElementById('progress-evidence').classList.contains('active');
+        return { reset, correctBaseline, wrongFollowup, errorHidden: document.getElementById('journey-error').hidden };
+      })()`);
+      if (!alternateJourney.reset || !alternateJourney.correctBaseline ||
+          !alternateJourney.wrongFollowup || !alternateJourney.errorHidden) {
+        throw new Error(viewport.label + ' alternative journey paths failed: ' + JSON.stringify(alternateJourney));
+      }
+      // Return to the positive, verified answer path for screenshot review.
+      await devtools.eval(`(() => {
+        document.getElementById('restart-journey').click();
+        document.getElementById('choice-b').click();
+        document.getElementById('lesson-reviewed').click();
+        document.getElementById('choice-a').click();
+      })()`);
       const journeyShot = await devtools.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       await writeFile('artifacts/screenshots/fark-learning-journey-' + viewport.label + '.png', Buffer.from(journeyShot.data, 'base64'));
       console.log(viewport.label + ' passed: new explainable assessment → lesson → issued reassessment journey');
